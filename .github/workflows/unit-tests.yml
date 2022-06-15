@@ -4,6 +4,10 @@ jobs:
   unit-test:
     runs-on: ubuntu-latest
     steps:
+      env:
+        SF_URL: ${{ secrets.SF_URL }}
+        SF_USER: ${{ secrets.SF_USER }}
+        SF_PASS: ${{ secrets.SF_PASS }}
       - name: Check out repository code
         uses: actions/checkout@v3
       - uses: actions/setup-node@v3
