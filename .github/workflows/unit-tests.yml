@@ -1,4 +1,4 @@
-name: veloce-sfdx
+name: veloce-sfdx-v3
 on: [push]
 jobs:
   unit-test:

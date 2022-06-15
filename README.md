@@ -3,12 +3,12 @@ veloce
 
 Extension to sfdx which allows veloce specific data pull and push
 
-[![Version](https://img.shields.io/npm/v/veloce.svg)](https://npmjs.org/package/veloce)
+[![Version](https://img.shields.io/npm/v/veloce-sfdx-v3.svg)](https://npmjs.org/package/veloce-sfdx-v3)
 [![Tests](https://github.com/veloceapps/veloce-sfdx-v3/actions/workflows/unit-tests.yml/badge.svg)](https://github.com/veloceapps/veloce-sfdx-v3/actions/workflows/unit-tests.yml)
 [![Greenkeeper](https://badges.greenkeeper.io/veloceapps/veloce-sfdx-v3.svg)](https://greenkeeper.io/)
 [![Known Vulnerabilities](https://snyk.io/test/github/veloceapps/veloce-sfdx-v3/badge.svg)](https://snyk.io/test/github/veloceapps/veloce-sfdx-v3)
-[![Downloads/week](https://img.shields.io/npm/dw/veloce.svg)](https://npmjs.org/package/veloce)
-[![License](https://img.shields.io/npm/l/veloce.svg)](https://github.com/veloceapps/veloce-sfdx-v3/blob/master/package.json)
+[![Downloads/week](https://img.shields.io/npm/dw/veloce-sfdx-v3.svg)](https://npmjs.org/package/veloce-sfdx-v3)
+[![License](https://img.shields.io/npm/l/veloce-sfdx-v3.svg)](https://github.com/veloceapps/veloce-sfdx-v3/blob/master/package.json)
 
 <!-- toc -->
 
@@ -16,11 +16,11 @@ Extension to sfdx which allows veloce specific data pull and push
 <!-- install -->
 <!-- usage -->
 ```sh-session
-$ npm install -g veloce
+$ npm install -g veloce-sfdx-v3
 $ sfdx COMMAND
 running command...
 $ sfdx (-v|--version|version)
-veloce/0.0.1 darwin-x64 node-v16.15.1
+veloce-sfdx-v3/0.0.1 darwin-x64 node-v16.15.1
 $ sfdx --help [COMMAND]
 USAGE
   $ sfdx COMMAND
