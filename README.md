@@ -62,7 +62,7 @@ OPTIONS
 
 EXAMPLE
   sfdx velcoe:source:pull --targetusername myOrg@example.com --targetdevhubusername devhub@org.com --members 
-  template:Cato_v143 --sourcepath ./source/templates
+  model:Octa --sourcepath ./source/templates
 ```
 
 _See code: [src/commands/veloce/source/pull.ts](https://github.com/veloceapps/veloce-sfdx-v3/blob/v0.0.1/src/commands/veloce/source/pull.ts)_
