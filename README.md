@@ -11,7 +11,7 @@ Extension to sfdx which allows veloce specific data pull and push
 [![License](https://img.shields.io/npm/l/veloce.svg)](https://github.com/veloceapps/veloce-sfdx-v3/blob/master/package.json)
 
 <!-- toc -->
-* [Debugging your plugin](#debugging-your-plugin)
+
 <!-- tocstop -->
 <!-- install -->
 <!-- usage -->
@@ -28,20 +28,23 @@ USAGE
 ```
 <!-- usagestop -->
 <!-- commands -->
-* [`sfdx veloce:source:pull [-n <string>] [-f] [-v <string>] [-u <string>] [--apiversion <string>] [--json] [--loglevel trace|debug|info|warn|error|fatal|TRACE|DEBUG|INFO|WARN|ERROR|FATAL]`](#sfdx-velocesourcepull--n-string--f--v-string--u-string---apiversion-string---json---loglevel-tracedebuginfowarnerrorfataltracedebuginfowarnerrorfatal)
+* [`sfdx veloce:source:pull [-m <string>] [-p <string>] [-v <string>] [-u <string>] [--apiversion <string>] [--json] [--loglevel trace|debug|info|warn|error|fatal|TRACE|DEBUG|INFO|WARN|ERROR|FATAL]`](#sfdx-velocesourcepull--m-string--p-string--v-string--u-string---apiversion-string---json---loglevel-tracedebuginfowarnerrorfataltracedebuginfowarnerrorfatal)
 
-## `sfdx veloce:source:pull [-n <string>] [-f] [-v <string>] [-u <string>] [--apiversion <string>] [--json] [--loglevel trace|debug|info|warn|error|fatal|TRACE|DEBUG|INFO|WARN|ERROR|FATAL]`
+## `sfdx veloce:source:pull [-m <string>] [-p <string>] [-v <string>] [-u <string>] [--apiversion <string>] [--json] [--loglevel trace|debug|info|warn|error|fatal|TRACE|DEBUG|INFO|WARN|ERROR|FATAL]`
 
-print a greeting and your org IDs
+Retrieves Sources from Salesforce org and stores it in git folder structure
 
 ```
 USAGE
-  $ sfdx veloce:source:pull [-n <string>] [-f] [-v <string>] [-u <string>] [--apiversion <string>] [--json] [--loglevel 
-  trace|debug|info|warn|error|fatal|TRACE|DEBUG|INFO|WARN|ERROR|FATAL]
+  $ sfdx veloce:source:pull [-m <string>] [-p <string>] [-v <string>] [-u <string>] [--apiversion <string>] [--json] 
+  [--loglevel trace|debug|info|warn|error|fatal|TRACE|DEBUG|INFO|WARN|ERROR|FATAL]
 
 OPTIONS
-  -f, --force                                                                       example boolean flag
-  -n, --name=name                                                                   name to print
+  -m, --members=members                                                             Pull only specific type of data or
+                                                                                    even name
+
+  -p, --sourcepath=sourcepath                                                       Path where to store retrieved
+                                                                                    sources
 
   -u, --targetusername=targetusername                                               username or alias for the target
                                                                                     org; overrides default target org
@@ -57,9 +60,9 @@ OPTIONS
   --loglevel=(trace|debug|info|warn|error|fatal|TRACE|DEBUG|INFO|WARN|ERROR|FATAL)  [default: warn] logging level for
                                                                                     this command invocation
 
-EXAMPLES
-  sfdx hello:org --targetusername myOrg@example.com --targetdevhubusername devhub@org.com
-  sfdx hello:org --name myname --targetusername myOrg@example.com
+EXAMPLE
+  sfdx velcoe:source:pull --targetusername myOrg@example.com --targetdevhubusername devhub@org.com --members 
+  template:Cato_v143 --sourcepath ./source/templates
 ```
 
 _See code: [src/commands/veloce/source/pull.ts](https://github.com/veloceapps/veloce-sfdx-v3/blob/v0.0.1/src/commands/veloce/source/pull.ts)_
