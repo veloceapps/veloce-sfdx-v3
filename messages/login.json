@@ -1,0 +1,8 @@
+{
+  "commandDescription": "Login using username and password",
+  "userFlagDescription": "Username to login with",
+  "passwordfileFlagDescription": "Relative/Full path to file containing password",
+  "aliasFlagDescription": "target alias to create",
+  "instanceurlFlagDescription": "salesforce environment Instance URL",
+  "securityTokenFlagDescription": "security token"
+}

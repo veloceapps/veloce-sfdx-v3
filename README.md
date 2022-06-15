@@ -28,7 +28,41 @@ USAGE
 ```
 <!-- usagestop -->
 <!-- commands -->
+* [`sfdx veloce:login -p <string> -a <string> -u <string> -r <string> [-s <string>] [--json] [--loglevel trace|debug|info|warn|error|fatal|TRACE|DEBUG|INFO|WARN|ERROR|FATAL]`](#sfdx-velocelogin--p-string--a-string--u-string--r-string--s-string---json---loglevel-tracedebuginfowarnerrorfataltracedebuginfowarnerrorfatal)
 * [`sfdx veloce:source:pull [-m <string>] [-p <string>] [-v <string>] [-u <string>] [--apiversion <string>] [--json] [--loglevel trace|debug|info|warn|error|fatal|TRACE|DEBUG|INFO|WARN|ERROR|FATAL]`](#sfdx-velocesourcepull--m-string--p-string--v-string--u-string---apiversion-string---json---loglevel-tracedebuginfowarnerrorfataltracedebuginfowarnerrorfatal)
+
+## `sfdx veloce:login -p <string> -a <string> -u <string> -r <string> [-s <string>] [--json] [--loglevel trace|debug|info|warn|error|fatal|TRACE|DEBUG|INFO|WARN|ERROR|FATAL]`
+
+Login using username and password
+
+```
+USAGE
+  $ sfdx veloce:login -p <string> -a <string> -u <string> -r <string> [-s <string>] [--json] [--loglevel 
+  trace|debug|info|warn|error|fatal|TRACE|DEBUG|INFO|WARN|ERROR|FATAL]
+
+OPTIONS
+  -a, --alias=alias                                                                 (required) target alias to create
+
+  -p, --passwordfile=passwordfile                                                   (required) Relative/Full path to
+                                                                                    file containing password
+
+  -r, --instanceurl=instanceurl                                                     (required) salesforce environment
+                                                                                    Instance URL
+
+  -s, --securitytoken=securitytoken                                                 security token
+
+  -u, --user=user                                                                   (required) Username to login with
+
+  --json                                                                            format output as json
+
+  --loglevel=(trace|debug|info|warn|error|fatal|TRACE|DEBUG|INFO|WARN|ERROR|FATAL)  [default: warn] logging level for
+                                                                                    this command invocation
+
+EXAMPLE
+  $ sfdx veloce:login -u username -p ./PASSWORDFILE -a alias01
+```
+
+_See code: [src/commands/veloce/login.ts](https://github.com/veloceapps/veloce-sfdx-v3/blob/v0.0.1/src/commands/veloce/login.ts)_
 
 ## `sfdx veloce:source:pull [-m <string>] [-p <string>] [-v <string>] [-u <string>] [--apiversion <string>] [--json] [--loglevel trace|debug|info|warn|error|fatal|TRACE|DEBUG|INFO|WARN|ERROR|FATAL]`
 
@@ -61,8 +95,8 @@ OPTIONS
                                                                                     this command invocation
 
 EXAMPLE
-  sfdx velcoe:source:pull --targetusername myOrg@example.com --targetdevhubusername devhub@org.com --members 
-  model:Octa --sourcepath ./source/templates
+  sfdx velcoe:source:pull --targetusername myOrg@example.com --targetdevhubusername devhub@org.com --members model:Octa 
+  --sourcepath ./source/templates
 ```
 
 _See code: [src/commands/veloce/source/pull.ts](https://github.com/veloceapps/veloce-sfdx-v3/blob/v0.0.1/src/commands/veloce/source/pull.ts)_
