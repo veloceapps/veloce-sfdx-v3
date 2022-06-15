@@ -1,0 +1,21 @@
+name: veloce-sfdx
+on: [push]
+jobs:
+  unit-test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository code
+        uses: actions/checkout@v3
+      - uses: actions/setup-node@v3
+        with:
+          node-version: '16'
+      - run: |
+          yarn install
+          yarn prepack
+          npm -g i install sfdx-cli@7.144.2
+          sfdx plugins:link .
+          echo "$SF_PASS" > ./sf-pass
+          sfdx veloce:login -r ${SF_URL} -u ${SF_USER} -p ./sf-pass -a sfdx-test
+          yarn test
+          ./node_modules/.bin/nyc report --reporter text-lcov > coverage.lcov
+          curl -s https://codecov.io/bash | bash
