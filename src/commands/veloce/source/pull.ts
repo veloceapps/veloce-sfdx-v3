@@ -21,17 +21,21 @@ export default class Pull extends SfdxCommand {
 
   public static examples = messages.getMessage('examples').split(os.EOL);
 
-  public static args = [{ name: 'file' }];
+  public static args = [];
+
+// -u quick-guide
+// -m template:Cato_v143
+// -p ./source/templates
 
   protected static flagsConfig = {
-    // flag with a value (-n, --name=VALUE)
-    name: flags.string({
-      char: 'n',
-      description: messages.getMessage('nameFlagDescription'),
+    // flag with a value (-m, --members=VALUE)
+    members: flags.string({
+      char: 'm',
+      description: messages.getMessage('membersFlagDescription'),
     }),
-    force: flags.boolean({
-      char: 'f',
-      description: messages.getMessage('forceFlagDescription'),
+    sourcepath: flags.string({
+      char: 'p',
+      description: messages.getMessage('sourcepathFlagDescription'),
     }),
   };
 
@@ -76,16 +80,6 @@ export default class Pull extends SfdxCommand {
       outputString = `${outputString} and I will be around until ${date}!`;
     }
     this.ux.log(outputString);
-
-    // this.hubOrg is NOT guaranteed because supportsHubOrgUsername=true, as opposed to requiresHubOrgUsername.
-    if (this.hubOrg) {
-      const hubOrgId = this.hubOrg.getOrgId();
-      this.ux.log(`My hub org id is: ${hubOrgId}`);
-    }
-
-    if (this.flags.force && this.args.file) {
-      this.ux.log(`You input --force and a file: ${this.args.file as string}`);
-    }
 
     // Return an object to be displayed with --json
     return { orgId: this.org.getOrgId(), outputString };
