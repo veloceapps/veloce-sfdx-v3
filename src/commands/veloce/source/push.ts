@@ -14,9 +14,9 @@ Messages.importMessagesDirectory(__dirname);
 
 // Load the specific messages for this file. Messages from @salesforce/command, @salesforce/core,
 // or any library that is using the messages framework can also be loaded this way.
-const messages = Messages.loadMessages('veloce-sfdx-v3', 'source-pull');
+const messages = Messages.loadMessages('veloce-sfdx-v3', 'source-push');
 
-export default class Pull extends SfdxCommand {
+export default class Push extends SfdxCommand {
   public static description = messages.getMessage('commandDescription');
 
   public static examples = messages.getMessage('examples').split(os.EOL);

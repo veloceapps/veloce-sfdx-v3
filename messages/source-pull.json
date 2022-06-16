@@ -1,0 +1,8 @@
+{
+  "commandDescription": "Retrieves Sources from Salesforce org and stores it in git folder structure",
+  "membersFlagDescription": "Pull only specific type of data or even name of object",
+  "sourcepathFlagDescription": "Path where to store sources",
+  "examples": [
+    "sfdx velcoe:source:pull --targetusername myOrg@example.com --targetdevhubusername devhub@org.com --members model:Octa --sourcepath ./source/pmls"
+  ]
+}

@@ -1,0 +1,7 @@
+{
+  "commandDescription": "Uploads Data from CSVs to Salesforce org",
+  "sourcepathFlagDescription": "Path where to get data",
+  "examples": [
+    "sfdx velcoe:data:pull --targetusername myOrg@example.com --targetdevhubusername devhub@org.com --members model:Octa --sourcepath ./source/templates"
+  ]
+}

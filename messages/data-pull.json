@@ -1,0 +1,7 @@
+{
+  "commandDescription": "Retrieves data from Salesforce org and stores it in provided folder as CSVs",
+  "sourcepathFlagDescription": "Path where to store data",
+  "examples": [
+    "sfdx velcoe:data:pull --targetusername myOrg@example.com --targetdevhubusername devhub@org.com --sourcepath ./source/templates"
+  ]
+}
