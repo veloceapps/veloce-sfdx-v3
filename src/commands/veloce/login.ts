@@ -59,7 +59,7 @@ export default class Login extends SfdxCommand {
   protected static requiresProject = false;
 
   public async run(): Promise<AnyJson> {
-    const url = (this.flags.instanceurl as string).trim();
+    const url = (this.flags.instanceurl as string).trim().replace(/\/$/, ""); // remove trailing spaces and slash
     const securitytoken = ((this.flags.securitytoken as string) || '' ).trim();
     const user = (this.flags.user as string).trim();
     const alias = (this.flags.alias as string).trim();
