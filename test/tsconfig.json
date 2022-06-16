@@ -1,4 +1,7 @@
 {
-  "extends": "../tsconfig-test"
+  "extends": "@salesforce/dev-config/tsconfig-test",
+  "include": ["./**/*.ts"],
+  "compilerOptions": {
+    "skipLibCheck": true
+  }
 }
-
