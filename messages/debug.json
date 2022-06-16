@@ -1,0 +1,12 @@
+{
+  "commandDescription": "Starts new ISOLATED debug session and streams backend logs",
+  "targetFlagDescription": "Alias of existing org",
+  "examples": [
+    "sfdx velcoe:debug --targetusername myOrg@example.com --targetdevhubusername devhub@org.com start",
+    "sfdx velcoe:debug --targetusername myOrg@example.com --targetdevhubusername devhub@org.com stop",
+    "sfdx velcoe:debug --targetusername myOrg@example.com --targetdevhubusername devhub@org.com list",
+    "sfdx velcoe:debug --targetusername myOrg@example.com --targetdevhubusername devhub@org.com push",
+    "sfdx velcoe:debug --targetusername myOrg@example.com --targetdevhubusername devhub@org.com watch",
+    "sfdx velcoe:debug --targetusername myOrg@example.com --targetdevhubusername devhub@org.com logs"
+  ]
+}

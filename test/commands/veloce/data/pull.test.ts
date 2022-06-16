@@ -6,7 +6,7 @@ import {exec as plainExec} from 'node:child_process';
 const exec = promisify(plainExec);
 
 describe('veloce:data:pull', () => {
-  it('should pull veloce sources from org', async () => {
+  it('should pull veloce data from org', async () => {
     //     var name = `HugeCorp-${Date.now()}`
     //     const dataCSV = `Id,Name,VELOCPQ__Active__c,VELOCPQ__BundleProduct__c,VELOCPQ__Comment__c,VELOCPQ__ContentId__c,VELOCPQ__EndDate__c,VELOCPQ__Pml__c,VELOCPQ__PropertyMapId__c,VELOCPQ__ReferenceId__c,VELOCPQ__StartDate__c,VELOCPQ__UiDefinitionsId__c,VELOCPQ__Version__c
     // aBQ040000008RMfGAM,${name},false,false,"Super cool company",01504000000ISZRAA4,,,,aBQ040000008RMfDAM,,01504000000ISZWAA4,

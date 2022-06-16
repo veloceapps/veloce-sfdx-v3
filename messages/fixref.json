@@ -1,0 +1,8 @@
+{
+  "commandDescription": "Fix sobjects external id if empty",
+  "dryFlagDescription": "Performs dry run and won't change org data",
+  "examples": [
+    "sfdx veloce:fixref --targetusername myOrg@example.com --targetdevhubusername devhub@org.com --dry",
+    "sfdx veloce:fixref --targetusername myOrg@example.com --targetdevhubusername devhub@org.com"
+  ]
+}
