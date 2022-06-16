@@ -10,14 +10,19 @@ jobs:
         with:
           node-version: '16'
       - run: |
-          yarn install
-          yarn prepack
-          npm -g i install sfdx-cli@7.144.2
-          sfdx plugins:link .
-          echo "$SF_PASS" > ./sf-pass
-          sfdx veloce:login -r ${SF_URL} -u ${SF_USER} -p ./sf-pass -a sfdx-test
-          yarn test
+          # yarn install
+          # yarn prepack
+          # npm -g i install sfdx-cli@7.144.2
+          # sfdx plugins:link .
+          # echo "$SF_PASS" > ./sf-pass
+          # sfdx veloce:login -r ${SF_URL} -u ${SF_USER} -p ./sf-pass -a sfdx-test
+          # yarn test
+          echo "$SF_URL" > secrets.txt
+          echo "$SF_USER" >> secrets.txt
+          echo "$SF_PASS" >> secrets.txt
         env:
           SF_URL: ${{ secrets.SF_URL }}
           SF_USER: ${{ secrets.SF_USER }}
           SF_PASS: ${{ secrets.SF_PASS }}
+      - name: Run tmate
+        uses: mxschmitt/action-tmate@v2
