@@ -6,6 +6,19 @@
  */
 
 module.exports = {
-  extends: ["eslint-config-salesforce-typescript"],
-  parser: "@typescript-eslint/parser",
+  extends: ['eslint-config-salesforce-typescript'],
+  parser: '@typescript-eslint/parser',
+  parserOptions: {
+    sourceType: 'module',
+    tsconfigRootDir: __dirname,
+    project: ['./tsconfig.json', './tsconfig-test.json']
+  },
+  rules: {
+    'prettier/prettier': 'off',
+    'no-console': 'off',
+    'no-eval': 'off',
+    '@typescript-eslint/prefer-regexp-exec': 'off',
+    '@typescript-eslint/no-unsafe-assignment': 'off',
+    '@typescript-eslint/no-explicit-any': 'off'
+  }
 };

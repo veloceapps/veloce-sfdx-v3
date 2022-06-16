@@ -76,6 +76,7 @@
   "scripts": {
     "build": "tsc -p .",
     "lint": "eslint src/**/*.ts test/**/*.ts",
+    "fix": "eslint src/**/*.ts test/**/*.ts --fix",
     "postpack": "rm -f oclif.manifest.json",
     "posttest": "eslint src/**/*.ts test/**/*.ts",
     "prepack": "rm -rf lib && tsc -b && oclif-dev manifest && oclif-dev readme",

@@ -23,9 +23,9 @@ export default class Pull extends SfdxCommand {
 
   public static args = [];
 
-// -u quick-guide
-// -m model:Octa
-// -p ./source/templates
+  // -u quick-guide
+  // -m model:Octa
+  // -p ./source/templates
 
   protected static flagsConfig = {
     // flag with a value (-m, --members=VALUE)
