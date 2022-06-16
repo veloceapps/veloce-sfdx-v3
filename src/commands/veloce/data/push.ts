@@ -28,11 +28,6 @@ export default class Push extends SfdxCommand {
   // -p ./source/templates
 
   protected static flagsConfig = {
-    // flag with a value (-m, --members=VALUE)
-    members: flags.string({
-      char: 'm',
-      description: messages.getMessage('membersFlagDescription'),
-    }),
     sourcepath: flags.string({
       char: 'p',
       description: messages.getMessage('sourcepathFlagDescription'),
