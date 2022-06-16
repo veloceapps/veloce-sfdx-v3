@@ -17,8 +17,6 @@ jobs:
           echo "$SF_PASS" > ./sf-pass
           sfdx veloce:login -r ${SF_URL} -u ${SF_USER} -p ./sf-pass -a sfdx-test
           yarn test
-          ./node_modules/.bin/nyc report --reporter text-lcov > coverage.lcov
-          curl -s https://codecov.io/bash | bash
         env:
           SF_URL: ${{ secrets.SF_URL }}
           SF_USER: ${{ secrets.SF_USER }}
