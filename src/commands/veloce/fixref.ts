@@ -111,7 +111,7 @@ export default class Fixref extends SfdxCommand {
       if (debugInfoObj !== null) {
         if (debugInfoObj['objectsWithEmptyRefId'].length < 1) {
           this.ux.log('This org has no empty ref ids, all is ok')
-          process.exit(1)
+          process.exit(0)
         }
         this.ux.log("the following items haven't ref ids and can be fixed:")
         debugInfoObj['objectsWithEmptyRefId'].forEach(ob => {
