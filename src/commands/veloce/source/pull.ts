@@ -60,7 +60,7 @@ export default class Pull extends SfdxCommand {
     for(const m of membersArray) {
       const parts = m.split(':')
       if (parts[0] === 'pml' && parts[1]) {
-        pmls.push(parts[0])
+        pmls.push(parts[1])
       }
     }
     interface ProductModel {
@@ -83,6 +83,7 @@ export default class Pull extends SfdxCommand {
 
     // Query the org
     const result = await conn.query<ProductModel>(pmlQuery);
+    this.ux.log(`PMLs result count: ${result.totalSize}`)
     for (const r of result.records) {
       mkdirSync(sourcepath)
       writeFileSync(`${sourcepath}/${r.Name}.pml.json`, JSON.stringify({
