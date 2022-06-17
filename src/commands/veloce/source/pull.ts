@@ -4,7 +4,7 @@
  * Licensed under the BSD 3-Clause license.
  * For full license text, see LICENSE.txt file in the repo root or https://opensource.org/licenses/BSD-3-Clause
  */
-import { writeFileSync } from 'node:fs'
+import { writeFileSync, mkdirSync } from 'node:fs'
 import * as os from 'os';
 import { flags, SfdxCommand } from '@salesforce/command';
 import { Messages } from '@salesforce/core';
@@ -82,6 +82,7 @@ export default class Pull extends SfdxCommand {
     // Query the org
     const result = await conn.query<ProductModel>(pmlQuery);
     for (const r of result.records) {
+      mkdirSync(sourcepath)
       writeFileSync(`${sourcepath}/${r.Name}.pml.json`, JSON.stringify({
         Id: r.Id,
         Name: r.Name,
