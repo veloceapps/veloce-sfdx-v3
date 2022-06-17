@@ -12,6 +12,22 @@ Messages.importMessagesDirectory(__dirname)
 // or any library that is using the messages framework can also be loaded this way.
 const messages = Messages.loadMessages('veloce-sfdx-v3', 'fixref')
 
+interface SfResponseDiagnostic {
+  lineNumber: number;
+  columnNumber: number;
+  compileProblem: string;
+  exceptionMessage: string;
+  exceptionStackTrace: string;
+}
+
+interface SfResponse {
+  success: boolean;
+  compiled: boolean;
+  logs: string;
+  diagnostic: SfResponseDiagnostic[];
+}
+
+
 export default class Fixref extends SfdxCommand {
 
   public static description = messages.getMessage('commandDescription')
@@ -62,9 +78,8 @@ export default class Fixref extends SfdxCommand {
                     }
                 }
             }
-            result.put('objects_with_empty_ref_id', veloceObjectsWithoutRefDebug);
-
-            result.put('objects_without_ref_column', veloceObjectsWithoutRefColumn);
+            result.put('objectsWithEmptyRefId', veloceObjectsWithoutRefDebug);
+            result.put('objectsWithoutRefColumn', veloceObjectsWithoutRefColumn);
 
             String resultJSON = JSON.serialize(result);
             System.debug(resultJSON);
@@ -73,7 +88,7 @@ export default class Fixref extends SfdxCommand {
 
     const exec = new ExecuteService(conn)
     const execAnonOptions = Object.assign({}, {apexCode: script})
-    const result = await exec.executeAnonymous(execAnonOptions)
+    const result = (await exec.executeAnonymous(execAnonOptions)) as SfResponse
 
     if (!result.success) {
       this.ux.log('Failed to execute apex code')
@@ -83,23 +98,23 @@ export default class Fixref extends SfdxCommand {
       process.exit(1)
     }
 
-    let debugInfo = ''
+    let debugInfoObj: { objectsWithEmptyRefId: string[] } = null
     for (const line of result.logs.split('\n')) {
-      if (line.includes('{"objects_without_ref_column":[')) {
-        debugInfo = line.split('|')
-        debugInfo = debugInfo[debugInfo.length - 1]
-        debugInfo = JSON.parse(debugInfo)
+      if (line.includes('{"objectsWithoutRefColumn":[')) {
+        const debugInfoArr = line.split('|')
+        const debugInfo = debugInfoArr[debugInfoArr.length - 1]
+        debugInfoObj = JSON.parse(debugInfo)
         break
       }
     }
     if (this.flags.dry) {
-      if (debugInfo !== '') {
-        if (debugInfo['objects_with_empty_ref_id'].length < 1) {
+      if (debugInfoObj !== null) {
+        if (debugInfoObj['objectsWithEmptyRefId'].length < 1) {
           this.ux.log('This org has no empty ref ids, all is ok')
           process.exit(1)
         }
         this.ux.log("the following items haven't ref ids and can be fixed:")
-        debugInfo['objects_with_empty_ref_id'].forEach(ob => {
+        debugInfoObj['objectsWithEmptyRefId'].forEach(ob => {
           this.ux.log(ob)
         })
         this.ux.log('please use without --dry flag to fix empty ref ids in listed object')
@@ -114,7 +129,7 @@ export default class Fixref extends SfdxCommand {
     return {orgId: this.org.getOrgId()}
   }
 
-  private formatDefault(response) {
+  private formatDefault(response: SfResponse): string {
     let outputText = ''
     if (response.success) {
       outputText += 'SUCCESS\n'

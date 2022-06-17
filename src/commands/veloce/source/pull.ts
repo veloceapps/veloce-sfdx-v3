@@ -67,6 +67,16 @@ export default class Pull extends SfdxCommand {
     }
 
     // Return an object to be displayed with --json
-    return { pmls };
+
+    const conn = this.org.getConnection();
+    const query = 'Select Name, TrialExpirationDate from Organization';
+    // The type we are querying for
+    interface Organization {
+      Name: string;
+      TrialExpirationDate: string;
+    }
+    // Query the org
+    await conn.query<Organization>(query);
+    return { pmls};
   }
 }
