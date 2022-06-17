@@ -74,9 +74,11 @@ export default class Pull extends SfdxCommand {
       // Dump ALL
       // PML
       pmlQuery = `Select Id,Name,VELOCPQ__ContentId__c,VELOCPQ__Version__c from VELOCPQ__ProductModel__c`;
+      this.ux.log(`Dumping All PMLs`)
     } else if (pmls.length > 0) {
       // Dump some members only
       pmlQuery = `Select Id,Name,VELOCPQ__ContentId__c,VELOCPQ__Version__c from VELOCPQ__ProductModel__c WHERE Name IN ('${pmls.join("','")}')`;
+      this.ux.log(`Dumping PMLs with names: ${pmls.join(',')}`)
     }
 
     // Query the org
