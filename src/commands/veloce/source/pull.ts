@@ -92,6 +92,6 @@ export default class Pull extends SfdxCommand {
       writeFileSync(`${sourcepath}/${r.Name}.pml`, r.VELOCPQ__ContentId__c,{flag: 'w+'})
     }
     // Return an object to be displayed with --json
-    return { 'aaaa': pmlResult.records };
+    return { 'pmls': pmlResult.records };
   }
 }
