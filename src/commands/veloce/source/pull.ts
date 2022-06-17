@@ -4,6 +4,7 @@
  * Licensed under the BSD 3-Clause license.
  * For full license text, see LICENSE.txt file in the repo root or https://opensource.org/licenses/BSD-3-Clause
  */
+import { writeFileSync } from 'node:fs'
 import * as os from 'os';
 import { flags, SfdxCommand } from '@salesforce/command';
 import { Messages } from '@salesforce/core';
@@ -50,7 +51,10 @@ export default class Pull extends SfdxCommand {
   protected static requiresProject = false;
 
   public async run(): Promise<AnyJson> {
+    const conn = this.org.getConnection();
     const members = (this.flags.members || '') as string;
+    const sourcepath = ((this.flags.sourcepath || 'source') as string).replace(/\/$/, ""); // trim last slash if present
+
     const pmls: string[] = []
     const membersArray = members.split(',')
     for(const m of membersArray) {
@@ -59,24 +63,35 @@ export default class Pull extends SfdxCommand {
         pmls.push(parts[0])
       }
     }
+    interface ProductModel {
+      Id: string;
+      Name: string;
+      VELOCPQ__ContentId__c: string;
+      VELOCPQ__Version__c: string;
+    }
+    let pmlQuery: string
     if (members === '') {
       // Dump ALL
       // PML
-    } else {
+      pmlQuery = `Select Id,Name,VELOCPQ__ContentId__c,VELOCPQ__Version__c from VELOCPQ__ProductModel__c`;
+    } else if (pmls.length > 0) {
       // Dump some members only
+      pmlQuery = `Select Id,Name,VELOCPQ__ContentId__c,VELOCPQ__Version__c from VELOCPQ__ProductModel__c WHERE Name IN ('${pmls.join("','")}')`;
+    }
+
+    // Query the org
+    const result = await conn.query<ProductModel>(pmlQuery);
+    for (const r of result.records) {
+      writeFileSync(`${sourcepath}/${r.Name}.pml.json`, JSON.stringify({
+        Id: r.Id,
+        Name: r.Name,
+        VELOCPQ__ContentId__c: r.VELOCPQ__ContentId__c,
+        VELOCPQ__Version__c: r.VELOCPQ__Version__c,
+      }, null, '  '),{flag: "w+"})
+      writeFileSync(`${sourcepath}/${r.Name}.pml`, r.VELOCPQ__ContentId__c,{flag: "w+"})
     }
 
     // Return an object to be displayed with --json
-
-    const conn = this.org.getConnection();
-    const query = 'Select Name, TrialExpirationDate from Organization';
-    // The type we are querying for
-    interface Organization {
-      Name: string;
-      TrialExpirationDate: string;
-    }
-    // Query the org
-    await conn.query<Organization>(query);
     return { pmls};
   }
 }
