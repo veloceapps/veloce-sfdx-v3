@@ -1,9 +1,9 @@
-//import { promisify } from 'node:util';
-//import {exec as plainExec} from 'node:child_process';
+// import { promisify } from 'node:util';
+// import {exec as plainExec} from 'node:child_process';
 
 // import { writeFileSync } from 'node:fs'
 
-//const exec = promisify(plainExec);
+// const exec = promisify(plainExec);
 
 describe('veloce:debug', () => {
   it('should start debug in org', async () => {
@@ -13,8 +13,8 @@ describe('veloce:debug', () => {
     // `
     //    writeFileSync("/tmp/VELOCPQ__ProductModel__c.csv", dataCSV)
     // FIXME: times out!
-    //const cmdResult = await exec('sfdx veloce:debug -u sfdx-test');
-    //console.log(cmdResult.stdout);
+    // const cmdResult = await exec('sfdx veloce:debug -u sfdx-test');
+    // console.log(cmdResult.stdout);
     // var check = await exec(`sfdx force:data:soql:query  -u sfdx-test -q "select fields(all) from VELOCPQ__ProductModel__c where Name = '${name}' limit 10" --json`)
     // var checkParsed = JSON.parse(check.stdout)
     // console.log(checkParsed)
