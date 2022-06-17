@@ -53,7 +53,7 @@ export default class Pull extends SfdxCommand {
   public async run(): Promise<AnyJson> {
     const conn = this.org.getConnection();
     const members = (this.flags.members || '') as string;
-    const sourcepath = ((this.flags.sourcepath || 'source') as string).replace(/\/$/, ""); // trim last slash if present
+    const sourcepath = ((this.flags.sourcepath || 'source') as string).replace(/\/$/, ''); // trim last slash if present
 
     const pmls: string[] = []
     const membersArray = members.split(',')
@@ -64,17 +64,14 @@ export default class Pull extends SfdxCommand {
       }
     }
     interface ProductModel {
-      Id: string;
-      Name: string;
-      VELOCPQ__ContentId__c: string;
-      VELOCPQ__Version__c: string;
+      [key: string]: string;
     }
     let pmlQuery: string
     if (members === '') {
       // Dump ALL
       // PML
-      pmlQuery = `Select Id,Name,VELOCPQ__ContentId__c,VELOCPQ__Version__c from VELOCPQ__ProductModel__c`;
-      this.ux.log(`Dumping All PMLs`)
+      pmlQuery = 'Select Id,Name,VELOCPQ__ContentId__c,VELOCPQ__Version__c from VELOCPQ__ProductModel__c';
+      this.ux.log('Dumping All PMLs')
     } else if (pmls.length > 0) {
       // Dump some members only
       pmlQuery = `Select Id,Name,VELOCPQ__ContentId__c,VELOCPQ__Version__c from VELOCPQ__ProductModel__c WHERE Name IN ('${pmls.join("','")}')`;
@@ -82,20 +79,19 @@ export default class Pull extends SfdxCommand {
     }
 
     // Query the org
-    const result = await conn.query<ProductModel>(pmlQuery);
-    this.ux.log(`PMLs result count: ${result.totalSize}`)
-    for (const r of result.records) {
+    const pmlResult = await conn.query<ProductModel>(pmlQuery);
+    this.ux.log(`PMLs result count: ${pmlResult.totalSize}`)
+    for (const r of pmlResult.records) {
       mkdirSync(sourcepath)
       writeFileSync(`${sourcepath}/${r.Name}.pml.json`, JSON.stringify({
         Id: r.Id,
         Name: r.Name,
-        VELOCPQ__ContentId__c: r.VELOCPQ__ContentId__c,
-        VELOCPQ__Version__c: r.VELOCPQ__Version__c,
-      }, null, '  '),{flag: "w+"})
-      writeFileSync(`${sourcepath}/${r.Name}.pml`, r.VELOCPQ__ContentId__c,{flag: "w+"})
+        /* eslint-disable camelcase */ VELOCPQ__ContentId__c: r.VELOCPQ__ContentId__c,
+        /* eslint-disable camelcase */ VELOCPQ__Version__c: r.VELOCPQ__Version__c,
+      }, null, '  '),{flag: 'w+'})
+      writeFileSync(`${sourcepath}/${r.Name}.pml`, r.VELOCPQ__ContentId__c,{flag: 'w+'})
     }
-
     // Return an object to be displayed with --json
-    return { pmls};
+    return { 'aaaa': pmlResult.records };
   }
 }
