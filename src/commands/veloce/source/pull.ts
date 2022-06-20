@@ -107,7 +107,7 @@ export default class Pull extends SfdxCommand {
     return members
       .split(',')
       .map(member => member.split(':'))
-      .filter(([type]) => memberTypes.includes(type));
+      .filter(([type]) => memberTypes.includes(type as Member));
   }
 
   private getMembersModelNames(memberTypes: Member[]): string[] {
