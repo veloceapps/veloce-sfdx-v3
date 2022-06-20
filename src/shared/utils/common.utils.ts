@@ -1,4 +1,4 @@
-import { readFileSync, existsSync, mkdirSync, writeFileSync, readdirSync } from 'fs'
+import { readFileSync, existsSync, mkdirSync, writeFileSync, readdirSync, WriteFileOptions } from 'fs'
 import { UX } from '@salesforce/command'
 import { IdMap } from '../types/common.types'
 
@@ -30,11 +30,11 @@ export const readFileSafe = (path: string, ux?: UX): string => {
   }
 }
 
-export const writeFileSafe = (dir: string, filename: string, data: string): void => {
+export const writeFileSafe = (dir: string, filename: string, data: string, options?: WriteFileOptions): void => {
   if (!existsSync(dir)) {
     mkdirSync(dir, { recursive: true })
   }
-  writeFileSync(`${dir}/${filename}`, data)
+  writeFileSync(`${dir}/${filename}`, data, options)
 }
 
 export const getDirectoryNames = (dir: string): string[] => {
