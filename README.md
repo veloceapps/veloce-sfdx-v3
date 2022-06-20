@@ -63,7 +63,7 @@ OPTIONS
                                                                                     this command invocation
 
 EXAMPLE
-  sfdx velcoe:data:pull --targetusername myOrg@example.com --targetdevhubusername devhub@org.com --sourcepath 
+  sfdx veloce:data:pull --targetusername myOrg@example.com --targetdevhubusername devhub@org.com --sourcepath 
   ./source/templates
 ```
 
@@ -96,7 +96,7 @@ OPTIONS
                                                                                     this command invocation
 
 EXAMPLE
-  sfdx velcoe:data:pull --targetusername myOrg@example.com --targetdevhubusername devhub@org.com --members model:Octa 
+  sfdx veloce:data:pull --targetusername myOrg@example.com --targetdevhubusername devhub@org.com --members model:Octa 
   --sourcepath ./source/templates
 ```
 
@@ -124,12 +124,12 @@ OPTIONS
                                                                                     this command invocation
 
 EXAMPLES
-  sfdx velcoe:debug --targetusername myOrg@example.com --targetdevhubusername devhub@org.com start
-  sfdx velcoe:debug --targetusername myOrg@example.com --targetdevhubusername devhub@org.com stop
-  sfdx velcoe:debug --targetusername myOrg@example.com --targetdevhubusername devhub@org.com list
-  sfdx velcoe:debug --targetusername myOrg@example.com --targetdevhubusername devhub@org.com push
-  sfdx velcoe:debug --targetusername myOrg@example.com --targetdevhubusername devhub@org.com watch
-  sfdx velcoe:debug --targetusername myOrg@example.com --targetdevhubusername devhub@org.com logs
+  sfdx veloce:debug --targetusername myOrg@example.com --targetdevhubusername devhub@org.com start
+  sfdx veloce:debug --targetusername myOrg@example.com --targetdevhubusername devhub@org.com stop
+  sfdx veloce:debug --targetusername myOrg@example.com --targetdevhubusername devhub@org.com list
+  sfdx veloce:debug --targetusername myOrg@example.com --targetdevhubusername devhub@org.com push
+  sfdx veloce:debug --targetusername myOrg@example.com --targetdevhubusername devhub@org.com watch
+  sfdx veloce:debug --targetusername myOrg@example.com --targetdevhubusername devhub@org.com logs
 ```
 
 _See code: [src/commands/veloce/debug.ts](https://github.com/veloceapps/veloce-sfdx-v3/blob/v0.0.4/src/commands/veloce/debug.ts)_
@@ -228,7 +228,7 @@ OPTIONS
                                                                                     this command invocation
 
 EXAMPLE
-  sfdx velcoe:source:pull --targetusername myOrg@example.com --targetdevhubusername devhub@org.com --members model:Octa 
+  sfdx veloce:source:pull --targetusername myOrg@example.com --targetdevhubusername devhub@org.com --members model:Octa 
   --sourcepath ./source/pmls
 ```
 
@@ -264,7 +264,7 @@ OPTIONS
                                                                                     this command invocation
 
 EXAMPLE
-  sfdx velcoe:source:push --targetusername myOrg@example.com --targetdevhubusername devhub@org.com --members model:Octa 
+  sfdx veloce:source:push --targetusername myOrg@example.com --targetdevhubusername devhub@org.com --members model:Octa 
   --sourcepath ./source/pmls
 ```
 

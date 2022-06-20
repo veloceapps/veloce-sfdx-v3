@@ -3,6 +3,6 @@
   "membersFlagDescription": "Push only specific type of data or even name of object",
   "sourcepathFlagDescription": "Path where to get sources",
   "examples": [
-    "sfdx velcoe:source:push --targetusername myOrg@example.com --targetdevhubusername devhub@org.com --members pml:OCTA --sourcepath ./source/pmls"
+    "sfdx veloce:source:push --targetusername myOrg@example.com --targetdevhubusername devhub@org.com --members pml:OCTA --sourcepath ./source/pmls"
   ]
 }
