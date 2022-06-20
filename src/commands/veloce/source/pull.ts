@@ -21,7 +21,6 @@ import {
 import { writeFileSafe } from '../../../shared/utils/common.utils';
 import { extractElementMetadata, fromBase64, isLegacyDefinition } from '../../../shared/utils/ui.utils';
 import { ProductModel } from '../../../shared/types/product-model.types';
-import { Promise } from 'jsforce';
 import { Member } from '../../../shared/types/pull.types';
 
 // Initialize Messages with the current plugin directory
@@ -282,7 +281,7 @@ export default class Pull extends SfdxCommand {
     writeFileSafe(path, 'metadata.json', JSON.stringify(metadata, null, 2) + '\n')
   }
 
-  private async fetchUiDefinitions(productModels: ProductModel[]): Promise {
+  private async fetchUiDefinitions(productModels: ProductModel[]): Promise<void> {
     const uiDefMembers = this.getMembersByTypes([Member.ui]);
     const productModelsUiDef: ProductModel[] = this.flags.members ? this.filterProductModelsByMember(Member.ui, productModels) : [...productModels];
 
@@ -294,7 +293,7 @@ export default class Pull extends SfdxCommand {
     contents.forEach(([{Name}, content]) => {
       let uiDefs: UiDef[] = [];
       try {
-        uiDefs = JSON.parse(content) as UiDef[];
+        uiDefs = JSON.parse(content as string) as UiDef[];
       } catch (err) {
         this.ux.log(`Failed to parse document content: ${Name}`);
         return;
