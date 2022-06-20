@@ -176,7 +176,7 @@ export default class Push extends SfdxCommand {
     // Encode to base64 TWICE!, first time is requirement of POST/PATCH, and it will be decoded on reads automatically by SF.
     const b64Data = Buffer.from(gzipped.toString('base64')).toString('base64')
 
-    const meta = JSON.parse(readFileSync(`${sourcepath}/${pmlName}.pml.json`).toString()) as { [key: string]: string }
+    const meta = JSON.parse(readFileSync(`${sourcepath}/${pmlName}.json`).toString()) as { [key: string]: string }
     const folderId = this.getOrCreateModelFolderId()
     // attempt to update existing document first
     if (await this.documentExists(meta['VELOCPQ__ContentId__c'])) {
@@ -212,7 +212,7 @@ export default class Push extends SfdxCommand {
       }
       // update meta
       meta['VELOCPQ__ContentId__c'] = response.id
-      writeFileSync(`${sourcepath}/${pmlName}.pml.json`,
+      writeFileSync(`${sourcepath}/${pmlName}.json`,
         JSON.stringify(meta, null, '  '), {flag: 'w+'})
       // mark ProductModel as pending upload
       pmToUpload.add(pmlName)

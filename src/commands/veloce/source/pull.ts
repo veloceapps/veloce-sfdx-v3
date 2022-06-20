@@ -18,6 +18,9 @@ Messages.importMessagesDirectory(__dirname);
 // or any library that is using the messages framework can also be loaded this way.
 const messages = Messages.loadMessages('veloce-sfdx-v3', 'source-pull');
 
+interface ProductModel {
+  [key: string]: string;
+}
 
 export default class Pull extends SfdxCommand {
   public static description = messages.getMessage('commandDescription');
@@ -56,48 +59,68 @@ export default class Pull extends SfdxCommand {
     const members = (this.flags.members || '') as string;
     const sourcepath = ((this.flags.sourcepath || 'source') as string).replace(/\/$/, ''); // trim last slash if present
 
-    const pmls: string[] = []
+    const pmlsToDump = new Set<String>()
+    const pmsToDump = new Set<String>()
+
     const membersArray = members.split(',')
     for(const m of membersArray) {
       const parts = m.split(':')
       if (parts[0] === 'pml' && parts[1]) {
-        pmls.push(parts[1])
+        pmlsToDump.add(parts[1])
       }
     }
-    interface ProductModel {
-      [key: string]: string;
-    }
+    // Handling of PML
     let pmlQuery: string
     if (members === '') {
-      // Dump ALL
-      // PML
-      pmlQuery = 'Select Id,Name,VELOCPQ__ContentId__c,VELOCPQ__Version__c,VELOCPQ__ReferenceId__c from VELOCPQ__ProductModel__c';
+      // Dump ALL PML
+      pmlQuery = 'Select Id,Name,VELOCPQ__ContentId__c from VELOCPQ__ProductModel__c';
       this.ux.log('Dumping All PMLs')
-    } else if (pmls.length > 0) {
+    } else if (pmlsToDump.size > 0) {
       // Dump some members only
-      pmlQuery = `Select Id,Name,VELOCPQ__ContentId__c,VELOCPQ__Version__c,VELOCPQ__ReferenceId__c from VELOCPQ__ProductModel__c WHERE Name IN ('${pmls.join("','")}')`;
-      this.ux.log(`Dumping PMLs with names: ${pmls.join(',')}`)
+      pmlQuery = `Select Id,Name,VELOCPQ__ContentId__c from VELOCPQ__ProductModel__c WHERE Name IN ('${Array.from(pmlsToDump.values()).join("','")}')`;
+      this.ux.log(`Dumping PMLs with names: ${Array.from(pmlsToDump.values()).join(',')}`)
     }
-
-    // Query the org
+    // PML Handlings
     const pmlResult = await conn.query<ProductModel>(pmlQuery);
     this.ux.log(`PMLs result count: ${pmlResult.totalSize}`)
     for (const r of pmlResult.records) {
+      //
       if (!existsSync(sourcepath)) {
         mkdirSync(sourcepath, { recursive: true })
       }
-      writeFileSync(`${sourcepath}/${r.Name}.pml.json`, JSON.stringify({
+      writeFileSync(`${sourcepath}/${r.Name}.pml`,
+        await this.documentContent(r.VELOCPQ__ContentId__c),{flag: 'w+'})
+      // mark full PM dump as a dependancy (metadata)
+      pmsToDump.add(r.Name)
+    }
+    // and LAST ONE ProductModel handlings
+    let pmQuery: string
+    if (members === '') {
+      // Dump ALL PM
+      pmQuery = 'Select Id,Name,VELOCPQ__ContentId__c,VELOCPQ__Version__c,VELOCPQ__ReferenceId__c from VELOCPQ__ProductModel__c';
+      this.ux.log('Dumping All PMs')
+    } else if (pmsToDump.size > 0) {
+      // Dump some members only
+      pmQuery = `Select Id,Name,VELOCPQ__ContentId__c,VELOCPQ__Version__c,VELOCPQ__ReferenceId__c from VELOCPQ__ProductModel__c WHERE Name IN ('${Array.from(pmsToDump.values()).join("','")}')`;
+      this.ux.log(`Dumping PMs with names: ${Array.from(pmsToDump.values()).join(',')}`)
+    }
+    // Query ProductModels
+    const pmResult = await conn.query<ProductModel>(pmQuery);
+    this.ux.log(`PMs result count: ${pmResult.totalSize}`)
+    for (const r of pmResult.records) {
+      if (!existsSync(sourcepath)) {
+        mkdirSync(sourcepath, { recursive: true })
+      }
+      writeFileSync(`${sourcepath}/${r.Name}.json`, JSON.stringify({
         Id: r.Id,
         Name: r.Name,
         /* eslint-disable camelcase */ VELOCPQ__ContentId__c: r.VELOCPQ__ContentId__c,
         /* eslint-disable camelcase */ VELOCPQ__Version__c: r.VELOCPQ__Version__c,
-        /* eslint-disable camelcase */ VELOCPQ__ReferenceId__c: r.VELOCPQ__ReferenceId__c,
+        /* eslint-disable camelcase */ VELOCPQ__ReferenceId__c: r.VELOCPQ__ReferenceId__c, // TODO: add more
       }, null, '  '),{flag: 'w+'})
-      writeFileSync(`${sourcepath}/${r.Name}.pml`,
-        await this.documentContent(r.VELOCPQ__ContentId__c),{flag: 'w+'})
     }
     // Return an object to be displayed with --json
-    return { 'pmls': pmlResult.records };
+    return { 'pmls': pmlResult.records, 'pms': pmResult.records };
   }
 
   private async documentContent(documentId: string): Promise<string> {
