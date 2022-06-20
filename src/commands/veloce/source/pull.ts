@@ -5,7 +5,7 @@
  * For full license text, see LICENSE.txt file in the repo root or https://opensource.org/licenses/BSD-3-Clause
  */
 import { writeFileSync, mkdirSync, existsSync } from 'node:fs'
-import {gunzipSync} from "zlib";
+import {gunzipSync} from 'zlib';
 import * as os from 'os';
 import { flags, SfdxCommand } from '@salesforce/command';
 import {Messages, SfdxError} from '@salesforce/core';
@@ -50,24 +50,6 @@ export default class Pull extends SfdxCommand {
 
   // Set this to true if your command requires a project workspace; 'requiresProject' is false by default
   protected static requiresProject = false;
-
-  private async documentContent(documentId: string): Promise<string> {
-    const conn = this.org.getConnection()
-    const query = `Select Body from Document WHERE Id='${documentId}'`
-    interface Document {
-      Body: string
-    }
-    // Query the org
-    const result = await conn.query<Document>(query)
-    if (!result.records || result.records.length <= 0) {
-      throw new SfdxError('Document not found')
-    }
-    // Document body always only returns one result
-    const url = result.records[0].Body
-    const res = (await conn.request({ url })) as Buffer;
-    const gzipped = Buffer.from(res.toString(), 'base64')
-    return gunzipSync(gzipped).toString()
-  }
 
   public async run(): Promise<AnyJson> {
     const conn = this.org.getConnection();
@@ -116,5 +98,23 @@ export default class Pull extends SfdxCommand {
     }
     // Return an object to be displayed with --json
     return { 'pmls': pmlResult.records };
+  }
+
+  private async documentContent(documentId: string): Promise<string> {
+    const conn = this.org.getConnection()
+    const query = `Select Body from Document WHERE Id='${documentId}'`
+    interface Document {
+      Body: string;
+    }
+    // Query the org
+    const result = await conn.query<Document>(query)
+    if (!result.records || result.records.length <= 0) {
+      throw new SfdxError('Document not found')
+    }
+    // Document body always only returns one result
+    const url = result.records[0].Body
+    const res = (await conn.request({ url }));
+    const gzipped = Buffer.from(res.toString(), 'base64')
+    return gunzipSync(gzipped).toString()
   }
 }
