@@ -4,10 +4,11 @@
  * Licensed under the BSD 3-Clause license.
  * For full license text, see LICENSE.txt file in the repo root or https://opensource.org/licenses/BSD-3-Clause
  */
-import { writeFileSync, mkdirSync } from 'node:fs'
+import { writeFileSync, mkdirSync, existsSync } from 'node:fs'
+import {gunzipSync} from "zlib";
 import * as os from 'os';
 import { flags, SfdxCommand } from '@salesforce/command';
-import { Messages } from '@salesforce/core';
+import {Messages, SfdxError} from '@salesforce/core';
 import { AnyJson } from '@salesforce/ts-types';
 
 // Initialize Messages with the current plugin directory
@@ -50,6 +51,24 @@ export default class Pull extends SfdxCommand {
   // Set this to true if your command requires a project workspace; 'requiresProject' is false by default
   protected static requiresProject = false;
 
+  private async documentContent(documentId: string): Promise<string> {
+    const conn = this.org.getConnection()
+    const query = `Select Body from Document WHERE Id='${documentId}'`
+    interface Document {
+      Body: string
+    }
+    // Query the org
+    const result = await conn.query<Document>(query)
+    if (!result.records || result.records.length <= 0) {
+      throw new SfdxError('Document not found')
+    }
+    // Document body always only returns one result
+    const url = result.records[0].Body
+    const res = (await conn.request({ url })) as Buffer;
+    const gzipped = Buffer.from(res.toString(), 'base64')
+    return gunzipSync(gzipped).toString()
+  }
+
   public async run(): Promise<AnyJson> {
     const conn = this.org.getConnection();
     const members = (this.flags.members || '') as string;
@@ -70,11 +89,11 @@ export default class Pull extends SfdxCommand {
     if (members === '') {
       // Dump ALL
       // PML
-      pmlQuery = 'Select Id,Name,VELOCPQ__ContentId__c,VELOCPQ__Version__c from VELOCPQ__ProductModel__c';
+      pmlQuery = 'Select Id,Name,VELOCPQ__ContentId__c,VELOCPQ__Version__c,VELOCPQ__ReferenceId__c from VELOCPQ__ProductModel__c';
       this.ux.log('Dumping All PMLs')
     } else if (pmls.length > 0) {
       // Dump some members only
-      pmlQuery = `Select Id,Name,VELOCPQ__ContentId__c,VELOCPQ__Version__c from VELOCPQ__ProductModel__c WHERE Name IN ('${pmls.join("','")}')`;
+      pmlQuery = `Select Id,Name,VELOCPQ__ContentId__c,VELOCPQ__Version__c,VELOCPQ__ReferenceId__c from VELOCPQ__ProductModel__c WHERE Name IN ('${pmls.join("','")}')`;
       this.ux.log(`Dumping PMLs with names: ${pmls.join(',')}`)
     }
 
@@ -82,14 +101,18 @@ export default class Pull extends SfdxCommand {
     const pmlResult = await conn.query<ProductModel>(pmlQuery);
     this.ux.log(`PMLs result count: ${pmlResult.totalSize}`)
     for (const r of pmlResult.records) {
-      mkdirSync(sourcepath)
+      if (!existsSync(sourcepath)) {
+        mkdirSync(sourcepath, { recursive: true })
+      }
       writeFileSync(`${sourcepath}/${r.Name}.pml.json`, JSON.stringify({
         Id: r.Id,
         Name: r.Name,
         /* eslint-disable camelcase */ VELOCPQ__ContentId__c: r.VELOCPQ__ContentId__c,
         /* eslint-disable camelcase */ VELOCPQ__Version__c: r.VELOCPQ__Version__c,
+        /* eslint-disable camelcase */ VELOCPQ__ReferenceId__c: r.VELOCPQ__ReferenceId__c,
       }, null, '  '),{flag: 'w+'})
-      writeFileSync(`${sourcepath}/${r.Name}.pml`, r.VELOCPQ__ContentId__c,{flag: 'w+'})
+      writeFileSync(`${sourcepath}/${r.Name}.pml`,
+        await this.documentContent(r.VELOCPQ__ContentId__c),{flag: 'w+'})
     }
     // Return an object to be displayed with --json
     return { 'pmls': pmlResult.records };
