@@ -84,7 +84,7 @@ export default class Pull extends SfdxCommand {
     return {'pms': productModels.length};
   }
 
-  private writeProductModelJsons(productModels: ProductModel[]) {
+  private writeProductModelJsons(productModels: ProductModel[]): void {
     productModels.forEach(({Id, Name, VELOCPQ__ContentId__c, VELOCPQ__Version__c, VELOCPQ__ReferenceId__c}) => {
       const productModelJson = JSON.stringify({
         Id,
@@ -95,14 +95,14 @@ export default class Pull extends SfdxCommand {
       }, null, '  ');
       const dir = `${this.sourcepath}/${Name}`;
       writeFileSafe(dir, `${Name}.json`, productModelJson, {flag: 'w+'});
-    })
+    });
   }
 
   private async fetchProductModels(): Promise<ProductModel[] | undefined> {
-    const modelNames = [this.membersMap[MemberType.pml], this.membersMap[MemberType.ui]]
+    const modelNames: string[] = [this.membersMap[MemberType.pml], this.membersMap[MemberType.ui]]
       .filter(Boolean)
       .flat()
-      .map(({modelName}) => modelName);
+      .map(({modelName}) => modelName as string);
 
     const conn = this.org?.getConnection()
     if (!conn) {
@@ -128,7 +128,10 @@ export default class Pull extends SfdxCommand {
       .split(',')
       .map(member => member.split(':'))
       .reduce((acc, [memberType, modelName, defName]) => {
-        (acc[memberType] ??= []).push({
+        if (acc[memberType]) {
+          acc[memberType] = [];
+        }
+        (acc[memberType] as any[]).push({
           modelName,
           defName
         });
@@ -139,7 +142,8 @@ export default class Pull extends SfdxCommand {
   }
 
   private async fetchPml(productModels: ProductModel[]): Promise<void> {
-    const modelNames = (this.membersMap[MemberType.pml] ?? []).map(({modelName}) => modelName);
+    const membersPml: any[] = this.membersMap[MemberType.pml] ?? [];
+    const modelNames = membersPml.map(({modelName}) => modelName as string);
     const productModelsPml: ProductModel[] = this.flags.members ? productModels.filter(({Name}) => modelNames.includes(Name)) : [...productModels];
 
     const contents = await Promise.all(productModelsPml.map(productModel => Promise.all([
@@ -294,8 +298,8 @@ export default class Pull extends SfdxCommand {
   }
 
   private async fetchUiDefinitions(productModels: ProductModel[]): Promise<void> {
-    const membersUi: { modelName: string; defName?: string; }[] = this.membersMap[MemberType.ui] ?? [];
-    const modelNames: string[] = membersUi.map(({modelName}) => modelName);
+    const membersUi: any[] = this.membersMap[MemberType.ui] ?? [];
+    const modelNames: string[] = membersUi.map(({modelName}) => modelName as string);
     const productModelsUiDef: ProductModel[] = this.flags.members ? productModels.filter(({Name}) => modelNames.includes(Name)) : [...productModels];
 
     const contents = await Promise.all(productModelsUiDef.map(productModel => Promise.all([

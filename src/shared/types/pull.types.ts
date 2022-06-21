@@ -4,5 +4,5 @@ export enum MemberType {
 }
 
 export interface MembersMap {
-  [MemberType]: { modelName: string; defName?: string; }[]
+  [MemberType]: Array<{ modelName: string; defName?: string }>;
 }
