@@ -4,9 +4,9 @@
  * Licensed under the BSD 3-Clause license.
  * For full license text, see LICENSE.txt file in the repo root or https://opensource.org/licenses/BSD-3-Clause
  */
-import { existsSync, mkdirSync } from 'node:fs'
 import { gunzipSync } from 'zlib';
 import * as os from 'os';
+import { existsSync, mkdirSync } from 'node:fs'
 import { flags, SfdxCommand } from '@salesforce/command';
 import { Messages, SfdxError } from '@salesforce/core';
 import { AnyJson } from '@salesforce/ts-types';
@@ -75,7 +75,7 @@ export default class Pull extends SfdxCommand {
     await this.fetchPml(productModels);
     await this.fetchUiDefinitions(productModels);
 
-    this.ux.log(`Done.`);
+    this.ux.log('Done.');
 
     // Return an object to be displayed with --json
     return {};
@@ -89,7 +89,7 @@ export default class Pull extends SfdxCommand {
       return
     }
 
-    let query = `Select Id,Name,VELOCPQ__ContentId__c,VELOCPQ__Version__c,VELOCPQ__ReferenceId__c,VELOCPQ__UiDefinitionsId__c from VELOCPQ__ProductModel__c`;
+    let query = 'Select Id,Name,VELOCPQ__ContentId__c,VELOCPQ__Version__c,VELOCPQ__ReferenceId__c,VELOCPQ__UiDefinitionsId__c from VELOCPQ__ProductModel__c';
     if (modelNames.length) {
       query += ` WHERE Name IN ('${modelNames.join("','")}')`;
     }
@@ -102,7 +102,7 @@ export default class Pull extends SfdxCommand {
   }
 
   private getMembersByTypes(memberTypes: Member[]): string[][] {
-    //-m config-ui:Cato,pml:Cato
+    // -m config-ui:Cato,pml:Cato
     const members = (this.flags.members || '') as string;
     return members
       .split(',')
@@ -120,7 +120,7 @@ export default class Pull extends SfdxCommand {
     return productModels.filter(({Name}) => modelNames.includes(Name))
   }
 
-  private async fetchPml(productModels: ProductModel[]) {
+  private async fetchPml(productModels: ProductModel[]): Promise<void> {
     const productModelsPml: ProductModel[] = this.flags.members ? this.filterProductModelsByMember(Member.pml, productModels) : [...productModels];
     const contents = await Promise.all(productModelsPml.map(productModel => Promise.all([
       Promise.resolve(productModel),
@@ -131,13 +131,13 @@ export default class Pull extends SfdxCommand {
       const pmlJson = JSON.stringify({
         Id,
         Name,
-        /* eslint-disable camelcase */ VELOCPQ__ContentId__c,
-        /* eslint-disable camelcase */ VELOCPQ__Version__c,
-        /* eslint-disable camelcase */ VELOCPQ__ReferenceId__c,
+        VELOCPQ__ContentId__c,
+        VELOCPQ__Version__c,
+        VELOCPQ__ReferenceId__c,
       }, null, '  ');
       const dir = `${this.sourcepath}/${Name}`;
       writeFileSafe(dir, `${Name}.pml.json`, pmlJson, {flag: 'w+'});
-      writeFileSafe(dir, `${Name}.pml`, pml as string, {flag: 'w+'})
+      writeFileSafe(dir, `${Name}.pml`, pml, {flag: 'w+'})
     })
   }
 
@@ -293,7 +293,7 @@ export default class Pull extends SfdxCommand {
     contents.forEach(([{Name}, content]) => {
       let uiDefs: UiDef[] = [];
       try {
-        uiDefs = JSON.parse(content as string) as UiDef[];
+        uiDefs = JSON.parse(content) as UiDef[];
       } catch (err) {
         this.ux.log(`Failed to parse document content: ${Name}`);
         return;
