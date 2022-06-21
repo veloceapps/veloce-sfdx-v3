@@ -5,11 +5,11 @@
  * For full license text, see LICENSE.txt file in the repo root or https://opensource.org/licenses/BSD-3-Clause
  */
 import * as os from 'os';
-import { readFileSync, writeFileSync} from 'node:fs';
+import {readFileSync, writeFileSync, readdirSync} from 'node:fs';
 import {gzipSync} from 'node:zlib';
-import { flags, SfdxCommand } from '@salesforce/command';
-import { Messages, SfdxError } from '@salesforce/core';
-import { AnyJson } from '@salesforce/ts-types';
+import {flags, SfdxCommand} from '@salesforce/command';
+import {Messages, SfdxError} from '@salesforce/core';
+import {AnyJson} from '@salesforce/ts-types';
 
 // Initialize Messages with the current plugin directory
 Messages.importMessagesDirectory(__dirname);
@@ -39,6 +39,10 @@ interface CreateResult {
   errors: string[];
   name: string;
   message: string;
+}
+
+interface ProductModel {
+  [key: string]: string;
 }
 
 export default class Push extends SfdxCommand {
@@ -88,7 +92,7 @@ export default class Push extends SfdxCommand {
       }
     }
     if (members === '') {
-      // Oush ALL
+      // Push ALL
       // PML
       this.ux.log('Pushing All PMLs')
       pmlsToUpload = this.findAllPMLs(sourcepath)
@@ -101,7 +105,7 @@ export default class Push extends SfdxCommand {
         await this.uploadPM(sourcepath, p)
       }
     } else if (pmlsToUpload.size > 0) {
-      // Dump some members only
+      // Push some members only
       this.ux.log(`Pushing PMLs with names: ${Array.from(pmlsToUpload.values()).join(',')}`)
       for (const p of pmlsToUpload) {
         await this.uploadPML(sourcepath, p, pmsToUpload)
@@ -156,17 +160,61 @@ export default class Push extends SfdxCommand {
     return docResult.totalSize > 0
   }
 
+  private async getPm(pm: string): Promise<string> {
+    const conn = this.org.getConnection();
+    // deal with folder
+    // Check if veloce folder exists:
+    const docResult = await conn.query<ProductModel>(`Select Id, Name
+                                                      from VELOCPQ__ProductModel__c
+                                                      WHERE Name = '${pm}'`)
+    if (docResult.totalSize > 0) {
+      return docResult.records[0].Id
+    }
+    return null
+  }
+
+
   private findAllPMLs(sourcepath: string): Set<string> {
     const result = new Set<string>()
+    const filenames = readdirSync(sourcepath);
+    filenames.forEach(file => {
+      if (file.endsWith('.pml')) {
+        result.add(file)
+      }
+    });
     return result
   }
 
   private findAllPMs(sourcepath: string): Set<string> {
     const result = new Set<string>()
+    const filenames = readdirSync(sourcepath);
+    filenames.forEach(file => {
+      if (file.endsWith('.json')) {
+        result.add(file)
+      }
+    });
     return result
   }
 
   private async uploadPM(sourcepath: string, pmName: string): Promise<void> {
+    const conn = this.org.getConnection();
+    const meta = JSON.parse(readFileSync(`${sourcepath}/${pmName}.json`).toString()) as { [key: string]: string }
+    const pmId = this.getPm(pmName)
+    if (pmId === null) {
+      // inserting new product model from meta
+      delete meta['Id']
+      conn.sobject<ProductModel>("VELOCPQ__ProductModel__c").create(meta,
+        (err, ret) => {
+          if (err || !ret.success) {
+            this.ux.log(`Failed to insert Product Model ${pmName}, error: ${err}`)
+          }
+          // update meta json with new id
+          meta['Id'] = (ret as any).id
+        })
+    } else {
+      // updating existing product model from meta
+
+    }
   }
 
   private async uploadPML(sourcepath: string, pmlName: string, pmToUpload: Set<string>): Promise<void> {
@@ -204,7 +252,7 @@ export default class Push extends SfdxCommand {
         url: `/services/data/v${conn.getApiVersion()}/sobjects/Document`,
         body: JSON.stringify(data),
         method: 'POST'
-      })) as CreateResult;
+      }));
       if (response.success) {
         this.ux.log(`New Document '${pmlName}' created with id ${response.id}`)
       } else {

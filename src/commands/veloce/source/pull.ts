@@ -4,12 +4,14 @@
  * Licensed under the BSD 3-Clause license.
  * For full license text, see LICENSE.txt file in the repo root or https://opensource.org/licenses/BSD-3-Clause
  */
-import { writeFileSync, mkdirSync, existsSync } from 'node:fs'
 import {gunzipSync} from 'zlib';
 import * as os from 'os';
 import { flags, SfdxCommand } from '@salesforce/command';
 import {Messages, SfdxError} from '@salesforce/core';
 import { AnyJson } from '@salesforce/ts-types';
+import {pullPml} from "../../../common/pull.pml";
+import {pullUI} from "../../../common/pull.ui";
+import {pullPM} from "../../../common/pull.pm";
 
 // Initialize Messages with the current plugin directory
 Messages.importMessagesDirectory(__dirname);
@@ -17,10 +19,6 @@ Messages.importMessagesDirectory(__dirname);
 // Load the specific messages for this file. Messages from @salesforce/command, @salesforce/core,
 // or any library that is using the messages framework can also be loaded this way.
 const messages = Messages.loadMessages('veloce-sfdx-v3', 'source-pull');
-
-interface ProductModel {
-  [key: string]: string;
-}
 
 export default class Pull extends SfdxCommand {
   public static description = messages.getMessage('commandDescription');
@@ -32,7 +30,6 @@ export default class Pull extends SfdxCommand {
   // -u quick-guide
   // -m model:Octa
   // -p ./source/templates
-
   protected static flagsConfig = {
     // flag with a value (-m, --members=VALUE)
     members: flags.string({
@@ -59,85 +56,28 @@ export default class Pull extends SfdxCommand {
     const members = (this.flags.members || '') as string;
     const sourcepath = ((this.flags.sourcepath || 'source') as string).replace(/\/$/, ''); // trim last slash if present
 
-    const pmlsToDump = new Set<String>()
-    const pmsToDump = new Set<String>()
+    const pmlsToDump = new Set<string>()
+    const uisToDump = new Set<string>()
+    const pmsToDump = new Set<string>()
 
     const membersArray = members.split(',')
     for(const m of membersArray) {
       const parts = m.split(':')
-      if (parts[0] === 'pml' && parts[1]) {
-        pmlsToDump.add(parts[1])
+      switch (parts[0]) {
+        case 'pml':
+          pmlsToDump.add(parts[1])
+          break
+        case 'config-ui':
+          uisToDump.add(parts[1])
+          break
       }
     }
-    // Handling of PML
-    let pmlQuery: string
-    if (members === '') {
-      // Dump ALL PML
-      pmlQuery = 'Select Id,Name,VELOCPQ__ContentId__c from VELOCPQ__ProductModel__c';
-      this.ux.log('Dumping All PMLs')
-    } else if (pmlsToDump.size > 0) {
-      // Dump some members only
-      pmlQuery = `Select Id,Name,VELOCPQ__ContentId__c from VELOCPQ__ProductModel__c WHERE Name IN ('${Array.from(pmlsToDump.values()).join("','")}')`;
-      this.ux.log(`Dumping PMLs with names: ${Array.from(pmlsToDump.values()).join(',')}`)
-    }
-    // PML Handlings
-    const pmlResult = await conn.query<ProductModel>(pmlQuery);
-    this.ux.log(`PMLs result count: ${pmlResult.totalSize}`)
-    for (const r of pmlResult.records) {
-      //
-      if (!existsSync(sourcepath)) {
-        mkdirSync(sourcepath, { recursive: true })
-      }
-      writeFileSync(`${sourcepath}/${r.Name}.pml`,
-        await this.documentContent(r.VELOCPQ__ContentId__c),{flag: 'w+'})
-      // mark full PM dump as a dependancy (metadata)
-      pmsToDump.add(r.Name)
-    }
-    // and LAST ONE ProductModel handlings
-    let pmQuery: string
-    if (members === '') {
-      // Dump ALL PM
-      pmQuery = 'Select Id,Name,VELOCPQ__ContentId__c,VELOCPQ__Version__c,VELOCPQ__ReferenceId__c from VELOCPQ__ProductModel__c';
-      this.ux.log('Dumping All PMs')
-    } else if (pmsToDump.size > 0) {
-      // Dump some members only
-      pmQuery = `Select Id,Name,VELOCPQ__ContentId__c,VELOCPQ__Version__c,VELOCPQ__ReferenceId__c from VELOCPQ__ProductModel__c WHERE Name IN ('${Array.from(pmsToDump.values()).join("','")}')`;
-      this.ux.log(`Dumping PMs with names: ${Array.from(pmsToDump.values()).join(',')}`)
-    }
-    // Query ProductModels
-    const pmResult = await conn.query<ProductModel>(pmQuery);
-    this.ux.log(`PMs result count: ${pmResult.totalSize}`)
-    for (const r of pmResult.records) {
-      if (!existsSync(sourcepath)) {
-        mkdirSync(sourcepath, { recursive: true })
-      }
-      writeFileSync(`${sourcepath}/${r.Name}.json`, JSON.stringify({
-        Id: r.Id,
-        Name: r.Name,
-        /* eslint-disable camelcase */ VELOCPQ__ContentId__c: r.VELOCPQ__ContentId__c,
-        /* eslint-disable camelcase */ VELOCPQ__Version__c: r.VELOCPQ__Version__c,
-        /* eslint-disable camelcase */ VELOCPQ__ReferenceId__c: r.VELOCPQ__ReferenceId__c, // TODO: add more
-      }, null, '  '),{flag: 'w+'})
-    }
-    // Return an object to be displayed with --json
-    return { 'pmls': pmlResult.records, 'pms': pmResult.records };
-  }
+    // each dumped pml record adds pm record to set of to be dumped
+    const pmlRecords = await pullPml(sourcepath, conn, members === '', pmlsToDump, pmsToDump)
+    const uiRecords = await pullUI(sourcepath, conn, members === '', uisToDump, pmsToDump)
+    const pmRecords = await pullPM(sourcepath, conn, members === '', pmsToDump)
 
-  private async documentContent(documentId: string): Promise<string> {
-    const conn = this.org.getConnection()
-    const query = `Select Body from Document WHERE Id='${documentId}'`
-    interface Document {
-      Body: string;
-    }
-    // Query the org
-    const result = await conn.query<Document>(query)
-    if (!result.records || result.records.length <= 0) {
-      throw new SfdxError('Document not found')
-    }
-    // Document body always only returns one result
-    const url = result.records[0].Body
-    const res = (await conn.request({ url }));
-    const gzipped = Buffer.from(res.toString(), 'base64')
-    return gunzipSync(gzipped).toString()
+    // Return an object to be displayed with --json
+    return { 'pml': pmlRecords, 'config-ui': uiRecords, 'pm': pmRecords }
   }
 }
