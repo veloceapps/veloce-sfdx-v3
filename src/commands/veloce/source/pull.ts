@@ -21,7 +21,7 @@ import {
 import { writeFileSafe } from '../../../shared/utils/common.utils';
 import { extractElementMetadata, fromBase64, isLegacyDefinition } from '../../../shared/utils/ui.utils';
 import { ProductModel } from '../../../shared/types/product-model.types';
-import { Member } from '../../../shared/types/pull.types';
+import { MemberType, MembersMap } from '../../../shared/types/pull.types';
 
 // Initialize Messages with the current plugin directory
 Messages.importMessagesDirectory(__dirname);
@@ -63,26 +63,46 @@ export default class Pull extends SfdxCommand {
   protected static requiresProject = false;
 
   private sourcepath: string;
+  private membersMap: MembersMap;
 
   public async run(): Promise<AnyJson> {
     this.sourcepath = ((this.flags.sourcepath || 'source') as string).replace(/\/$/, ''); // trim last slash if present
+    this.membersMap = this.getMembersMap();
 
     const productModels: ProductModel[] = await this.fetchProductModels();
     if (!productModels.length) {
       return {};
     }
 
+    this.writeProductModelJsons(productModels);
     await this.fetchPml(productModels);
     await this.fetchUiDefinitions(productModels);
 
     this.ux.log('Done.');
 
     // Return an object to be displayed with --json
-    return {};
+    return {'pms': productModels.length};
   }
 
-  private async fetchProductModels(): Promise<ProductModel[]|undefined> {
-    const modelNames = this.getMembersModelNames([Member.pml, Member.ui]);
+  private writeProductModelJsons(productModels: ProductModel[]) {
+    productModels.forEach(({Id, Name, VELOCPQ__ContentId__c, VELOCPQ__Version__c, VELOCPQ__ReferenceId__c}) => {
+      const productModelJson = JSON.stringify({
+        Id,
+        Name,
+        VELOCPQ__ContentId__c,
+        VELOCPQ__Version__c,
+        VELOCPQ__ReferenceId__c,
+      }, null, '  ');
+      const dir = `${this.sourcepath}/${Name}`;
+      writeFileSafe(dir, `${Name}.json`, productModelJson, {flag: 'w+'});
+    })
+  }
+
+  private async fetchProductModels(): Promise<ProductModel[] | undefined> {
+    const modelNames = [this.membersMap[MemberType.pml], this.membersMap[MemberType.ui]]
+      .filter(Boolean)
+      .flat()
+      .map(({modelName}) => modelName);
 
     const conn = this.org?.getConnection()
     if (!conn) {
@@ -101,42 +121,34 @@ export default class Pull extends SfdxCommand {
     return result?.records ?? [];
   }
 
-  private getMembersByTypes(memberTypes: Member[]): string[][] {
-    // -m config-ui:Cato,pml:Cato
+  private getMembersMap(): MembersMap {
+    // -m config-ui:Cato:Default\ UI,pml:Cato
     const members = (this.flags.members || '') as string;
-    return members
+    const membersMap: MembersMap = members
       .split(',')
       .map(member => member.split(':'))
-      .filter(([type]) => memberTypes.includes(type as Member));
-  }
+      .reduce((acc, [memberType, modelName, defName]) => {
+        (acc[memberType] ??= []).push({
+          modelName,
+          defName
+        });
+        return acc;
+      }, {} as MembersMap);
 
-  private getMembersModelNames(memberTypes: Member[]): string[] {
-    return this.getMembersByTypes(memberTypes)
-      .map(([, name]) => name);
-  }
-
-  private filterProductModelsByMember(memberType: Member, productModels: ProductModel[]): ProductModel[] {
-    const modelNames = this.getMembersModelNames([memberType]);
-    return productModels.filter(({Name}) => modelNames.includes(Name))
+    return membersMap;
   }
 
   private async fetchPml(productModels: ProductModel[]): Promise<void> {
-    const productModelsPml: ProductModel[] = this.flags.members ? this.filterProductModelsByMember(Member.pml, productModels) : [...productModels];
+    const modelNames = (this.membersMap[MemberType.pml] ?? []).map(({modelName}) => modelName);
+    const productModelsPml: ProductModel[] = this.flags.members ? productModels.filter(({Name}) => modelNames.includes(Name)) : [...productModels];
+
     const contents = await Promise.all(productModelsPml.map(productModel => Promise.all([
       Promise.resolve(productModel),
       this.getDocumentAttachment(productModel.VELOCPQ__ContentId__c)
     ])));
 
-    contents.forEach(([{Id, Name, VELOCPQ__ContentId__c, VELOCPQ__Version__c, VELOCPQ__ReferenceId__c}, pml]) => {
-      const pmlJson = JSON.stringify({
-        Id,
-        Name,
-        VELOCPQ__ContentId__c,
-        VELOCPQ__Version__c,
-        VELOCPQ__ReferenceId__c,
-      }, null, '  ');
+    contents.forEach(([{Name}, pml]) => {
       const dir = `${this.sourcepath}/${Name}`;
-      writeFileSafe(dir, `${Name}.pml.json`, pmlJson, {flag: 'w+'});
       writeFileSafe(dir, `${Name}.pml`, pml, {flag: 'w+'})
     })
   }
@@ -282,8 +294,9 @@ export default class Pull extends SfdxCommand {
   }
 
   private async fetchUiDefinitions(productModels: ProductModel[]): Promise<void> {
-    const uiDefMembers = this.getMembersByTypes([Member.ui]);
-    const productModelsUiDef: ProductModel[] = this.flags.members ? this.filterProductModelsByMember(Member.ui, productModels) : [...productModels];
+    const membersUi: { modelName: string; defName?: string; }[] = this.membersMap[MemberType.ui] ?? [];
+    const modelNames: string[] = membersUi.map(({modelName}) => modelName);
+    const productModelsUiDef: ProductModel[] = this.flags.members ? productModels.filter(({Name}) => modelNames.includes(Name)) : [...productModels];
 
     const contents = await Promise.all(productModelsUiDef.map(productModel => Promise.all([
       Promise.resolve(productModel),
@@ -305,8 +318,7 @@ export default class Pull extends SfdxCommand {
       const legacyMetadataArray: LegacyUiDefinition[] = []
 
       uiDefs?.forEach(ui => {
-        const includeUiName = !this.flags.members || uiDefMembers.filter(([, modelName]) => modelName === Name)
-          .some(([,, uiDefName]) => !uiDefName || uiDefName === ui.name)
+        const includeUiName = !this.flags.members || membersUi.some(({modelName, defName}) => modelName === Name && (!defName || defName === ui.name))
         if (!includeUiName) {
           return;
         }
