@@ -128,7 +128,7 @@ export default class Pull extends SfdxCommand {
       .split(',')
       .map(member => member.split(':'))
       .reduce((acc, [memberType, modelName, defName]) => {
-        if (acc[memberType]) {
+        if (!acc[memberType]) {
           acc[memberType] = [];
         }
         (acc[memberType] as any[]).push({
