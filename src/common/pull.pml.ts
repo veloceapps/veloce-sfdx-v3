@@ -1,8 +1,8 @@
-import {existsSync, mkdirSync, writeFileSync} from 'node:fs';
 import {gunzipSync} from 'zlib';
 import {Connection, SfdxError} from '@salesforce/core';
-import { ProductModel } from './entities/productModel';
+import {existsSync, mkdirSync, writeFileSync} from 'node:fs';
 import { SfdxCommandV } from '../shared/types/common.types';
+import { ProductModel } from './entities/productModel';
 
 interface Document {
   Body: string;
@@ -20,17 +20,17 @@ export const pullPml = (ctx: SfdxCommandV) => async (sourcepath: string, conn: C
   if (dumpAll) {
     // Dump ALL PML
     pmlQuery = 'Select Id,Name,VELOCPQ__ContentId__c from VELOCPQ__ProductModel__c';
-    console.log('Dumping All PMLs')
+    ctx.ux.log('Dumping All PMLs')
   } else if (pmlsToDump.size > 0) {
     // Dump some members only
     pmlQuery = `Select Id, Name, VELOCPQ__ContentId__c
                 from VELOCPQ__ProductModel__c
                 WHERE Name IN ('${Array.from(pmlsToDump.values()).join("','")}')`;
-    console.log(`Dumping PMLs with names: ${Array.from(pmlsToDump.values()).join(',')}`)
+    ctx.ux.log(`Dumping PMLs with names: ${Array.from(pmlsToDump.values()).join(',')}`)
   }
   // PML Handlings
   const pmlResult = await conn.query<ProductModel>(pmlQuery);
-  console.log(`PMLs result count: ${pmlResult.totalSize}`)
+  ctx.ux.log(`PMLs result count: ${pmlResult.totalSize}`)
   for (const r of pmlResult.records) {
     //
     if (!existsSync(sourcepath)) {

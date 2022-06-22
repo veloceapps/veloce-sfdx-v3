@@ -51,7 +51,7 @@ export default class Pull extends SfdxCommand {
   // Set this to true if your command requires a project workspace; 'requiresProject' is false by default
   protected static requiresProject = false;
 
-  private static spitMembers(members: string): { pmlsToDump: Set<string>, uisToDump: Set<string> } {
+  private static spitMembers(members: string): { pmlsToDump: Set<string>; uisToDump: Set<string> } {
     const pmlsToDump = new Set<string>()
     const uisToDump = new Set<string>()
     const membersArray = members.split(',')

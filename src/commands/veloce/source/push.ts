@@ -8,9 +8,9 @@ import * as os from 'os';
 import {flags, SfdxCommand} from '@salesforce/command';
 import {Messages} from '@salesforce/core';
 import {AnyJson} from '@salesforce/ts-types';
-import {pushPml} from "../../../common/push.pml";
-import {pushUI} from "../../../common/push.ui";
-import {pushPM} from "../../../common/push.pm";
+import {pushPml} from '../../../common/push.pml';
+import {pushUI} from '../../../common/push.ui';
+import {pushPM} from '../../../common/push.pm';
 
 // Initialize Messages with the current plugin directory
 Messages.importMessagesDirectory(__dirname);
@@ -51,7 +51,7 @@ export default class Push extends SfdxCommand {
   // Set this to true if your command requires a project workspace; 'requiresProject' is false by default
   protected static requiresProject = false;
 
-  private static splitMembers(members: string): { pmlsToUpload: Set<string>, uisToUpload: Set<string> } {
+  private static splitMembers(members: string): { pmlsToUpload: Set<string>; uisToUpload: Set<string> } {
     const pmlsToUpload = new Set<string>()
     const uisToUpload = new Set<string>()
     const membersArray = members.split(',')

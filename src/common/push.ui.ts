@@ -5,7 +5,7 @@ interface UiReturn {
   uiPmsToUpload: Set<string>;
 }
 
-export function pushUI(sourcepath: string, conn: Connection, dumpAll: boolean, uisToUpload: Set<string>): UiReturn {
+export async function pushUI(sourcepath: string, conn: Connection, dumpAll: boolean, uisToUpload: Set<string>): Promise<UiReturn> {
   console.log(sourcepath)
   console.log(conn.toString())
   console.log(dumpAll.toString())

@@ -1,7 +1,7 @@
 import {existsSync, mkdirSync, writeFileSync} from 'node:fs';
 import {Connection} from '@salesforce/core';
-import { ProductModel } from './entities/productModel';
 import { SfdxCommandV } from '../shared/types/common.types';
+import { ProductModel } from './entities/productModel';
 
 export const pullPM = (ctx: SfdxCommandV) => async (sourcepath: string, conn: Connection, dumpAll: boolean, pmsToDump: Set<string>): Promise<ProductModel[]> => {
   // and LAST ONE ProductModel handlings
@@ -9,15 +9,15 @@ export const pullPM = (ctx: SfdxCommandV) => async (sourcepath: string, conn: Co
   if (dumpAll) {
     // Dump ALL PM
     pmQuery = 'Select Id,Name,VELOCPQ__ContentId__c,VELOCPQ__UiDefinitionsId__c,VELOCPQ__Version__c,VELOCPQ__ReferenceId__c from VELOCPQ__ProductModel__c';
-    console.log('Dumping All PMs')
+    ctx.ux.log('Dumping All PMs')
   } else if (pmsToDump.size > 0) {
     // Dump some members only
     pmQuery = `Select Id,Name,VELOCPQ__ContentId__c,VELOCPQ__UiDefinitionsId__c,VELOCPQ__Version__c,VELOCPQ__ReferenceId__c from VELOCPQ__ProductModel__c WHERE Name IN ('${Array.from(pmsToDump.values()).join("','")}')`;
-    console.log(`Dumping PMs with names: ${Array.from(pmsToDump.values()).join(',')}`)
+    ctx.ux.log(`Dumping PMs with names: ${Array.from(pmsToDump.values()).join(',')}`)
   }
   // Query ProductModels
   const pmResult = await conn.query<ProductModel>(pmQuery);
-  console.log(`PMs result count: ${pmResult.totalSize}`)
+  ctx.ux.log(`PMs result count: ${pmResult.totalSize}`)
   for (const r of pmResult.records) {
     if (!existsSync(sourcepath)) {
       mkdirSync(sourcepath, { recursive: true })
