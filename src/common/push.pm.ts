@@ -37,8 +37,6 @@ async function uploadPM(sourcepath: string, conn: Connection, pmName: string): P
         if (err || !ret.success) {
           throw new SfdxError(`Failed to update Product Model ${pmName}, error: ${err ? err.toString(): 'no-error'}`)
         }
-        // update meta json with new id
-        meta['Id'] = ret.id
         returnId = meta['Id']
       })
   }
