@@ -1,4 +1,4 @@
 
-interface ProductModel {
+export interface ProductModel {
   [key: string]: string;
 }

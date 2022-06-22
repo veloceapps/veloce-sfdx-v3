@@ -4,14 +4,14 @@
  * Licensed under the BSD 3-Clause license.
  * For full license text, see LICENSE.txt file in the repo root or https://opensource.org/licenses/BSD-3-Clause
  */
-import {gunzipSync} from 'zlib';
 import * as os from 'os';
 import { flags, SfdxCommand } from '@salesforce/command';
-import {Messages, SfdxError} from '@salesforce/core';
+import { Messages } from '@salesforce/core';
 import { AnyJson } from '@salesforce/ts-types';
-import {pullPml} from "../../../common/pull.pml";
-import {pullUI} from "../../../common/pull.ui";
-import {pullPM} from "../../../common/pull.pm";
+import { pullPml } from '../../../common/pull.pml';
+import { pullUI } from '../../../common/pull.ui';
+import { pullPM } from '../../../common/pull.pm';
+import { SfdxCommandV } from '../../../shared/types/common.types';
 
 // Initialize Messages with the current plugin directory
 Messages.importMessagesDirectory(__dirname);
@@ -73,9 +73,9 @@ export default class Pull extends SfdxCommand {
       }
     }
     // each dumped pml record adds pm record to set of to be dumped
-    const pmlRecords = await pullPml.bind(this)(sourcepath, conn, members === '', pmlsToDump, pmsToDump)
-    const uiRecords = await pullUI.bind(this)(sourcepath, conn, members === '', uisToDump, pmsToDump)
-    const pmRecords = await pullPM.bind(this)(sourcepath, conn, members === '', pmsToDump)
+    const pmlRecords = await pullPml(this as SfdxCommandV)(sourcepath, conn, members === '', pmlsToDump, pmsToDump)
+    const uiRecords = await pullUI(this as SfdxCommandV)(sourcepath, conn, members === '', uisToDump, pmsToDump)
+    const pmRecords = await pullPM(this as SfdxCommandV)(sourcepath, conn, members === '', pmsToDump)
 
     // Return an object to be displayed with --json
     return { 'pml': pmlRecords, 'config-ui': uiRecords, 'pm': pmRecords }

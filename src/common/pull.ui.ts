@@ -1,3 +1,5 @@
+import { existsSync, mkdirSync } from 'fs';
+import { gunzipSync } from 'zlib';
 import {Connection} from '@salesforce/core';
 import { writeFileSafe } from '../shared/utils/common.utils';
 import {
@@ -9,12 +11,12 @@ import {
   UiMetadata
 } from '../shared/types/ui.types';
 import { extractElementMetadata, fromBase64, isLegacyDefinition } from '../shared/utils/ui.utils';
-import { gunzipSync } from 'zlib';
-import { existsSync, mkdirSync } from 'fs';
+import { SfdxCommandV } from '../shared/types/common.types';
+import { ProductModel } from './entities/productModel';
 
-export async function pullUI(sourcepath: string, conn: Connection, dumpAll: boolean, uisToDump: Set<string>, pmsToDump: Set<string>): Promise<ProductModel[]> {
-  const productModelsUiDef: ProductModel[] = await fetchProductModels.bind(this)(conn, dumpAll, uisToDump);
-  const uiDefsMap: {[modelName: string]: string;} = Array.from(uisToDump).reduce((acc, ui) => {
+export const pullUI = (ctx: SfdxCommandV) => async (sourcepath: string, conn: Connection, dumpAll: boolean, uisToDump: Set<string>, pmsToDump: Set<string>): Promise<ProductModel[]> => {
+  const productModelsUiDef: ProductModel[] = await fetchProductModels(ctx, conn, dumpAll, uisToDump);
+  const uiDefsMap: {[modelName: string]: string} = Array.from(uisToDump).reduce((acc, ui) => {
     const [modelName, defName] = ui.split(':');
     acc[modelName] = defName;
     return acc;
@@ -22,7 +24,7 @@ export async function pullUI(sourcepath: string, conn: Connection, dumpAll: bool
 
   const contents = await Promise.all(productModelsUiDef.map(productModel => Promise.all([
     Promise.resolve(productModel),
-    getDocumentAttachment.bind(this)(conn, productModel.VELOCPQ__UiDefinitionsId__c)
+    getDocumentAttachment(ctx, conn, productModel.VELOCPQ__UiDefinitionsId__c)
   ])));
 
   contents.forEach(([{Name}, content]) => {
@@ -30,7 +32,7 @@ export async function pullUI(sourcepath: string, conn: Connection, dumpAll: bool
     try {
       uiDefs = JSON.parse(content) as UiDef[];
     } catch (err) {
-      this.ux.log(`Failed to parse document content: ${Name}`);
+      ctx.ux.log(`Failed to parse document content: ${Name}`);
       return;
     }
 
@@ -140,14 +142,14 @@ function saveUiDefinition(ui: UiDefinition, path: string): void {
   writeFileSafe(path, 'metadata.json', JSON.stringify(metadata, null, 2) + '\n')
 }
 
-async function getDocumentAttachment(conn: Connection, documentId: string): Promise<string|undefined> {
+async function getDocumentAttachment(ctx: SfdxCommandV, conn: Connection, documentId: string): Promise<string|undefined> {
   const query = `Select Body from Document WHERE Id='${documentId}'`
 
   const result = await conn.query<{ Body: string }>(query)
   const [record] = result?.records ?? []
 
   if (!record) {
-    this.ux.log(`Document not found: ${documentId}`);
+    ctx.ux.log(`Document not found: ${documentId}`);
     return;
   }
 
@@ -159,16 +161,16 @@ async function getDocumentAttachment(conn: Connection, documentId: string): Prom
   return gunzipSync(gzipped).toString();
 }
 
-async function fetchProductModels(conn: Connection, dumpAll: boolean, uisToDump: Set<string>): Promise<ProductModel[]> {
+async function fetchProductModels(ctx: SfdxCommandV, conn: Connection, dumpAll: boolean, uisToDump: Set<string>): Promise<ProductModel[]> {
   const modelNames = dumpAll ? undefined : Array.from(uisToDump).map(ui => ui.split(':')[0]);
   let query = 'Select Id,Name,VELOCPQ__ContentId__c,VELOCPQ__Version__c,VELOCPQ__ReferenceId__c,VELOCPQ__UiDefinitionsId__c from VELOCPQ__ProductModel__c';
   if (!dumpAll) {
     query += ` WHERE Name IN ('${modelNames.join("','")}')`;
   }
 
-  this.ux.log(`Dumping ${modelNames?.length ? 'Uis with names:' + modelNames.join() : 'All Uis'}`);
+  ctx.ux.log(`Dumping ${modelNames?.length ? 'Uis with names: ' + modelNames.join() : 'All Uis'}`);
   const result = await conn.query<ProductModel>(query);
-  this.ux.log(`Uis result count: ${result?.totalSize}`);
+  ctx.ux.log(`Uis result count: ${result?.totalSize}`);
 
   return result?.records ?? [];
 }
