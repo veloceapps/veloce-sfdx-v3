@@ -4,10 +4,9 @@
  * Licensed under the BSD 3-Clause license.
  * For full license text, see LICENSE.txt file in the repo root or https://opensource.org/licenses/BSD-3-Clause
  */
-import {gunzipSync} from 'zlib';
 import * as os from 'os';
 import { flags, SfdxCommand } from '@salesforce/command';
-import {Messages, SfdxError} from '@salesforce/core';
+import {Messages} from '@salesforce/core';
 import { AnyJson } from '@salesforce/ts-types';
 import {pullPml} from "../../../common/pull.pml";
 import {pullUI} from "../../../common/pull.ui";
@@ -51,15 +50,9 @@ export default class Pull extends SfdxCommand {
   // Set this to true if your command requires a project workspace; 'requiresProject' is false by default
   protected static requiresProject = false;
 
-  public async run(): Promise<AnyJson> {
-    const conn = this.org.getConnection();
-    const members = (this.flags.members || '') as string;
-    const sourcepath = ((this.flags.sourcepath || 'source') as string).replace(/\/$/, ''); // trim last slash if present
-
+  private spitMembers(members: string) {
     const pmlsToDump = new Set<string>()
     const uisToDump = new Set<string>()
-    const pmsToDump = new Set<string>()
-
     const membersArray = members.split(',')
     for(const m of membersArray) {
       const parts = m.split(':')
@@ -72,9 +65,25 @@ export default class Pull extends SfdxCommand {
           break
       }
     }
+    return {pmlsToDump, uisToDump}
+  }
+
+  public async run(): Promise<AnyJson> {
+    const conn = this.org.getConnection();
+    const members = (this.flags.members || '') as string;
+    const sourcepath = ((this.flags.sourcepath || 'source') as string).replace(/\/$/, ''); // trim last slash if present
+
+    const {pmlsToDump, uisToDump} = this.spitMembers(members)
+    const pmsToDump = new Set<string>()
+
+    const {pmlRecords, pmlPmsToDump} = await pullPml(sourcepath, conn, members === '', pmlsToDump)
     // each dumped pml record adds pm record to set of to be dumped
-    const pmlRecords = await pullPml(sourcepath, conn, members === '', pmlsToDump, pmsToDump)
-    const uiRecords = await pullUI(sourcepath, conn, members === '', uisToDump, pmsToDump)
+    pmlPmsToDump.forEach(item => pmsToDump.add(item))
+
+    const {uiRecords, uiPmsToDump} = await pullUI(sourcepath, conn, members === '', uisToDump)
+    // each dumped ui record adds pm record to set of to be dumped
+    uiPmsToDump.forEach(item => pmsToDump.add(item))
+
     const pmRecords = await pullPM(sourcepath, conn, members === '', pmsToDump)
 
     // Return an object to be displayed with --json

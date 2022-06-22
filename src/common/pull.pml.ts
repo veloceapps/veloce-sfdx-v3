@@ -5,8 +5,14 @@ import {Connection, SfdxError} from '@salesforce/core';
 interface Document {
   Body: string;
 }
+interface PmlReturn {
+  pmlRecords: ProductModel[]
+  pmlPmsToDump: Set<string>
+}
 
-export async function pullPml(sourcepath: string, conn: Connection, dumpAll: boolean, pmlsToDump: Set<string>, pmsToDump: Set<string>): Promise<ProductModel[]> {
+export async function pullPml(sourcepath: string, conn: Connection, dumpAll: boolean, pmlsToDump: Set<string>): Promise<PmlReturn> {
+  const pmlPmsToDump = new Set<string>()
+
   // Handling of PML
   let pmlQuery: string
   if (dumpAll) {
@@ -31,9 +37,12 @@ export async function pullPml(sourcepath: string, conn: Connection, dumpAll: boo
     writeFileSync(`${sourcepath}/${r.Name}.pml`,
       await documentContent(conn, r.VELOCPQ__ContentId__c), {flag: 'w+'})
     // mark full PM dump as a dependancy (metadata)
-    pmsToDump.add(r.Name)
+    pmlPmsToDump.add(r.Name)
   }
-  return pmlResult.records
+  return {
+    pmlRecords: pmlResult.records,
+    pmlPmsToDump
+  }
 }
 
 async function documentContent(conn: Connection, documentId: string): Promise<string> {

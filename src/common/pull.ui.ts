@@ -1,5 +1,14 @@
 import {Connection} from '@salesforce/core';
 
-export async function pullUI(sourcepath: string, conn: Connection, dumpAll: boolean, pmlsToDump: Set<string>, pmsToDump: Set<string>): Promise<string[]> {
-  return []
+interface UiReturn {
+  uiRecords: string[]
+  uiPmsToDump: Set<string>
+}
+
+export async function pullUI(sourcepath: string, conn: Connection, dumpAll: boolean, pmlsToDump: Set<string>): Promise<UiReturn> {
+  const uiPmsToDump = new Set<string>()
+  return {
+    uiRecords: [],
+    uiPmsToDump
+  }
 }
