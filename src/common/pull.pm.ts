@@ -7,15 +7,15 @@ export async function pullPM(sourcepath: string, conn: Connection, dumpAll: bool
   if (dumpAll) {
     // Dump ALL PM
     pmQuery = 'Select Id,Name,VELOCPQ__ContentId__c,VELOCPQ__Version__c,VELOCPQ__ReferenceId__c from VELOCPQ__ProductModel__c';
-    this.ux.log('Dumping All PMs')
+    console.log('Dumping All PMs')
   } else if (pmsToDump.size > 0) {
     // Dump some members only
     pmQuery = `Select Id,Name,VELOCPQ__ContentId__c,VELOCPQ__Version__c,VELOCPQ__ReferenceId__c from VELOCPQ__ProductModel__c WHERE Name IN ('${Array.from(pmsToDump.values()).join("','")}')`;
-    this.ux.log(`Dumping PMs with names: ${Array.from(pmsToDump.values()).join(',')}`)
+    console.log(`Dumping PMs with names: ${Array.from(pmsToDump.values()).join(',')}`)
   }
   // Query ProductModels
   const pmResult = await conn.query<ProductModel>(pmQuery);
-  this.ux.log(`PMs result count: ${pmResult.totalSize}`)
+  console.log(`PMs result count: ${pmResult.totalSize}`)
   for (const r of pmResult.records) {
     if (!existsSync(sourcepath)) {
       mkdirSync(sourcepath, { recursive: true })

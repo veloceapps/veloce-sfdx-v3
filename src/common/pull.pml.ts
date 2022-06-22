@@ -6,8 +6,8 @@ interface Document {
   Body: string;
 }
 interface PmlReturn {
-  pmlRecords: ProductModel[]
-  pmlPmsToDump: Set<string>
+  pmlRecords: ProductModel[];
+  pmlPmsToDump: Set<string>;
 }
 
 export async function pullPml(sourcepath: string, conn: Connection, dumpAll: boolean, pmlsToDump: Set<string>): Promise<PmlReturn> {
@@ -18,17 +18,17 @@ export async function pullPml(sourcepath: string, conn: Connection, dumpAll: boo
   if (dumpAll) {
     // Dump ALL PML
     pmlQuery = 'Select Id,Name,VELOCPQ__ContentId__c from VELOCPQ__ProductModel__c';
-    this.ux.log('Dumping All PMLs')
+    console.log('Dumping All PMLs')
   } else if (pmlsToDump.size > 0) {
     // Dump some members only
     pmlQuery = `Select Id, Name, VELOCPQ__ContentId__c
                 from VELOCPQ__ProductModel__c
                 WHERE Name IN ('${Array.from(pmlsToDump.values()).join("','")}')`;
-    this.ux.log(`Dumping PMLs with names: ${Array.from(pmlsToDump.values()).join(',')}`)
+    console.log(`Dumping PMLs with names: ${Array.from(pmlsToDump.values()).join(',')}`)
   }
   // PML Handlings
   const pmlResult = await conn.query<ProductModel>(pmlQuery);
-  this.ux.log(`PMLs result count: ${pmlResult.totalSize}`)
+  console.log(`PMLs result count: ${pmlResult.totalSize}`)
   for (const r of pmlResult.records) {
     //
     if (!existsSync(sourcepath)) {
