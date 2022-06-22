@@ -20,17 +20,17 @@ export const pullPml = (ctx: SfdxCommandV) => async (sourcepath: string, conn: C
   if (dumpAll) {
     // Dump ALL PML
     pmlQuery = 'Select Id,Name,VELOCPQ__ContentId__c from VELOCPQ__ProductModel__c';
-    ctx.ux.log('Dumping All PMLs')
+    console.log('Dumping All PMLs')
   } else if (pmlsToDump.size > 0) {
     // Dump some members only
     pmlQuery = `Select Id, Name, VELOCPQ__ContentId__c
                 from VELOCPQ__ProductModel__c
                 WHERE Name IN ('${Array.from(pmlsToDump.values()).join("','")}')`;
-    ctx.ux.log(`Dumping PMLs with names: ${Array.from(pmlsToDump.values()).join(',')}`)
+    console.log(`Dumping PMLs with names: ${Array.from(pmlsToDump.values()).join(',')}`)
   }
   // PML Handlings
   const pmlResult = await conn.query<ProductModel>(pmlQuery);
-  ctx.ux.log(`PMLs result count: ${pmlResult.totalSize}`)
+  console.log(`PMLs result count: ${pmlResult.totalSize}`)
   for (const r of pmlResult.records) {
     //
     if (!existsSync(sourcepath)) {
