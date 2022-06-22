@@ -63,7 +63,7 @@ async function uploadPML(sourcepath: string, conn: Connection, pmlName: string, 
   const b64Data = Buffer.from(gzipped.toString('base64')).toString('base64')
 
   const meta = JSON.parse(readFileSync(`${sourcepath}/${pmlName}.json`).toString()) as { [key: string]: string }
-  const folderId = getOrCreateModelFolderId(conn)
+  const folderId = await getOrCreateModelFolderId(conn)
   // attempt to update existing document first
   if (await documentExists(conn, meta['VELOCPQ__ContentId__c'])) {
     // update existing document
@@ -73,14 +73,11 @@ async function uploadPML(sourcepath: string, conn: Connection, pmlName: string, 
       name: pmlName,
       folderId
     }
-    const response: CreateResult = await conn.request({
+    await conn.request({
       url: `/services/data/v${conn.getApiVersion()}/sobjects/Document/${meta['VELOCPQ__ContentId__c']}`,
       body: JSON.stringify(data),
       method: 'PATCH'
-    });
-    if (!response.success) {
-      throw new SfdxError(`Failed to update document: ${JSON.stringify(response)}`)
-    }
+    }); // patch has no response for some reason
   } else {
     // upload new document and link it to ProductModel
     console.log(`Create new PML document(${pmlName})`)

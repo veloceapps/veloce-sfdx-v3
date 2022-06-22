@@ -228,7 +228,7 @@ OPTIONS
                                                                                     this command invocation
 
 EXAMPLE
-  sfdx veloce:source:pull --targetusername myOrg@example.com --targetdevhubusername devhub@org.com --members model:Octa 
+  sfdx veloce:source:pull --targetusername myOrg@example.com --targetdevhubusername devhub@org.com --members pml:OCTA 
   --sourcepath ./source/pmls
 ```
 
@@ -264,7 +264,7 @@ OPTIONS
                                                                                     this command invocation
 
 EXAMPLE
-  sfdx veloce:source:push --targetusername myOrg@example.com --targetdevhubusername devhub@org.com --members model:Octa 
+  sfdx veloce:source:push --targetusername myOrg@example.com --targetdevhubusername devhub@org.com --members pml:OCTA 
   --sourcepath ./source/pmls
 ```
 

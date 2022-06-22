@@ -16,7 +16,7 @@ async function getPm(conn: Connection, pm: string): Promise<string> {
 
 async function uploadPM(sourcepath: string, conn: Connection, pmName: string): Promise<string> {
   const meta = JSON.parse(readFileSync(`${sourcepath}/${pmName}.json`).toString()) as { [key: string]: string }
-  const pmId = getPm(conn, pmName)
+  const pmId = await getPm(conn, pmName)
   let returnId = ''
   if (pmId === null) {
     // inserting new product model from meta
