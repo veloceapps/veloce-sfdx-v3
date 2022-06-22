@@ -11,7 +11,6 @@ import { AnyJson } from '@salesforce/ts-types';
 import { pullPml } from '../../../common/pull.pml';
 import { pullUI } from '../../../common/pull.ui';
 import { pullPM } from '../../../common/pull.pm';
-import { SfdxCommandV } from '../../../shared/types/common.types';
 
 // Initialize Messages with the current plugin directory
 Messages.importMessagesDirectory(__dirname);
@@ -77,15 +76,15 @@ export default class Pull extends SfdxCommand {
     const {pmlsToDump, uisToDump} = Pull.spitMembers(members)
     const pmsToDump = new Set<string>()
 
-    const {pmlRecords, pmlPmsToDump} = await pullPml(this as SfdxCommandV)(sourcepath, conn, members === '', pmlsToDump)
+    const {pmlRecords, pmlPmsToDump} = await pullPml(this)(sourcepath, conn, members === '', pmlsToDump)
     // each dumped pml record adds pm record to set of to be dumped
     pmlPmsToDump.forEach(item => pmsToDump.add(item))
 
-    const {uiRecords, uiPmsToDump} = await pullUI(this as SfdxCommandV)(sourcepath, conn, members === '', uisToDump)
+    const {uiRecords, uiPmsToDump} = await pullUI(this)(sourcepath, conn, members === '', uisToDump)
     // each dumped ui record adds pm record to set of to be dumped
     uiPmsToDump.forEach(item => pmsToDump.add(item))
 
-    const pmRecords = await pullPM(this as SfdxCommandV)(sourcepath, conn, members === '', pmsToDump)
+    const pmRecords = await pullPM(this)(sourcepath, conn, members === '', pmsToDump)
 
     // Return an object to be displayed with --json
     return { 'pml': pmlRecords, 'config-ui': uiRecords, 'pm': pmRecords }
