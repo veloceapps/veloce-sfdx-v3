@@ -14,13 +14,19 @@ import { extractElementMetadata, fromBase64, isLegacyDefinition } from '../share
 import { SfdxCommandV } from '../shared/types/common.types';
 import { ProductModel } from './entities/productModel';
 
-export const pullUI = (ctx: SfdxCommandV) => async (sourcepath: string, conn: Connection, dumpAll: boolean, uisToDump: Set<string>, pmsToDump: Set<string>): Promise<ProductModel[]> => {
+interface UiReturn {
+  uiRecords: ProductModel[];
+  uiPmsToDump: Set<string>;
+}
+
+export const pullUI = (ctx: SfdxCommandV) => async (sourcepath: string, conn: Connection, dumpAll: boolean, uisToDump: Set<string>): Promise<UiReturn> => {
   const productModelsUiDef: ProductModel[] = await fetchProductModels(ctx, conn, dumpAll, uisToDump);
   const uiDefsMap: {[modelName: string]: string} = Array.from(uisToDump).reduce((acc, ui) => {
     const [modelName, defName] = ui.split(':');
     acc[modelName] = defName;
     return acc;
   }, {});
+  const uiPmsToDump = new Set<string>()
 
   const contents = await Promise.all(productModelsUiDef.map(productModel => Promise.all([
     Promise.resolve(productModel),
@@ -37,7 +43,7 @@ export const pullUI = (ctx: SfdxCommandV) => async (sourcepath: string, conn: Co
     }
 
     // mark full PM dump as a dependancy (metadata)
-    pmsToDump.add(Name);
+    uiPmsToDump.add(Name);
 
     const path = `${sourcepath}/${Name}`;
 
@@ -64,7 +70,10 @@ export const pullUI = (ctx: SfdxCommandV) => async (sourcepath: string, conn: Co
     }
   })
 
-  return productModelsUiDef;
+  return {
+    uiRecords: productModelsUiDef,
+    uiPmsToDump
+  }
 }
 
 function saveLegacySections(sections: LegacySection[], path: string, metadata: LegacyUiDefinition, parentId?: string): void {

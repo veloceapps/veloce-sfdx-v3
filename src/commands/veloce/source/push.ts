@@ -5,11 +5,12 @@
  * For full license text, see LICENSE.txt file in the repo root or https://opensource.org/licenses/BSD-3-Clause
  */
 import * as os from 'os';
-import {readFileSync, writeFileSync, readdirSync} from 'node:fs';
-import {gzipSync} from 'node:zlib';
 import {flags, SfdxCommand} from '@salesforce/command';
-import {Messages, SfdxError} from '@salesforce/core';
+import {Messages} from '@salesforce/core';
 import {AnyJson} from '@salesforce/ts-types';
+import {pushPml} from "../../../common/push.pml";
+import {pushUI} from "../../../common/push.ui";
+import {pushPM} from "../../../common/push.pm";
 
 // Initialize Messages with the current plugin directory
 Messages.importMessagesDirectory(__dirname);
@@ -17,33 +18,6 @@ Messages.importMessagesDirectory(__dirname);
 // Load the specific messages for this file. Messages from @salesforce/command, @salesforce/core,
 // or any library that is using the messages framework can also be loaded this way.
 const messages = Messages.loadMessages('veloce-sfdx-v3', 'source-push');
-
-// The type we are querying for
-interface Document {
-  Id: string;
-  Body: string;
-  FolderId: string;
-}
-
-interface Folder {
-  Id: string;
-  Name: string;
-  DeveloperName: string;
-  AccessType: string;
-  Type: string;
-}
-
-interface CreateResult {
-  id: string;
-  success: boolean;
-  errors: string[];
-  name: string;
-  message: string;
-}
-
-interface ProductModel {
-  [key: string]: string;
-}
 
 export default class Push extends SfdxCommand {
   public static description = messages.getMessage('commandDescription');
@@ -77,193 +51,43 @@ export default class Push extends SfdxCommand {
   // Set this to true if your command requires a project workspace; 'requiresProject' is false by default
   protected static requiresProject = false;
 
+  private static splitMembers(members: string): { pmlsToUpload: Set<string>, uisToUpload: Set<string> } {
+    const pmlsToUpload = new Set<string>()
+    const uisToUpload = new Set<string>()
+    const membersArray = members.split(',')
+    for(const m of membersArray) {
+      const parts = m.split(':')
+      switch (parts[0]) {
+        case 'pml':
+          pmlsToUpload.add(parts[1])
+          break
+        case 'config-ui':
+          uisToUpload.add(parts[1])
+          break
+      }
+    }
+    return {pmlsToUpload, uisToUpload}
+  }
+
   public async run(): Promise<AnyJson> {
+    const conn = this.org.getConnection();
     const members = (this.flags.members || '') as string;
     const sourcepath = ((this.flags.sourcepath || 'source') as string).replace(/\/$/, ''); // trim last slash if present
 
-    let pmlsToUpload = new Set<string>() // PML Documents to upload
-    let pmsToUpload = new Set<string>() // PM entities to uplaod
+    const {pmlsToUpload, uisToUpload} = Push.splitMembers(members)
+    const pmsToUpload = new Set<string>() // PM entities to uplaod
 
-    const membersArray = members.split(',')
-    for (const m of membersArray) {
-      const parts = m.split(':')
-      if (parts[0] === 'pml' && parts[1]) {
-        pmlsToUpload.add(parts[1])
-      }
-    }
-    if (members === '') {
-      // Push ALL
-      // PML
-      this.ux.log('Pushing All PMLs')
-      pmlsToUpload = this.findAllPMLs(sourcepath)
-      for (const p of pmlsToUpload) {
-        await this.uploadPML(sourcepath, p, pmsToUpload)
-      }
-      this.ux.log('Pushing All PMs')
-      pmsToUpload = this.findAllPMs(sourcepath)
-      for (const p of pmsToUpload) {
-        await this.uploadPM(sourcepath, p)
-      }
-    } else if (pmlsToUpload.size > 0) {
-      // Push some members only
-      this.ux.log(`Pushing PMLs with names: ${Array.from(pmlsToUpload.values()).join(',')}`)
-      for (const p of pmlsToUpload) {
-        await this.uploadPML(sourcepath, p, pmsToUpload)
-      }
-      this.ux.log(`Pushing PMLs with names: ${Array.from(pmsToUpload.values()).join(',')}`)
-      for (const p of pmsToUpload) {
-        await this.uploadPM(sourcepath, p)
-      }
-    }
+    const {pmlPmsToUpload, pmlRecords} = await pushPml(sourcepath, conn, members === '', pmlsToUpload)
+    // each uploaded pml record adds pm record to set of to be uploaded
+    pmlPmsToUpload.forEach(item => pmsToUpload.add(item))
+
+    const {uiPmsToUpload, uiRecords} = await pushUI(sourcepath, conn, members === '', uisToUpload)
+    // each uploaded pml record adds pm record to set of to be uploaded
+    uiPmsToUpload.forEach(item => pmsToUpload.add(item))
+
+    const pmRecords = await pushPM(sourcepath, conn, members === '', pmsToUpload)
 
     // Return an object to be displayed with --json
-    return {'pmls': Array.from(pmlsToUpload.values())};
-  }
-
-  private async getOrCreateModelFolderId(): Promise<string> {
-    const conn = this.org.getConnection();
-    let folderId: string
-    // deal with folder
-    // Check if veloce folder exists:
-    const folderResult = await conn.query<Folder>(`Select Id, Name, Type
-                                                   from Folder
-                                                   WHERE Name = 'velo_product_models'`)
-    if (!folderResult.records || folderResult.records.length <= 0) {
-      // Create new Folder
-      const folder = {
-        Name: 'velo_product_models',
-        DeveloperName: 'velo_product_models',
-        Type: 'Document',
-        AccessType: 'Public'
-      } as Folder
-      const folderCreateResult = (await conn.sobject('Folder').create(folder)) as CreateResult
-      if (folderCreateResult.success) {
-        this.ux.log(`New folder created ${folderCreateResult.name} with id ${folderCreateResult.id}`)
-      } else {
-        throw new SfdxError(`Failed to create folder: ${JSON.stringify(folderCreateResult)}`)
-      }
-      return folderCreateResult.id
-    } else {
-      folderId = folderResult.records[0].Id
-      this.ux.log(`Use existing folder ${folderResult.records[0].Name} with id ${folderId}`)
-      return folderId
-    }
-  }
-
-  private async documentExists(documentId: string): Promise<boolean> {
-    const conn = this.org.getConnection();
-    // deal with folder
-    // Check if veloce folder exists:
-    const docResult = await conn.query<Document>(`Select Id
-                                                  from Document
-                                                  WHERE Id = '${documentId}'`)
-    return docResult.totalSize > 0
-  }
-
-  private async getPm(pm: string): Promise<string> {
-    const conn = this.org.getConnection();
-    // deal with folder
-    // Check if veloce folder exists:
-    const docResult = await conn.query<ProductModel>(`Select Id, Name
-                                                      from VELOCPQ__ProductModel__c
-                                                      WHERE Name = '${pm}'`)
-    if (docResult.totalSize > 0) {
-      return docResult.records[0].Id
-    }
-    return null
-  }
-
-
-  private findAllPMLs(sourcepath: string): Set<string> {
-    const result = new Set<string>()
-    const filenames = readdirSync(sourcepath);
-    filenames.forEach(file => {
-      if (file.endsWith('.pml')) {
-        result.add(file)
-      }
-    });
-    return result
-  }
-
-  private findAllPMs(sourcepath: string): Set<string> {
-    const result = new Set<string>()
-    const filenames = readdirSync(sourcepath);
-    filenames.forEach(file => {
-      if (file.endsWith('.json')) {
-        result.add(file)
-      }
-    });
-    return result
-  }
-
-  private async uploadPM(sourcepath: string, pmName: string): Promise<void> {
-    const conn = this.org.getConnection();
-    const meta = JSON.parse(readFileSync(`${sourcepath}/${pmName}.json`).toString()) as { [key: string]: string }
-    const pmId = this.getPm(pmName)
-    if (pmId === null) {
-      // inserting new product model from meta
-      delete meta['Id']
-      conn.sobject<ProductModel>("VELOCPQ__ProductModel__c").create(meta,
-        (err, ret) => {
-          if (err || !ret.success) {
-            this.ux.log(`Failed to insert Product Model ${pmName}, error: ${err}`)
-          }
-          // update meta json with new id
-          meta['Id'] = (ret as any).id
-        })
-    } else {
-      // updating existing product model from meta
-
-    }
-  }
-
-  private async uploadPML(sourcepath: string, pmlName: string, pmToUpload: Set<string>): Promise<void> {
-    const conn = this.org.getConnection();
-    const pml = readFileSync(`${sourcepath}/${pmlName}.pml`)
-    const gzipped = gzipSync(pml)
-    // Encode to base64 TWICE!, first time is requirement of POST/PATCH, and it will be decoded on reads automatically by SF.
-    const b64Data = Buffer.from(gzipped.toString('base64')).toString('base64')
-
-    const meta = JSON.parse(readFileSync(`${sourcepath}/${pmlName}.json`).toString()) as { [key: string]: string }
-    const folderId = this.getOrCreateModelFolderId()
-    // attempt to update existing document first
-    if (await this.documentExists(meta['VELOCPQ__ContentId__c'])) {
-      // update existing document
-      this.ux.log(`Updating existing PML document(${pmlName}) with ID: ${meta['VELOCPQ__ContentId__c']}`)
-      const data = {
-        body: b64Data,
-        name: pmlName,
-        folderId
-      }
-      await conn.request({
-        url: `/services/data/v${conn.getApiVersion()}/sobjects/Document/${meta['VELOCPQ__ContentId__c']}`,
-        body: JSON.stringify(data),
-        method: 'PATCH'
-      });
-    } else {
-      // upload new document and link it to ProductModel
-      this.ux.log(`Create new PML document(${pmlName})`)
-      const data = {
-        body: b64Data,
-        name: pmlName,
-        folderId
-      }
-      const response = (await conn.request({
-        url: `/services/data/v${conn.getApiVersion()}/sobjects/Document`,
-        body: JSON.stringify(data),
-        method: 'POST'
-      }));
-      if (response.success) {
-        this.ux.log(`New Document '${pmlName}' created with id ${response.id}`)
-      } else {
-        throw new SfdxError(`Failed to create document: ${JSON.stringify(response)}`)
-      }
-      // update meta
-      meta['VELOCPQ__ContentId__c'] = response.id
-      writeFileSync(`${sourcepath}/${pmlName}.json`,
-        JSON.stringify(meta, null, '  '), {flag: 'w+'})
-      // mark ProductModel as pending upload
-      pmToUpload.add(pmlName)
-    }
+    return {'pml': pmlRecords, 'ui': uiRecords, 'pm': pmRecords};
   }
 }
