@@ -168,7 +168,7 @@ async function fetchProductModels(ctx: SfdxCommandV, conn: Connection, dumpAll: 
     query += ` WHERE Name IN ('${modelNames.join("','")}')`;
   }
 
-  ctx.ux.log(`Dumping ${modelNames?.length ? 'Uis with names: ' + modelNames.join() : 'All Uis'}`);
+  ctx.ux.log(`Dumping ${dumpAll ? 'All Uis' : 'Uis with names: ' + modelNames.join()}`);
   const result = await conn.query<ProductModel>(query);
   ctx.ux.log(`Uis result count: ${result?.totalSize}`);
 
