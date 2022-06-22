@@ -68,14 +68,14 @@ export default class Pull extends SfdxCommand {
           pmlsToDump.add(parts[1])
           break
         case 'config-ui':
-          uisToDump.add(parts[1])
+          uisToDump.add(parts[1] + ':' + (parts[2] ?? ''))
           break
       }
     }
     // each dumped pml record adds pm record to set of to be dumped
-    const pmlRecords = await pullPml(sourcepath, conn, members === '', pmlsToDump, pmsToDump)
-    const uiRecords = await pullUI(sourcepath, conn, members === '', uisToDump, pmsToDump)
-    const pmRecords = await pullPM(sourcepath, conn, members === '', pmsToDump)
+    const pmlRecords = await pullPml.bind(this)(sourcepath, conn, members === '', pmlsToDump, pmsToDump)
+    const uiRecords = await pullUI.bind(this)(sourcepath, conn, members === '', uisToDump, pmsToDump)
+    const pmRecords = await pullPM.bind(this)(sourcepath, conn, members === '', pmsToDump)
 
     // Return an object to be displayed with --json
     return { 'pml': pmlRecords, 'config-ui': uiRecords, 'pm': pmRecords }
