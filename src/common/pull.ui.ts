@@ -11,7 +11,8 @@ import {
 } from '../shared/types/ui.types';
 import { extractElementMetadata, fromBase64, isLegacyDefinition } from '../shared/utils/ui.utils';
 import { ProductModel } from '../shared/types/productModel.types';
-import { fetchDocumentAttachment, fetchProductModels } from '../shared/utils/query.utils';
+import { fetchProductModels } from '../shared/utils/productModel.utils';
+import { fetchDocumentAttachment } from '../shared/utils/document.utils';
 
 interface UiReturn {
   uiRecords: ProductModel[];

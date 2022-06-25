@@ -1,7 +1,7 @@
 import { Connection } from '@salesforce/core';
 import { ProductModel } from '../shared/types/productModel.types';
-import { fetchProductModels } from '../shared/utils/query.utils';
 import { writeFileSafe } from '../shared/utils/common.utils';
+import { fetchProductModels } from '../shared/utils/productModel.utils';
 
 export async function pullPM(sourcepath: string, conn: Connection, dumpAll: boolean, pmsToDump: Set<string>): Promise<ProductModel[]> {
   const productModels: ProductModel[] = await fetchProductModels(conn, dumpAll, Array.from(pmsToDump));
