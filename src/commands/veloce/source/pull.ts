@@ -76,15 +76,15 @@ export default class Pull extends SfdxCommand {
     const {pmlsToDump, uisToDump} = Pull.spitMembers(members)
     const pmsToDump = new Set<string>()
 
-    const {pmlRecords, pmlPmsToDump} = await pullPml(this)(sourcepath, conn, members === '', pmlsToDump)
+    const {pmlRecords, pmlPmsToDump} = await pullPml(sourcepath, conn, members === '', pmlsToDump)
     // each dumped pml record adds pm record to set of to be dumped
     pmlPmsToDump.forEach(item => pmsToDump.add(item))
 
-    const {uiRecords, uiPmsToDump} = await pullUI(this)(sourcepath, conn, members === '', uisToDump)
+    const {uiRecords, uiPmsToDump} = await pullUI(sourcepath, conn, members === '', uisToDump)
     // each dumped ui record adds pm record to set of to be dumped
     uiPmsToDump.forEach(item => pmsToDump.add(item))
 
-    const pmRecords = await pullPM(this)(sourcepath, conn, members === '', pmsToDump)
+    const pmRecords = await pullPM(sourcepath, conn, members === '', pmsToDump)
 
     // Return an object to be displayed with --json
     return { 'pml': pmlRecords, 'config-ui': uiRecords, 'pm': pmRecords }

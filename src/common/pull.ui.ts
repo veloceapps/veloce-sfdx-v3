@@ -1,6 +1,5 @@
 import { existsSync, mkdirSync } from 'fs';
-import { gunzipSync } from 'zlib';
-import {Connection} from '@salesforce/core';
+import { Connection } from '@salesforce/core';
 import { writeFileSafe } from '../shared/utils/common.utils';
 import {
   LegacySection,
@@ -11,26 +10,27 @@ import {
   UiMetadata
 } from '../shared/types/ui.types';
 import { extractElementMetadata, fromBase64, isLegacyDefinition } from '../shared/utils/ui.utils';
-import { SfdxCommandV } from '../shared/types/common.types';
-import { ProductModel } from './entities/productModel';
+import { ProductModel } from '../shared/types/productModel.types';
+import { fetchDocumentAttachment, fetchProductModels } from '../shared/utils/query.utils';
 
 interface UiReturn {
   uiRecords: ProductModel[];
   uiPmsToDump: Set<string>;
 }
 
-export const pullUI = (ctx: SfdxCommandV) => async (sourcepath: string, conn: Connection, dumpAll: boolean, uisToDump: Set<string>): Promise<UiReturn> => {
-  const productModelsUiDef: ProductModel[] = await fetchProductModels(ctx, conn, dumpAll, uisToDump);
-  const uiDefsMap: {[modelName: string]: string} = Array.from(uisToDump).reduce((acc, ui) => {
+export async function pullUI(sourcepath: string, conn: Connection, dumpAll: boolean, uisToDump: Set<string>): Promise<UiReturn> {
+  const modelNames = dumpAll ? undefined : Array.from(uisToDump).map(ui => ui.split(':')[0]);
+  const uiDefProductModels: ProductModel[] = await fetchProductModels(conn, dumpAll, modelNames);
+  const uiDefNamesMap: { [modelName: string]: string } = Array.from(uisToDump).reduce((acc, ui) => {
     const [modelName, defName] = ui.split(':');
     acc[modelName] = defName;
     return acc;
   }, {});
-  const uiPmsToDump = new Set<string>()
+  const uiPmsToDump = new Set<string>();
 
-  const contents = await Promise.all(productModelsUiDef.map(productModel => Promise.all([
+  const contents: [ProductModel, string][] = await Promise.all(uiDefProductModels.map(productModel => Promise.all([
     Promise.resolve(productModel),
-    getDocumentAttachment(ctx, conn, productModel.VELOCPQ__UiDefinitionsId__c)
+    fetchDocumentAttachment(conn, productModel.VELOCPQ__UiDefinitionsId__c)
   ])));
 
   contents.forEach(([{Name}, content]) => {
@@ -38,7 +38,7 @@ export const pullUI = (ctx: SfdxCommandV) => async (sourcepath: string, conn: Co
     try {
       uiDefs = JSON.parse(content) as UiDef[];
     } catch (err) {
-      ctx.ux.log(`Failed to parse document content: ${Name}`);
+      console.log(`Failed to parse document content: ${Name}`);
       return;
     }
 
@@ -48,10 +48,10 @@ export const pullUI = (ctx: SfdxCommandV) => async (sourcepath: string, conn: Co
     const path = `${sourcepath}/${Name}`;
 
     // legacy ui definitions metadata is stored in global metadata.json as array
-    const legacyMetadataArray: LegacyUiDefinition[] = []
+    const legacyMetadataArray: LegacyUiDefinition[] = [];
 
     uiDefs?.forEach(ui => {
-      const includeUiName = dumpAll || !uiDefsMap[Name] || uiDefsMap[Name] === ui.name;
+      const includeUiName = dumpAll || !uiDefNamesMap[Name] || uiDefNamesMap[Name] === ui.name;
       if (!includeUiName) {
         return;
       }
@@ -71,7 +71,7 @@ export const pullUI = (ctx: SfdxCommandV) => async (sourcepath: string, conn: Co
   })
 
   return {
-    uiRecords: productModelsUiDef,
+    uiRecords: uiDefProductModels,
     uiPmsToDump
   }
 }
@@ -91,7 +91,7 @@ function saveLegacySections(sections: LegacySection[], path: string, metadata: L
 }
 
 function saveLegacyUiDefinition(ui: LegacyUiDefinition, path: string, metadataArray: LegacyUiDefinition[]): void {
-  const legacyMetadata: LegacyUiDefinition = { ...ui, sections: [] }
+  const legacyMetadata: LegacyUiDefinition = {...ui, sections: []}
 
   ui.tabs.forEach(tab => {
     const tabPath = `${path}/${tab.name}`
@@ -104,7 +104,7 @@ function saveLegacyUiDefinition(ui: LegacyUiDefinition, path: string, metadataAr
 }
 
 function saveLegacySectionFiles(section: LegacySection, dir: string, metadata: LegacyUiDefinition): void {
-  const sectionMeta = { ...section }
+  const sectionMeta = {...section}
 
   if (section.script) {
     const fileName = `${section.label}.js`
@@ -135,7 +135,7 @@ function saveLegacySectionFiles(section: LegacySection, dir: string, metadata: L
 }
 
 function saveUiDefinition(ui: UiDefinition, path: string): void {
-  const { children, ...rest } = ui
+  const {children, ...rest} = ui
 
   // save elements recursively
   const childrenNames = children.reduce((acc, child) => {
@@ -151,38 +151,6 @@ function saveUiDefinition(ui: UiDefinition, path: string): void {
   writeFileSafe(path, 'metadata.json', JSON.stringify(metadata, null, 2) + '\n')
 }
 
-async function getDocumentAttachment(ctx: SfdxCommandV, conn: Connection, documentId: string): Promise<string|undefined> {
-  const query = `Select Body from Document WHERE Id='${documentId}'`
-
-  const result = await conn.query<{ Body: string }>(query)
-  const [record] = result?.records ?? []
-
-  if (!record) {
-    ctx.ux.log(`Document not found: ${documentId}`);
-    return;
-  }
-
-  const url: string = record?.Body;
-
-  const res = await conn.request({url});
-
-  const gzipped = Buffer.from(res.toString(), 'base64');
-  return gunzipSync(gzipped).toString();
-}
-
-async function fetchProductModels(ctx: SfdxCommandV, conn: Connection, dumpAll: boolean, uisToDump: Set<string>): Promise<ProductModel[]> {
-  const modelNames = dumpAll ? undefined : Array.from(uisToDump).map(ui => ui.split(':')[0]);
-  let query = 'Select Id,Name,VELOCPQ__ContentId__c,VELOCPQ__Version__c,VELOCPQ__ReferenceId__c,VELOCPQ__UiDefinitionsId__c from VELOCPQ__ProductModel__c';
-  if (!dumpAll) {
-    query += ` WHERE Name IN ('${modelNames.join("','")}')`;
-  }
-
-  ctx.ux.log(`Dumping ${dumpAll ? 'All Uis' : 'Uis with names: ' + modelNames.join()}`);
-  const result = await conn.query<ProductModel>(query);
-  ctx.ux.log(`Uis result count: ${result?.totalSize}`);
-
-  return result?.records ?? [];
-}
 
 function saveElement(el: UiElement, path: string): string | undefined {
   // name is located in the Angular decorator which is the part of the element script
@@ -195,7 +163,7 @@ function saveElement(el: UiElement, path: string): string | undefined {
   const elDir = `${path}/${elName}`
 
   if (!existsSync(elDir)) {
-    mkdirSync(elDir, { recursive: true })
+    mkdirSync(elDir, {recursive: true})
   }
 
   writeFileSafe(elDir, 'script.ts', script)

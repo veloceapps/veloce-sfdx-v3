@@ -1,5 +1,17 @@
-import { UX } from '@salesforce/command/lib/ux';
-
 export type IdMap = { [key: string]: string }
 
-export type SfdxCommandV = {ux: UX};
+export interface CreateResult {
+  id: string;
+  success: boolean;
+  errors: string[];
+  name: string;
+  message: string;
+}
+
+export interface Folder {
+  Id: string;
+  Name: string;
+  DeveloperName: string;
+  AccessType: string;
+  Type: string;
+}

@@ -17,8 +17,12 @@ module.exports = {
     'prettier/prettier': 'off',
     'no-console': 'off',
     'no-eval': 'off',
+    'camelcase': 'off',
     '@typescript-eslint/prefer-regexp-exec': 'off',
     '@typescript-eslint/no-unsafe-assignment': 'off',
-    '@typescript-eslint/no-explicit-any': 'off'
+    '@typescript-eslint/no-explicit-any': 'off',
+    '@typescript-eslint/array-type': ['error', {
+      default: 'array',
+    }]
   }
 };
