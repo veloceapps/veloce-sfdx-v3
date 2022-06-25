@@ -42,9 +42,6 @@ export async function pullUI(sourcepath: string, conn: Connection, dumpAll: bool
       return;
     }
 
-    // mark full PM dump as a dependancy (metadata)
-    uiPmsToDump.add(Name);
-
     const path = `${sourcepath}/${Name}`;
 
     // legacy ui definitions metadata is stored in global metadata.json as array
@@ -68,6 +65,9 @@ export async function pullUI(sourcepath: string, conn: Connection, dumpAll: bool
     if (legacyMetadataArray.length) {
       writeFileSafe(path, 'metadata.json', JSON.stringify(legacyMetadataArray, null, 2))
     }
+
+    // mark full PM dump as a dependancy (metadata)
+    uiPmsToDump.add(Name);
   })
 
   return {
