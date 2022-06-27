@@ -1,0 +1,7 @@
+{
+  "commandDescription": "Lists debug sessions",
+  "targetFlagDescription": "Alias of existing org",
+  "examples": [
+    "sfdx veloce:debug:list --targetusername myOrg@example.com --targetdevhubusername devhub@org.com"
+  ]
+}

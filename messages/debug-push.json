@@ -1,0 +1,7 @@
+{
+  "commandDescription": "Pushes changes to debug session manually",
+  "targetFlagDescription": "Alias of existing org",
+  "examples": [
+    "sfdx veloce:debug:push --targetusername myOrg@example.com --targetdevhubusername devhub@org.com"
+  ]
+}

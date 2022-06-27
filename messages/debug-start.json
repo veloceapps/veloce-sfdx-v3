@@ -1,0 +1,7 @@
+{
+  "commandDescription": "Starts new ISOLATED debug session",
+  "targetFlagDescription": "Alias of existing org",
+  "examples": [
+    "sfdx veloce:debug:start --targetusername myOrg@example.com --targetdevhubusername devhub@org.com"
+  ]
+}
