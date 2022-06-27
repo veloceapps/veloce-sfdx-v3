@@ -4,3 +4,9 @@ export interface Document {
   Body: string;
   FolderId: string;
 }
+
+export interface DocumentBody {
+  body: string;
+  name: string;
+  folderId: string;
+}

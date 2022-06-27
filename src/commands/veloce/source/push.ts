@@ -9,7 +9,7 @@ import {flags, SfdxCommand} from '@salesforce/command';
 import {Messages} from '@salesforce/core';
 import {AnyJson} from '@salesforce/ts-types';
 import {pushPml} from '../../../common/push.pml';
-import {pushUI} from '../../../common/push.ui';
+import { pushUI, SfdxCommandV } from '../../../common/push.ui';
 import {pushPM} from '../../../common/push.pm';
 
 // Initialize Messages with the current plugin directory
@@ -81,7 +81,7 @@ export default class Push extends SfdxCommand {
     // each uploaded pml record adds pm record to set of to be uploaded
     pmlPmsToUpload.forEach(item => pmsToUpload.add(item))
 
-    const {uiPmsToUpload, uiRecords} = await pushUI(sourcepath, conn, members === '', uisToUpload)
+    const {uiPmsToUpload, uiRecords} = await pushUI(this as SfdxCommandV)(sourcepath, conn, members === '', uisToUpload)
     // each uploaded pml record adds pm record to set of to be uploaded
     uiPmsToUpload.forEach(item => pmsToUpload.add(item))
 

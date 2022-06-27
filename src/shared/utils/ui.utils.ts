@@ -1,5 +1,4 @@
 import { existsSync, readFileSync } from 'fs'
-import { UX } from '@salesforce/command'
 import { SfdxError } from '@salesforce/core'
 import { IdMap } from '../types/common.types'
 import { LegacyUiDefinition, UiDef, UiDefinition, UiElement, UiElementMetadata, UiMetadata } from '../types/ui.types'
@@ -29,7 +28,7 @@ export const extractElementMetadata = (script: string): UiElementMetadata => {
 }
 
 export class UiDefinitionsBuilder {
-  public constructor(private dir: string, private modelName: string, private idmap?: IdMap, private ux?: UX) {}
+  public constructor(private dir: string, private modelName: string, private idmap?: IdMap) {}
 
   public pack(): UiDef[] {
     const dir = `${this.dir}/${this.modelName}`
@@ -54,7 +53,7 @@ export class UiDefinitionsBuilder {
         )
       }
 
-      this.ux?.log(`${originalId} => ${revertedId}`)
+      console.log(`${originalId} => ${revertedId}`)
 
       if (isLegacyDefinition(ui)) {
         return { ...ui, priceList: revertedId }
@@ -162,7 +161,7 @@ export class UiDefinitionsBuilder {
   private assertPath(p: string): void {
     for (const part of p.split('/')) {
       if (part.startsWith(' ') || part.endsWith(' ') || part.startsWith('\t') || part.endsWith('\t')) {
-        this.ux?.log(`Path has leading trailing/leading spaces, please remove and rename folder: ${p}`)
+        console.log(`Path has leading trailing/leading spaces, please remove and rename folder: ${p}`)
         process.exit(255)
       }
     }
@@ -173,7 +172,7 @@ export class UiDefinitionsBuilder {
       const b = readFileSync(p).toString()
       return JSON.parse(b)
     } catch (e: any) {
-      this.ux?.log('Failed to read/parse JSON file ', e)
+      console.log('Failed to read/parse JSON file ', e)
       process.exit(255)
     }
   }

@@ -2,18 +2,18 @@ import { readFileSync, existsSync, mkdirSync, writeFileSync, readdirSync, WriteF
 import { UX } from '@salesforce/command'
 import { IdMap } from '../types/common.types'
 
-export const readIdMap = (path: string, ux?: UX): IdMap => {
-  let idmap: IdMap
+export const readIdMap = (path: string): IdMap => {
+  let idmap: IdMap;
 
   try {
-    const content = readFileSync(path)
-    idmap = JSON.parse(content.toString()) as IdMap
+    const content = readFileSync(path);
+    idmap = JSON.parse(content.toString()) as IdMap;
   } catch (err) {
-    ux?.log(`Failed to load ID-Map file: ${path} will create new file at the end`)
-    idmap = {}
+    console.log(`Failed to load ID-Map file: ${path} will create new file at the end`);
+    idmap = {};
   }
 
-  return idmap
+  return idmap;
 }
 
 export const reverseId = (originalId: string, idmap: IdMap): string => {
