@@ -15,7 +15,7 @@ import { fetchProductModels } from '../shared/utils/productModel.utils';
 import { fetchDocumentAttachment } from '../shared/utils/document.utils';
 
 interface UiReturn {
-  uiRecords: ProductModel[];
+  uiRecords: string[];
   uiPmsToDump: Set<string>;
 }
 
@@ -72,7 +72,7 @@ export async function pullUI(sourcepath: string, conn: Connection, dumpAll: bool
   })
 
   return {
-    uiRecords: uiDefProductModels,
+    uiRecords: uiDefProductModels.map(({Id}) => Id),
     uiPmsToDump
   }
 }
