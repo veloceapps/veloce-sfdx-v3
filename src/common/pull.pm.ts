@@ -8,7 +8,7 @@ export async function pullPM(sourcepath: string, conn: Connection, dumpAll: bool
     // Dump ALL PM
     pmQuery = 'Select Id,Name,VELOCPQ__ContentId__c,VELOCPQ__UiDefinitionsId__c,VELOCPQ__Version__c,VELOCPQ__ReferenceId__c from VELOCPQ__ProductModel__c';
     console.log('Dumping All PMs')
-  } else if (pmsToDump.size == 0) {
+  } else if (pmsToDump.size === 0) {
     return []
   } else {
     // Dump some members only
