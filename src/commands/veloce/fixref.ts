@@ -51,6 +51,10 @@ export default class Fixref extends SfdxCommand {
   protected static requiresProject = false
 
   public async run(): Promise<AnyJson> {
+    if(!this.org) {
+      return Promise.reject('Org is not defined');
+    }
+
     const script = `
             Map<String, Object> result = new Map<String, Object>();
             List<Map<String, String>> veloceObjectsWithoutRefDebug = new List<Map<String, String>>();
@@ -98,7 +102,7 @@ export default class Fixref extends SfdxCommand {
       process.exit(1)
     }
 
-    let debugInfoObj: { objectsWithEmptyRefId: string[] } = null
+    let debugInfoObj: { objectsWithEmptyRefId: string[] } | null = null
     for (const line of result.logs.split('\n')) {
       if (line.includes('{"objectsWithoutRefColumn":[')) {
         const debugInfoArr = line.split('|')
