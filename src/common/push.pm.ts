@@ -2,7 +2,7 @@ import {readdirSync, readFileSync, writeFileSync} from 'node:fs';
 import {Connection, SfdxError} from '@salesforce/core';
 
 
-async function getPm(conn: Connection, pm: string): Promise<string> {
+async function getPm(conn: Connection, pm: string): Promise<string | null> {
   // deal with folder
   // Check if veloce folder exists:
   const docResult = await conn.query<ProductModel>(`Select Id, Name

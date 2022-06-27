@@ -3,7 +3,7 @@ import {Connection} from '@salesforce/core';
 
 export async function pullPM(sourcepath: string, conn: Connection, dumpAll: boolean, pmsToDump: Set<string>): Promise<ProductModel[]> {
   // and LAST ONE ProductModel handlings
-  let pmQuery: string
+  let pmQuery = ''
   if (dumpAll) {
     // Dump ALL PM
     pmQuery = 'Select Id,Name,VELOCPQ__ContentId__c,VELOCPQ__UiDefinitionsId__c,VELOCPQ__Version__c,VELOCPQ__ReferenceId__c from VELOCPQ__ProductModel__c';

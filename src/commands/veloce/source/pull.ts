@@ -69,6 +69,10 @@ export default class Pull extends SfdxCommand {
   }
 
   public async run(): Promise<AnyJson> {
+    if(!this.org) {
+      return Promise.reject('Org is not defined');
+    }
+
     const conn = this.org.getConnection();
     const members = (this.flags.members || '') as string;
     const sourcepath = ((this.flags.sourcepath || 'source') as string).replace(/\/$/, ''); // trim last slash if present

@@ -34,6 +34,10 @@ export default class Start extends SfdxCommand {
   protected static requiresProject = false
 
   public async run(): Promise<AnyJson> {
+    if(!this.org) {
+      return Promise.reject('Org is not defined');
+    }
+
     await this.org.refreshAuth(); // we need a live accessToken for the frontdoor url
     const conn = this.org.getConnection();
     const accessToken = conn.accessToken;

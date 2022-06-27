@@ -14,7 +14,7 @@ export async function pullPml(sourcepath: string, conn: Connection, dumpAll: boo
   const pmlPmsToDump = new Set<string>()
 
   // Handling of PML
-  let pmlQuery: string
+  let pmlQuery = ''
   if (dumpAll) {
     // Dump ALL PML
     pmlQuery = 'Select Id,Name,VELOCPQ__ContentId__c from VELOCPQ__ProductModel__c';
