@@ -1,6 +1,6 @@
+export type IdMap = { [key: string]: string }
 
-
-interface CreateResult {
+export interface CreateResult {
   id: string;
   success: boolean;
   errors: string[];

@@ -8,9 +8,9 @@ import * as os from 'os';
 import { flags, SfdxCommand } from '@salesforce/command';
 import {Messages} from '@salesforce/core';
 import { AnyJson } from '@salesforce/ts-types';
-import {pullPml} from "../../../common/pull.pml";
-import {pullUI} from "../../../common/pull.ui";
-import {pullPM} from "../../../common/pull.pm";
+import { pullPml } from '../../../common/pull.pml';
+import { pullUI } from '../../../common/pull.ui';
+import { pullPM } from '../../../common/pull.pm';
 
 // Initialize Messages with the current plugin directory
 Messages.importMessagesDirectory(__dirname);
@@ -50,7 +50,7 @@ export default class Pull extends SfdxCommand {
   // Set this to true if your command requires a project workspace; 'requiresProject' is false by default
   protected static requiresProject = false;
 
-  private static spitMembers(members: string): { pmlsToDump: Set<string>, uisToDump: Set<string> } {
+  private static spitMembers(members: string): { pmlsToDump: Set<string>; uisToDump: Set<string> } {
     const pmlsToDump = new Set<string>()
     const uisToDump = new Set<string>()
     const membersArray = members.split(',')
@@ -61,7 +61,7 @@ export default class Pull extends SfdxCommand {
           pmlsToDump.add(parts[1])
           break
         case 'config-ui':
-          uisToDump.add(parts[1])
+          uisToDump.add(parts[1] + ':' + (parts[2] ?? ''))
           break
       }
     }

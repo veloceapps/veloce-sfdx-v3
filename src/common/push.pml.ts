@@ -1,6 +1,9 @@
 import {readdirSync, readFileSync, writeFileSync} from 'node:fs';
 import {gzipSync} from 'node:zlib';
 import {Connection, SfdxError} from '@salesforce/core';
+import { CreateResult } from '../shared/types/common.types';
+import { Document } from '../shared/types/document.types';
+import { Folder } from '../shared/types/folder.types';
 
 interface PmlReturn {
   pmlRecords: string[];

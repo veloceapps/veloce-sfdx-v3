@@ -1,5 +1,5 @@
 
-interface Folder {
+export interface Folder {
   Id: string;
   Name: string;
   DeveloperName: string;
