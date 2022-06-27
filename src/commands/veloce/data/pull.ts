@@ -44,6 +44,10 @@ export default class Pull extends SfdxCommand {
   protected static requiresProject = false;
 
   public async run(): Promise<AnyJson> {
+    if(!this.org) {
+      return Promise.reject('Org is not defined');
+    }
+
     const name = (this.flags.name || 'world') as string;
 
     // this.org is guaranteed because requiresUsername=true, as opposed to supportsUsername
