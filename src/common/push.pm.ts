@@ -21,7 +21,7 @@ async function uploadPM(sourcepath: string, conn: Connection, pmName: string): P
   if (pmId === null) {
     // inserting new product model from meta
     delete meta['Id']
-    await conn.sobject<ProductModel>('VELOCPQ__ProductModel__c').create(meta, {},
+    await conn.sobject<{ [key: string]: string; }>('VELOCPQ__ProductModel__c').create(meta, {},
       (err, ret) => {
         if (err || !ret.success) {
           throw new SfdxError(`Failed to insert Product Model ${pmName}, error: ${err ? err.toString(): 'no-error'}`)
@@ -32,7 +32,7 @@ async function uploadPM(sourcepath: string, conn: Connection, pmName: string): P
       })
   } else {
     // updating existing product model from meta
-    await conn.sobject<ProductModel>('VELOCPQ__ProductModel__c').update(meta,
+    await conn.sobject<{ [key: string]: string; }>('VELOCPQ__ProductModel__c').update(meta,
       (err, ret) => {
         if (err || !ret.success) {
           throw new SfdxError(`Failed to update Product Model ${pmName}, error: ${err ? err.toString(): 'no-error'}`)
