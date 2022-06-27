@@ -19,7 +19,12 @@ export async function pullPml(sourcepath: string, conn: Connection, dumpAll: boo
     // Dump ALL PML
     pmlQuery = 'Select Id,Name,VELOCPQ__ContentId__c from VELOCPQ__ProductModel__c';
     console.log('Dumping All PMLs')
-  } else if (pmlsToDump.size > 0) {
+  } else if (pmlsToDump.size == 0) {
+    return {
+      pmlRecords: [],
+      pmlPmsToDump
+    }
+  } else {
     // Dump some members only
     pmlQuery = `Select Id, Name, VELOCPQ__ContentId__c
                 from VELOCPQ__ProductModel__c
