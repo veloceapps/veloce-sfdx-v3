@@ -3,7 +3,7 @@ import { ProductModel } from '../shared/types/productModel.types';
 import { writeFileSafe } from '../shared/utils/common.utils';
 import { fetchProductModels } from '../shared/utils/productModel.utils';
 
-export async function pullPM(sourcepath: string, conn: Connection, dumpAll: boolean, pmsToDump: Set<string>): Promise<ProductModel[]> {
+export async function pullPM(sourcepath: string, conn: Connection, dumpAll: boolean, pmsToDump: Set<string>): Promise<string[]> {
   const productModels: ProductModel[] = await fetchProductModels(conn, dumpAll, Array.from(pmsToDump));
 
   productModels.forEach(({
@@ -22,5 +22,5 @@ export async function pullPM(sourcepath: string, conn: Connection, dumpAll: bool
     writeFileSafe(dir, `${Name}.json`, productModelJson, {flag: 'w+'});
   });
 
-  return productModels;
+  return productModels.map(({Id}) => Id);
 }
