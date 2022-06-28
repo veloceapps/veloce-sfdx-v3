@@ -19,7 +19,16 @@ interface UiReturn {
   uiPmsToDump: Set<string>;
 }
 
-export async function pullUI(sourcepath: string, conn: Connection, dumpAll: boolean, uisToDump: Set<string>): Promise<UiReturn> {
+export interface PullUIParams {
+  sourcepath: string;
+  conn: Connection;
+  dumpAll: boolean;
+  uisToDump: Set<string>;
+}
+
+export async function pullUI(params: PullUIParams): Promise<UiReturn> {
+  const { sourcepath, conn, dumpAll, uisToDump } = params;
+
   const modelNames = dumpAll ? undefined : Array.from(uisToDump).map(ui => ui.split(':')[0]);
   const uiDefProductModels: ProductModel[] = await fetchProductModels(conn, dumpAll, modelNames);
   const uiDefNamesMap = Array.from(uisToDump).reduce((acc, ui) => {

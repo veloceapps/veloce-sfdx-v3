@@ -76,20 +76,21 @@ export default class Push extends SfdxCommand {
 
     const conn = this.org.getConnection();
     const members = (this.flags.members || '') as string;
+    const pushAll = members === '';
     const sourcepath = ((this.flags.sourcepath || 'source') as string).replace(/\/$/, ''); // trim last slash if present
 
     const {pmlsToUpload, uisToUpload} = Push.splitMembers(members)
     const pmsToUpload = new Set<string>() // PM entities to uplaod
 
-    const {pmlPmsToUpload, pmlRecords} = await pushPml(sourcepath, conn, members === '', pmlsToUpload)
+    const {pmlPmsToUpload, pmlRecords} = await pushPml({sourcepath, conn, pushAll, pmlsToUpload})
     // each uploaded pml record adds pm record to set of to be uploaded
     pmlPmsToUpload.forEach(item => pmsToUpload.add(item))
 
-    const {uiPmsToUpload, uiRecords} = await pushUI(sourcepath, conn, members === '', uisToUpload)
+    const {uiPmsToUpload, uiRecords} = await pushUI({sourcepath, conn, pushAll, uisToUpload})
     // each uploaded pml record adds pm record to set of to be uploaded
     uiPmsToUpload.forEach(item => pmsToUpload.add(item))
 
-    const pmRecords = await pushPM(sourcepath, conn, members === '', pmsToUpload)
+    const pmRecords = await pushPM({sourcepath, conn, pushAll, pmsToUpload})
 
     // Return an object to be displayed with --json
     return {'pml': pmlRecords, 'ui': uiRecords, 'pm': pmRecords};
