@@ -51,24 +51,28 @@ export default class Org extends SfdxCommand {
     const authorization = Buffer.from(JSON.stringify(params)).toString('base64')
     const headers = {
       'dev-token': debugSession.token,
-      'Authorization': authorization,
-      'Content-Type': 'application/json'
+      'Authorization': authorization
     }
     const backendUrl: string | undefined = debugSession.backendUrl
 
     this.ux.log('Following the backend logs...')
 
-    // eslint-disable-next-line no-constant-condition
-    while (true) {
-      try {
-        const response = await axios.get(`${backendUrl}/services/dev-override/logs`, {headers});
-        if (response.data !== '') {
-          this.ux.log(response.data)
-        }
-      } catch (e: any) {
-        this.ux.log(`Failed to get logs: ${e as string}`)
+    await new Promise(() => void this.callToGetLogs(backendUrl, headers));
+
+    return {}
+  }
+
+  private async callToGetLogs(backendUrl: string | undefined,
+                              headers: { Authorization: string; 'dev-token': any }): Promise<void> {
+    try {
+      const response = await axios.get(`${backendUrl}/services/dev-override/logs`, {headers});
+      if (response.data !== '') {
+        this.ux.log(response.data)
       }
-      await new Promise(resolve => setTimeout(resolve, 1000));
+    } catch (e) {
+      this.ux.log(`Failed to get logs: ${e as string}`)
+    } finally {
+      setTimeout(() => void this.callToGetLogs(backendUrl, headers), 1000);
     }
   }
 }
