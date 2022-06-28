@@ -31,8 +31,10 @@ export async function pullUI(params: PullUIParams): Promise<UiReturn> {
 
   const modelNames = dumpAll ? undefined : Array.from(uisToDump).map(ui => ui.split(':')[0]);
 
-  console.log(`Dumping ${dumpAll ? 'All Product Models' : 'Uis with names: ' + (modelNames?.join() ?? '')}`);
+  console.log(`Dumping ${dumpAll ? 'All Uis' : 'Uis with names: ' + (modelNames?.join() ?? '')}`);
   const uiDefProductModels: ProductModel[] = await fetchProductModels(conn, dumpAll, modelNames);
+  console.log(`Dumping Uis result count: ${uiDefProductModels.length}`);
+
   const uiDefNamesMap = Array.from(uisToDump).reduce((acc, ui) => {
     const [modelName, defName] = ui.split(':');
     acc[modelName] = defName;

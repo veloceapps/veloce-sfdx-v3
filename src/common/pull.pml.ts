@@ -19,8 +19,10 @@ export interface PullPmlParams {
 export async function pullPml(params: PullPmlParams): Promise<PmlReturn> {
   const { sourcepath, conn, dumpAll, pmlsToDump } = params;
 
-  console.log(`Dumping ${dumpAll ? 'All Product Models' : 'Pmls with names: ' + (Array.from(pmlsToDump)?.join() ?? '')}`);
+  console.log(`Dumping ${dumpAll ? 'All Pmls' : 'Pmls with names: ' + (Array.from(pmlsToDump)?.join() ?? '')}`);
   const pmlProductModels: ProductModel[] = await fetchProductModels(conn, dumpAll, Array.from(pmlsToDump));
+  console.log(`Dumping Pmls result count: ${pmlProductModels.length}`);
+
   const pmlPmsToDump = new Set<string>();
 
   const contents: [ProductModel, string|undefined][] = await Promise.all(pmlProductModels.map(productModel => Promise.all([

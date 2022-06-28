@@ -1,8 +1,5 @@
 import { Connection } from '@salesforce/core';
-import { readIdMap } from '../shared/utils/common.utils';
-import { IdMap } from '../shared/types/common.types';
 import { UiDefinitionsBuilder } from '../shared/utils/ui.utils';
-import { OutputFlags } from '@oclif/parser';
 import { gzipSync } from 'node:zlib';
 import { createDocument, fetchDocument, updateDocument } from '../shared/utils/document.utils';
 import { createFolder, fetchFolder } from '../shared/utils/folder.utils';
@@ -22,40 +19,40 @@ export interface PushUIParams {
   uisToUpload: Set<string>;
 }
 
+const FOLDER_NAME = 'velo_product_models';
+
 // sfdx veloce:packui -n AM_TelcoModel -i ./models -o output.json -I .
 // sfdx veloce:loaddoc -u studio-dev -i 01556000001AnWOAA0 -F velo_product_models -n CPQ_UiDefinitions -f /Users/amankevics/Documents/work_tmp/ui.json -I /Users/amankevics/Documents/work_tmp/idmap.json
 export async function pushUI(params: PushUIParams): Promise<UiReturn> {
-  const { sourcepath, conn, pushAll, uisToUpload } = params;
-
-  Array.from(uisToUpload);
+  const {sourcepath, conn, pushAll, uisToUpload} = params;
 
   const modelNames: string[] = Array.from(uisToUpload);
   console.log(`Dumping ${pushAll ? 'All Uis' : 'Uis with names: ' + modelNames.join()}`);
   const productModels: ProductModel[] = await fetchProductModels(conn, pushAll, modelNames);
-
-  // todo get documentId and by modelname
-  const documentName: string = this.flags.name;
-
-  const uiBuilder = new UiDefinitionsBuilder(sourcepath, documentName);
-  const uiDefinitions = uiBuilder.pack();
-  const output = JSON.stringify(uiDefinitions, null, 2);
-  const gzipped = gzipSync(output);
-  // Encode to base64 TWICE!, first time is requirement of POST/PATCH, and it will be decoded on reads automatically by SF.
-  const b64Data = Buffer.from(gzipped.toString('base64')).toString('base64');
+  console.log(`Dumping Uis result count: ${productModels.length}`);
 
   // Check if veloce folder exists:
-  let folderId = (await fetchFolder(this.conn, 'velo_product_models'))?.Id;
+  let folderId = (await fetchFolder(conn, FOLDER_NAME))?.Id;
   if (!folderId) {
-    folderId = (await createFolder(this.conn, 'velo_product_models'))?.id;
+    folderId = (await createFolder(conn, FOLDER_NAME))?.id;
   }
 
-  const documentBody: DocumentBody = { folderId, body: b64Data, name: documentName };
-  let documentId = (await fetchDocument(this.conn, documentName))?.Id;
-  if (!documentId) {
-    await createDocument(this.conn, documentBody);
-  } else {
-    await updateDocument(this.conn, documentId, documentBody);
-  }
+  await Promise.all(productModels.map(({VELOCPQ__UiDefinitionsId__c, Name}) => {
+
+    // pack all Ui Definitions
+    const uiBuilder = new UiDefinitionsBuilder(sourcepath, Name);
+    const uiDefinitions = uiBuilder.pack();
+    const output = JSON.stringify(uiDefinitions, null, 2);
+    const gzipped = gzipSync(output);
+    // Encode to base64 TWICE!, first time is requirement of POST/PATCH, and it will be decoded on reads automatically by SF.
+    const b64Data = Buffer.from(gzipped.toString('base64')).toString('base64');
+
+    const documentBody: DocumentBody = { folderId, body: b64Data, name: Name };
+
+    return fetchDocument(conn, VELOCPQ__UiDefinitionsId__c).then(document => document?.Id
+      ? updateDocument(conn, document.Id, documentBody)
+      : createDocument(conn, documentBody));
+  }));
 
   // Return an object to be displayed with --json
   return {

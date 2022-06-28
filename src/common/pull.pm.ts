@@ -15,6 +15,8 @@ export async function pullPM(params: PullPMParams): Promise<string[]> {
 
   console.log(`Dumping ${dumpAll ? 'All Product Models' : 'Product Models with names: ' + (Array.from(pmsToDump)?.join() ?? '')}`);
   const productModels: ProductModel[] = await fetchProductModels(conn, dumpAll, Array.from(pmsToDump));
+  console.log(`Dumping Product Models result count: ${productModels.length}`);
+
   productModels.forEach(({
                            Id,
                            Name,

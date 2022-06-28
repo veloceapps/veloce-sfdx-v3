@@ -8,7 +8,5 @@ export async function fetchProductModels(conn: Connection, dumpAll: boolean, mod
   }
 
   const result = await conn.query<ProductModel>(query);
-  console.log(`Fetch Product Models result count: ${result?.totalSize}`);
-
   return result?.records ?? [];
 }
