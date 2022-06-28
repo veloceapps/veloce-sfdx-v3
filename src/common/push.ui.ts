@@ -21,8 +21,6 @@ export interface PushUIParams {
 
 const FOLDER_NAME = 'velo_product_models';
 
-// sfdx veloce:packui -n AM_TelcoModel -i ./models -o output.json -I .
-// sfdx veloce:loaddoc -u studio-dev -i 01556000001AnWOAA0 -F velo_product_models -n CPQ_UiDefinitions -f /Users/amankevics/Documents/work_tmp/ui.json -I /Users/amankevics/Documents/work_tmp/idmap.json
 export async function pushUI(params: PushUIParams): Promise<UiReturn> {
   const {sourcepath, conn, pushAll, uisToUpload} = params;
 
