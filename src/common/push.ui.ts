@@ -35,7 +35,7 @@ export async function pushUI(params: PushUIParams): Promise<UiReturn> {
     folderId = (await createFolder(conn, FOLDER_NAME))?.id;
   }
 
-  await Promise.all(productModels.map(({VELOCPQ__UiDefinitionsId__c, Name}) => {
+  const result: {modelName: string; documentId: string}[] = await Promise.all(productModels.map(({VELOCPQ__UiDefinitionsId__c, Name}) => {
 
     // pack all Ui Definitions
     const uiBuilder = new UiDefinitionsBuilder(sourcepath, Name);
@@ -48,13 +48,13 @@ export async function pushUI(params: PushUIParams): Promise<UiReturn> {
     const documentBody: DocumentBody = { folderId: folderId as string, body: b64Data, name: Name };
 
     return fetchDocument(conn, VELOCPQ__UiDefinitionsId__c).then(document => document?.Id
-      ? updateDocument(conn, document.Id, documentBody)
-      : createDocument(conn, documentBody));
+      ? updateDocument(conn, document.Id, documentBody).then(() => ({modelName: Name, documentId: document.Id}))
+      : createDocument(conn, documentBody).then((res) => ({modelName: Name, documentId: res.id})));
   }));
 
   // Return an object to be displayed with --json
   return {
-    uiRecords: [],
-    uiPmsToUpload: new Set<string>()
+    uiRecords: result.map(({documentId}) => documentId),
+    uiPmsToUpload: new Set(result.map(({modelName}) => modelName))
   }
 }

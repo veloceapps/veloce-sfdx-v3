@@ -13,9 +13,9 @@ export interface PullPMParams {
 export async function pullPM(params: PullPMParams): Promise<string[]> {
   const { sourcepath, conn, dumpAll, pmsToDump } = params;
 
-  console.log(`Dumping ${dumpAll ? 'All Product Models' : 'Product Models with names: ' + (Array.from(pmsToDump)?.join() ?? '')}`);
+  console.log(`Dumping ${dumpAll ? 'All PMs' : 'PMs with names: ' + (Array.from(pmsToDump)?.join() ?? '')}`);
   const productModels: ProductModel[] = await fetchProductModels(conn, dumpAll, Array.from(pmsToDump));
-  console.log(`Dumping Product Models result count: ${productModels.length}`);
+  console.log(`Dumping PMs result count: ${productModels.length}`);
 
   productModels.forEach(({
                            Id,
