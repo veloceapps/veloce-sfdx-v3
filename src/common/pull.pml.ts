@@ -28,8 +28,7 @@ export async function pullPml(params: PullPmlParams): Promise<PmlReturn> {
   ])));
 
   contents.forEach(([{Name}, content]) => {
-    const dir = `${sourcepath}/${Name}`;
-    writeFileSafe(dir, `${Name}.pml`, content ?? '', {flag: 'w+'});
+    writeFileSafe(sourcepath, `${Name}.pml`, content ?? '', {flag: 'w+'});
 
     // mark full PM dump as a dependancy (metadata)
     pmlPmsToDump.add(Name);
