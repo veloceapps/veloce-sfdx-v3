@@ -1,0 +1,7 @@
+{
+  "commandDescription": "Stops debug session",
+  "targetFlagDescription": "Alias of existing org",
+  "examples": [
+    "sfdx veloce:debug:stop --targetusername myOrg@example.com --targetdevhubusername devhub@org.com"
+  ]
+}

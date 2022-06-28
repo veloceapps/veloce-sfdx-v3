@@ -59,7 +59,7 @@ function findAllPMLs(sourcepath: string): Set<string> {
   return result
 }
 
-async function uploadPML(sourcepath: string, conn: Connection, pmlName: string, pmToUpload: Set<string>): Promise<void> {
+async function uploadPML(sourcepath: string, conn: Connection, pmlName: string, pmToUpload: Set<string>): Promise<string> {
   const pml = readFileSync(`${sourcepath}/${pmlName}.pml`)
   const gzipped = gzipSync(pml)
   // Encode to base64 TWICE!, first time is requirement of POST/PATCH, and it will be decoded on reads automatically by SF.
@@ -81,6 +81,7 @@ async function uploadPML(sourcepath: string, conn: Connection, pmlName: string, 
       body: JSON.stringify(data),
       method: 'PATCH'
     }); // patch has no response for some reason
+    return meta['VELOCPQ__ContentId__c']
   } else {
     // upload new document and link it to ProductModel
     console.log(`Create new PML document(${pmlName})`)
@@ -105,10 +106,20 @@ async function uploadPML(sourcepath: string, conn: Connection, pmlName: string, 
       JSON.stringify(meta, null, '  '), {flag: 'w+'})
     // mark ProductModel as pending upload
     pmToUpload.add(pmlName)
+    return meta['VELOCPQ__ContentId__c']
   }
 }
 
-export async function pushPml(sourcepath: string, conn: Connection, pushAll: boolean, pmlsToUpload: Set<string>): Promise<PmlReturn> {
+export interface PushPmlParams {
+  sourcepath: string;
+  conn: Connection;
+  pushAll: boolean;
+  pmlsToUpload: Set<string>;
+}
+
+export async function pushPml(params: PushPmlParams): Promise<PmlReturn> {
+  const { sourcepath, conn, pushAll, pmlsToUpload } = params;
+
   const retIDs = []
   let pmsToUpload = new Set<string>()
   if (pushAll) {

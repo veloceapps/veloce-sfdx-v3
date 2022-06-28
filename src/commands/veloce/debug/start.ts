@@ -13,9 +13,9 @@ Messages.importMessagesDirectory(__dirname)
 
 // Load the specific messages for this file. Messages from @salesforce/command, @salesforce/core,
 // or any library that is using the messages framework can also be loaded this way.
-const messages = Messages.loadMessages('veloce-sfdx-v3', 'debug')
+const messages = Messages.loadMessages('veloce-sfdx-v3', 'debug-start')
 
-export default class Debug extends SfdxCommand {
+export default class Start extends SfdxCommand {
 
   public static description = messages.getMessage('commandDescription')
 
@@ -34,6 +34,10 @@ export default class Debug extends SfdxCommand {
   protected static requiresProject = false
 
   public async run(): Promise<AnyJson> {
+    if(!this.org) {
+      return Promise.reject('Org is not defined');
+    }
+
     await this.org.refreshAuth(); // we need a live accessToken for the frontdoor url
     const conn = this.org.getConnection();
     const accessToken = conn.accessToken;

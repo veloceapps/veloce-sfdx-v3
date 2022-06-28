@@ -1,0 +1,7 @@
+{
+  "commandDescription": "Watches filesystem for changes and automatically propagates them to backend",
+  "targetFlagDescription": "Alias of existing org",
+  "examples": [
+    "sfdx veloce:debug:watch --targetusername myOrg@example.com --targetdevhubusername devhub@org.com"
+  ]
+}

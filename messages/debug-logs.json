@@ -1,0 +1,7 @@
+{
+  "commandDescription": "Streams logs out of debug session to console",
+  "targetFlagDescription": "Alias of existing org",
+  "examples": [
+    "sfdx veloce:debug:logs --targetusername myOrg@example.com --targetdevhubusername devhub@org.com"
+  ]
+}

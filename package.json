@@ -1,21 +1,21 @@
 {
   "name": "veloce-sfdx-v3",
   "description": "Extension to sfdx which allows veloce specific data pull and push",
-  "version": "0.0.4",
+  "version": "0.0.5",
   "author": "veloceapps",
   "bugs": "https://github.com/veloceapps/veloce-sfdx-v3/issues",
   "dependencies": {
     "@oclif/command": "^1",
     "@oclif/config": "^1",
     "@oclif/errors": "^1",
+    "@salesforce/apex-node": "^0.11.0",
     "@salesforce/command": "^4",
     "@salesforce/core": "^2",
-    "tslib": "^2",
-    "uuid": "^8.3.2",
+    "axios": "^0.27.1",
     "open": "^8.2.1",
     "ts-replace-all": "^1.0.0",
-    "axios": "^0.27.1",
-    "@salesforce/apex-node": "^0.11.0"
+    "tslib": "^2",
+    "uuid": "^8.3.2"
   },
   "devDependencies": {
     "@oclif/dev-cli": "^1",
@@ -28,6 +28,7 @@
     "@types/chai": "^4",
     "@types/jsforce": "^1.9.29",
     "@types/mocha": "^8",
+    "@types/uuid": "^8.3.4",
     "@typescript-eslint/eslint-plugin": "^4",
     "@typescript-eslint/parser": "^4",
     "chai": "^4",

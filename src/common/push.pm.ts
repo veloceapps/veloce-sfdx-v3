@@ -2,7 +2,7 @@ import {readdirSync, readFileSync, writeFileSync} from 'node:fs';
 import {Connection, SfdxError} from '@salesforce/core';
 import { ProductModel } from '../shared/types/productModel.types';
 
-async function getPm(conn: Connection, pm: string): Promise<string> {
+async function getPm(conn: Connection, pm: string): Promise<string | null> {
   // deal with folder
   // Check if veloce folder exists:
   const docResult = await conn.query<ProductModel>(`Select Id, Name
@@ -21,7 +21,7 @@ async function uploadPM(sourcepath: string, conn: Connection, pmName: string): P
   if (pmId === null) {
     // inserting new product model from meta
     delete meta['Id']
-    await conn.sobject<ProductModel>('VELOCPQ__ProductModel__c').create(meta, {},
+    await conn.sobject<{ [key: string]: string }>('VELOCPQ__ProductModel__c').create(meta, {},
       (err, ret) => {
         if (err || !ret.success) {
           throw new SfdxError(`Failed to insert Product Model ${pmName}, error: ${err ? err.toString(): 'no-error'}`)
@@ -32,7 +32,7 @@ async function uploadPM(sourcepath: string, conn: Connection, pmName: string): P
       })
   } else {
     // updating existing product model from meta
-    await conn.sobject<ProductModel>('VELOCPQ__ProductModel__c').update(meta,
+    await conn.sobject<{ [key: string]: string }>('VELOCPQ__ProductModel__c').update(meta,
       (err, ret) => {
         if (err || !ret.success) {
           throw new SfdxError(`Failed to update Product Model ${pmName}, error: ${err ? err.toString(): 'no-error'}`)
@@ -57,7 +57,17 @@ function findAllPMs(sourcepath: string): Set<string> {
   return result
 }
 
-export async function pushPM(sourcepath: string, conn: Connection, pushAll: boolean, pmsToUpload: Set<string>): Promise<string[]> {
+export interface PushPMParams {
+  sourcepath: string;
+  conn: Connection;
+  pushAll: boolean;
+  pmsToUpload: Set<string>;
+}
+
+export async function pushPM(params: PushPMParams): Promise<string[]> {
+  const { sourcepath, conn, pushAll } = params;
+  let { pmsToUpload } = params;
+
   const pmIDs: string[] = []
   if (pushAll) {
     console.log('Pushing All PMs')

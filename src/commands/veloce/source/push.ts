@@ -9,7 +9,7 @@ import {flags, SfdxCommand} from '@salesforce/command';
 import {Messages} from '@salesforce/core';
 import {AnyJson} from '@salesforce/ts-types';
 import {pushPml} from '../../../common/push.pml';
-import { pushUI, SfdxCommandV } from '../../../common/push.ui';
+import {pushUI} from '../../../common/push.ui';
 import {pushPM} from '../../../common/push.pm';
 
 // Initialize Messages with the current plugin directory
@@ -71,22 +71,27 @@ export default class Push extends SfdxCommand {
   }
 
   public async run(): Promise<AnyJson> {
+    if(!this.org) {
+      return Promise.reject('Org is not defined');
+    }
+
     const conn = this.org.getConnection();
     const members = (this.flags.members || '') as string;
+    const pushAll = members === '';
     const sourcepath = ((this.flags.sourcepath || 'source') as string).replace(/\/$/, ''); // trim last slash if present
 
     const {pmlsToUpload, uisToUpload} = Push.splitMembers(members)
     const pmsToUpload = new Set<string>() // PM entities to uplaod
 
-    const {pmlPmsToUpload, pmlRecords} = await pushPml(sourcepath, conn, members === '', pmlsToUpload)
+    const {pmlPmsToUpload, pmlRecords} = await pushPml({sourcepath, conn, pushAll, pmlsToUpload})
     // each uploaded pml record adds pm record to set of to be uploaded
     pmlPmsToUpload.forEach(item => pmsToUpload.add(item))
 
-    const {uiPmsToUpload, uiRecords} = await pushUI(this as SfdxCommandV)(sourcepath, conn, members === '', uisToUpload)
+    const {uiPmsToUpload, uiRecords} = await pushUI({sourcepath, conn, pushAll, uisToUpload})
     // each uploaded pml record adds pm record to set of to be uploaded
     uiPmsToUpload.forEach(item => pmsToUpload.add(item))
 
-    const pmRecords = await pushPM(sourcepath, conn, members === '', pmsToUpload)
+    const pmRecords = await pushPM({sourcepath, conn, pushAll, pmsToUpload})
 
     // Return an object to be displayed with --json
     return {'pml': pmlRecords, 'ui': uiRecords, 'pm': pmRecords};
