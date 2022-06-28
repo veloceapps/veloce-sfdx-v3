@@ -1,5 +1,5 @@
-import { Connection } from '@salesforce/core';
 import { gzipSync } from 'node:zlib';
+import { Connection } from '@salesforce/core';
 import { UiDefinitionsBuilder } from '../shared/utils/ui.utils';
 import { createDocument, fetchDocument, updateDocument } from '../shared/utils/document.utils';
 import { createFolder, fetchFolder } from '../shared/utils/folder.utils';
