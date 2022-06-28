@@ -110,7 +110,16 @@ async function uploadPML(sourcepath: string, conn: Connection, pmlName: string, 
   }
 }
 
-export async function pushPml(sourcepath: string, conn: Connection, pushAll: boolean, pmlsToUpload: Set<string>): Promise<PmlReturn> {
+export interface PushPmlParams {
+  sourcepath: string;
+  conn: Connection;
+  pushAll: boolean;
+  pmlsToUpload: Set<string>;
+}
+
+export async function pushPml(params: PushPmlParams): Promise<PmlReturn> {
+  const { sourcepath, conn, pushAll, pmlsToUpload } = params;
+
   const retIDs = []
   let pmsToUpload = new Set<string>()
   if (pushAll) {

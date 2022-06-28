@@ -3,9 +3,17 @@ import { ProductModel } from '../shared/types/productModel.types';
 import { writeFileSafe } from '../shared/utils/common.utils';
 import { fetchProductModels } from '../shared/utils/productModel.utils';
 
-export async function pullPM(sourcepath: string, conn: Connection, dumpAll: boolean, pmsToDump: Set<string>): Promise<string[]> {
-  const productModels: ProductModel[] = await fetchProductModels(conn, dumpAll, Array.from(pmsToDump));
+export interface PullPMParams {
+  sourcepath: string;
+  conn: Connection;
+  dumpAll: boolean;
+  pmsToDump: Set<string>;
+}
 
+export async function pullPM(params: PullPMParams): Promise<string[]> {
+  const { sourcepath, conn, dumpAll, pmsToDump } = params;
+
+  const productModels: ProductModel[] = await fetchProductModels(conn, dumpAll, Array.from(pmsToDump));
   productModels.forEach(({
                            Id,
                            Name,

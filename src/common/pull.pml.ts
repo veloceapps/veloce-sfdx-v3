@@ -9,7 +9,16 @@ interface PmlReturn {
   pmlPmsToDump: Set<string>;
 }
 
-export async function pullPml(sourcepath: string, conn: Connection, dumpAll: boolean, pmlsToDump: Set<string>): Promise<PmlReturn> {
+export interface PullPmlParams {
+  sourcepath: string;
+  conn: Connection;
+  dumpAll: boolean;
+  pmlsToDump: Set<string>;
+}
+
+export async function pullPml(params: PullPmlParams): Promise<PmlReturn> {
+  const { sourcepath, conn, dumpAll, pmlsToDump } = params;
+
   const pmlProductModels: ProductModel[] = await fetchProductModels(conn, dumpAll, Array.from(pmlsToDump));
   const pmlPmsToDump = new Set<string>();
 

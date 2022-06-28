@@ -75,20 +75,21 @@ export default class Pull extends SfdxCommand {
 
     const conn = this.org.getConnection();
     const members = (this.flags.members || '') as string;
+    const dumpAll = members === '';
     const sourcepath = ((this.flags.sourcepath || 'source') as string).replace(/\/$/, ''); // trim last slash if present
 
     const {pmlsToDump, uisToDump} = Pull.spitMembers(members)
     const pmsToDump = new Set<string>()
 
-    const {pmlRecords, pmlPmsToDump} = await pullPml(sourcepath, conn, members === '', pmlsToDump)
+    const {pmlRecords, pmlPmsToDump} = await pullPml({sourcepath, conn, dumpAll, pmlsToDump})
     // each dumped pml record adds pm record to set of to be dumped
     pmlPmsToDump.forEach(item => pmsToDump.add(item))
 
-    const {uiRecords, uiPmsToDump} = await pullUI(sourcepath, conn, members === '', uisToDump)
+    const {uiRecords, uiPmsToDump} = await pullUI({sourcepath, conn, dumpAll, uisToDump})
     // each dumped ui record adds pm record to set of to be dumped
     uiPmsToDump.forEach(item => pmsToDump.add(item))
 
-    const pmRecords = await pullPM(sourcepath, conn, members === '', pmsToDump)
+    const pmRecords = await pullPM({sourcepath, conn, dumpAll, pmsToDump})
 
     // Return an object to be displayed with --json
     return { 'pml': pmlRecords, 'config-ui': uiRecords, 'pm': pmRecords };

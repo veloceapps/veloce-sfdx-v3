@@ -57,7 +57,17 @@ function findAllPMs(sourcepath: string): Set<string> {
   return result
 }
 
-export async function pushPM(sourcepath: string, conn: Connection, pushAll: boolean, pmsToUpload: Set<string>): Promise<string[]> {
+export interface PushPMParams {
+  sourcepath: string;
+  conn: Connection;
+  pushAll: boolean;
+  pmsToUpload: Set<string>;
+}
+
+export async function pushPM(params: PushPMParams): Promise<string[]> {
+  const { sourcepath, conn, pushAll } = params;
+  let { pmsToUpload } = params;
+
   const pmIDs: string[] = []
   if (pushAll) {
     console.log('Pushing All PMs')
