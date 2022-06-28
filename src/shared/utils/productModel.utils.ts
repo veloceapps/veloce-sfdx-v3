@@ -7,7 +7,6 @@ export async function fetchProductModels(conn: Connection, dumpAll: boolean, mod
     query += ` WHERE Name IN ('${modelNames?.join("','")}')`;
   }
 
-  console.log(`Dumping ${dumpAll ? 'All Product Models' : 'Product Models with names: ' + (modelNames?.join() ?? '')}`);
   const result = await conn.query<ProductModel>(query);
   console.log(`Fetch Product Models result count: ${result?.totalSize}`);
 

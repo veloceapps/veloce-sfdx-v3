@@ -13,6 +13,7 @@ export interface PullPMParams {
 export async function pullPM(params: PullPMParams): Promise<string[]> {
   const { sourcepath, conn, dumpAll, pmsToDump } = params;
 
+  console.log(`Dumping ${dumpAll ? 'All Product Models' : 'Product Models with names: ' + (Array.from(pmsToDump)?.join() ?? '')}`);
   const productModels: ProductModel[] = await fetchProductModels(conn, dumpAll, Array.from(pmsToDump));
   productModels.forEach(({
                            Id,
