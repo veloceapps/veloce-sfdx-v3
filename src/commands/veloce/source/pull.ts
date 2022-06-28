@@ -91,6 +91,6 @@ export default class Pull extends SfdxCommand {
     const pmRecords = await pullPM(sourcepath, conn, members === '', pmsToDump)
 
     // Return an object to be displayed with --json
-    return { 'pml': pmlRecords, 'config-ui': uiRecords, 'pm': pmRecords }
+    return { 'pml': pmlRecords, 'config-ui': uiRecords, 'pm': pmRecords };
   }
 }

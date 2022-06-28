@@ -15,21 +15,21 @@ import { fetchProductModels } from '../shared/utils/productModel.utils';
 import { fetchDocumentAttachment } from '../shared/utils/document.utils';
 
 interface UiReturn {
-  uiRecords: ProductModel[];
+  uiRecords: string[];
   uiPmsToDump: Set<string>;
 }
 
 export async function pullUI(sourcepath: string, conn: Connection, dumpAll: boolean, uisToDump: Set<string>): Promise<UiReturn> {
   const modelNames = dumpAll ? undefined : Array.from(uisToDump).map(ui => ui.split(':')[0]);
   const uiDefProductModels: ProductModel[] = await fetchProductModels(conn, dumpAll, modelNames);
-  const uiDefNamesMap: { [modelName: string]: string } = Array.from(uisToDump).reduce((acc, ui) => {
+  const uiDefNamesMap = Array.from(uisToDump).reduce((acc, ui) => {
     const [modelName, defName] = ui.split(':');
     acc[modelName] = defName;
     return acc;
-  }, {});
+  }, {} as { [modelName: string]: string });
   const uiPmsToDump = new Set<string>();
 
-  const contents: [ProductModel, string][] = await Promise.all(uiDefProductModels.map(productModel => Promise.all([
+  const contents: [ProductModel, string|undefined][] = await Promise.all(uiDefProductModels.map(productModel => Promise.all([
     Promise.resolve(productModel),
     fetchDocumentAttachment(conn, productModel.VELOCPQ__UiDefinitionsId__c)
   ])));
@@ -37,7 +37,7 @@ export async function pullUI(sourcepath: string, conn: Connection, dumpAll: bool
   contents.forEach(([{Name}, content]) => {
     let uiDefs: UiDef[] = [];
     try {
-      uiDefs = JSON.parse(content) as UiDef[];
+      uiDefs = JSON.parse(content ?? '') as UiDef[];
     } catch (err) {
       console.log(`Failed to parse document content: ${Name}`);
       return;
@@ -72,7 +72,7 @@ export async function pullUI(sourcepath: string, conn: Connection, dumpAll: bool
   })
 
   return {
-    uiRecords: uiDefProductModels,
+    uiRecords: uiDefProductModels.map(({Id}) => Id),
     uiPmsToDump
   }
 }
