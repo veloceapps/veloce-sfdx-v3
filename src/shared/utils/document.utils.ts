@@ -15,14 +15,14 @@ export async function fetchDocumentAttachment(conn: Connection, documentId: stri
   return gunzipSync(gzipped).toString();
 }
 
-export async function fetchDocument(conn: Connection, documentName: string): Promise<Document | undefined> {
-  const query = `Select Id, Body, FolderId from Document WHERE Name='${documentName}' Limit 1`;
+export async function fetchDocument(conn: Connection, documentId: string): Promise<Document | undefined> {
+  const query = `Select Id, Body, FolderId from Document WHERE Id='${documentId}'`;
 
   const result = await conn.query<Document>(query);
   const [record] = result?.records ?? [];
 
   if (!record) {
-    console.log(`Document not found: ${documentName}`);
+    console.log(`Document not found: ${documentId}`);
     return;
   }
 

@@ -16,10 +16,6 @@ export const readIdMap = (path: string): IdMap => {
   return idmap;
 }
 
-export const reverseId = (originalId: string, idmap: IdMap): string => {
-  return idmap[originalId] ?? originalId
-}
-
 export const readFileSafe = (path: string, ux?: UX): string => {
   try {
     const raw = readFileSync(path)

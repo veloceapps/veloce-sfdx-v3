@@ -62,6 +62,7 @@ export default class Push extends SfdxCommand {
           pmlsToUpload.add(parts[1])
           break
         case 'config-ui':
+          // Todo support Ui Definition Names: -m config-ui:Cato:Default\ UI
           uisToUpload.add(parts[1])
           break
       }

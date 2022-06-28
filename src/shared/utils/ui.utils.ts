@@ -28,39 +28,11 @@ export const extractElementMetadata = (script: string): UiElementMetadata => {
 }
 
 export class UiDefinitionsBuilder {
-  public constructor(private dir: string, private modelName: string, private idmap?: IdMap) {}
+  public constructor(private dir: string, private modelName: string) {}
 
   public pack(): UiDef[] {
     const dir = `${this.dir}/${this.modelName}`
     return [...this.packUiDefinitions(dir), ...this.packLegacyUiDefinitions(dir)]
-  }
-
-  public normalizePricelist(uiDefs: UiDef[], pricelistId?: string, strict = false): UiDef[] {
-    return uiDefs.map(ui => {
-      const originalId = isLegacyDefinition(ui) ? ui.priceList : ui.properties?.priceList
-
-      if (!originalId) {
-        return ui
-      }
-
-      const id = pricelistId ?? originalId
-      const revertedId = reverseId(id, this.idmap ?? {})
-
-      if (strict && !pricelistId && !revertedId) {
-        throw new SfdxError(
-          `Existing pricelistId: ${originalId} was NOT REPLACED, because no entry in idmap was present`,
-          'PricelistIdNotReplaced'
-        )
-      }
-
-      console.log(`${originalId} => ${revertedId}`)
-
-      if (isLegacyDefinition(ui)) {
-        return { ...ui, priceList: revertedId }
-      } else {
-        return { ...ui, properties: { ...ui.properties, pricelistId: revertedId } }
-      }
-    })
   }
 
   private packUiDefinitions(dir: string): UiDefinition[] {
