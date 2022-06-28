@@ -1,8 +1,6 @@
 import { existsSync, readFileSync } from 'fs'
-import { SfdxError } from '@salesforce/core'
-import { IdMap } from '../types/common.types'
 import { LegacyUiDefinition, UiDef, UiDefinition, UiElement, UiElementMetadata, UiMetadata } from '../types/ui.types'
-import { getDirectoryNames, readFileSafe, reverseId } from './common.utils'
+import { getDirectoryNames, readFileSafe } from './common.utils'
 
 const METADATA_DECORATOR_REGEX = /@ElementDefinition\(([\s\S]+)\)(\n|.)*export class/g
 

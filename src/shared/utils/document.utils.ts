@@ -4,7 +4,7 @@ import { Document, DocumentBody } from '../types/document.types';
 import { CreateResult } from '../types/common.types';
 
 export async function fetchDocumentAttachment(conn: Connection, documentId: string): Promise<string | undefined> {
-  const url: string = (await fetchDocument(conn, documentId))?.Body;
+  const url: string|undefined = (await fetchDocument(conn, documentId))?.Body;
   if (!url) {
     return;
   }
@@ -47,7 +47,7 @@ export async function createDocument(conn: Connection, data: DocumentBody): Prom
   });
 
   if (result.success) {
-    this.ux.log(`New Document ${result.name} created with id ${result.id}`)
+    console.log(`New Document ${result.name} created with id ${result.id}`)
   } else {
     throw new SfdxError(`Failed to create document: ${JSON.stringify(result)}`)
   }

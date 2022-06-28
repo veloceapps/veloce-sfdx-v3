@@ -1,6 +1,6 @@
 import { Connection, SfdxError } from '@salesforce/core';
+import { SuccessResult } from 'jsforce/record-result';
 import { Folder, NewFolder } from '../types/folder.types';
-import { RecordResult } from 'jsforce';
 
 export async function fetchFolder(conn: Connection, foldername: string): Promise<Folder | undefined> {
   const query = `Select Id, Name, Type from Folder WHERE Name = '${foldername}' Limit 1`;
@@ -16,7 +16,7 @@ export async function fetchFolder(conn: Connection, foldername: string): Promise
   return record;
 }
 
-export async function createFolder(conn: Connection, foldername: string): Promise<RecordResult> {
+export async function createFolder(conn: Connection, foldername: string): Promise<SuccessResult> {
   const folder: NewFolder = {
     Name: foldername,
     DeveloperName: foldername,
