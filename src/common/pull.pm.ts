@@ -13,6 +13,7 @@ export interface PullPMParams {
 export async function pullPM(params: PullPMParams): Promise<string[]> {
   const { sourcepath, conn, dumpAll, pmsToDump } = params;
 
+  console.log(`Dumping ${dumpAll ? 'All Product Models' : 'Product Models with names: ' + (Array.from(pmsToDump)?.join() ?? '')}`);
   const productModels: ProductModel[] = await fetchProductModels(conn, dumpAll, Array.from(pmsToDump));
   productModels.forEach(({
                            Id,
@@ -22,12 +23,11 @@ export async function pullPM(params: PullPMParams): Promise<string[]> {
                            VELOCPQ__Version__c,
                            VELOCPQ__UiDefinitionsId__c
                          }) => {
-    const dir = `${sourcepath}/${Name}`;
     const productModelJson = JSON.stringify({
       Id, Name, VELOCPQ__ContentId__c, VELOCPQ__ReferenceId__c, VELOCPQ__Version__c, VELOCPQ__UiDefinitionsId__c
       // TODO: add more
     }, null, '  ');
-    writeFileSafe(dir, `${Name}.json`, productModelJson, {flag: 'w+'});
+    writeFileSafe(sourcepath, `${Name}.json`, productModelJson, {flag: 'w+'});
   });
 
   return productModels.map(({Id}) => Id);

@@ -30,6 +30,8 @@ export async function pullUI(params: PullUIParams): Promise<UiReturn> {
   const { sourcepath, conn, dumpAll, uisToDump } = params;
 
   const modelNames = dumpAll ? undefined : Array.from(uisToDump).map(ui => ui.split(':')[0]);
+
+  console.log(`Dumping ${dumpAll ? 'All Product Models' : 'Uis with names: ' + (modelNames?.join() ?? '')}`);
   const uiDefProductModels: ProductModel[] = await fetchProductModels(conn, dumpAll, modelNames);
   const uiDefNamesMap = Array.from(uisToDump).reduce((acc, ui) => {
     const [modelName, defName] = ui.split(':');

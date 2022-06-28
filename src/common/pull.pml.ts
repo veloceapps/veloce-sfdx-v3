@@ -19,6 +19,7 @@ export interface PullPmlParams {
 export async function pullPml(params: PullPmlParams): Promise<PmlReturn> {
   const { sourcepath, conn, dumpAll, pmlsToDump } = params;
 
+  console.log(`Dumping ${dumpAll ? 'All Product Models' : 'Pmls with names: ' + (Array.from(pmlsToDump)?.join() ?? '')}`);
   const pmlProductModels: ProductModel[] = await fetchProductModels(conn, dumpAll, Array.from(pmlsToDump));
   const pmlPmsToDump = new Set<string>();
 
@@ -28,8 +29,7 @@ export async function pullPml(params: PullPmlParams): Promise<PmlReturn> {
   ])));
 
   contents.forEach(([{Name}, content]) => {
-    const dir = `${sourcepath}/${Name}`;
-    writeFileSafe(dir, `${Name}.pml`, content ?? '', {flag: 'w+'});
+    writeFileSafe(sourcepath, `${Name}.pml`, content ?? '', {flag: 'w+'});
 
     // mark full PM dump as a dependancy (metadata)
     pmlPmsToDump.add(Name);
