@@ -1,8 +1,8 @@
-export type UiDef = UiDefinition | LegacyUiDefinition
+export type UiDef = UiDefinition | LegacyUiDefinition;
 
 export type UiMetadata = Omit<UiDefinition, 'children'> & {
   children: string[];
-}
+};
 
 export interface UiDefinition {
   name: string;

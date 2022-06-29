@@ -1,5 +1,5 @@
 import { promisify } from 'node:util';
-import {exec as plainExec} from 'node:child_process';
+import { exec as plainExec } from 'node:child_process';
 
 // import { writeFileSync } from 'node:fs'
 

@@ -5,13 +5,13 @@
  * For full license text, see LICENSE.txt file in the repo root or https://opensource.org/licenses/BSD-3-Clause
  */
 import * as os from 'os';
-import {flags, SfdxCommand} from '@salesforce/command';
-import {Messages} from '@salesforce/core';
-import {AnyJson} from '@salesforce/ts-types';
-import {pushModel} from '../../../common/push.model';
-import {pushUI} from '../../../common/push.ui';
-import {pushDRL} from '../../../common/push.drl';
-import {splitMembers} from '../../../utils/push';
+import { flags, SfdxCommand } from '@salesforce/command';
+import { Messages } from '@salesforce/core';
+import { AnyJson } from '@salesforce/ts-types';
+import { pushModel } from '../../../common/push.model';
+import { pushUI } from '../../../common/push.ui';
+import { pushDRL } from '../../../common/push.drl';
+import { splitMembers } from '../../../utils/push';
 
 // Initialize Messages with the current plugin directory
 Messages.importMessagesDirectory(__dirname);
@@ -53,7 +53,7 @@ export default class Push extends SfdxCommand {
   protected static requiresProject = false;
 
   public async run(): Promise<AnyJson> {
-    if(!this.org) {
+    if (!this.org) {
       return Promise.reject('Org is not defined');
     }
 
@@ -62,13 +62,13 @@ export default class Push extends SfdxCommand {
     const rootPath = ((this.flags.sourcepath || 'source') as string).replace(/\/$/, ''); // trim last slash if present
 
     const memberMap = splitMembers(members);
-    const drlRecords = await pushDRL({rootPath, conn, member: memberMap['drl']});
+    const drlRecords = await pushDRL({ rootPath, conn, member: memberMap['drl'] });
 
-    const pmlRecords = await pushModel({rootPath, conn, member: memberMap['model']});
+    const pmlRecords = await pushModel({ rootPath, conn, member: memberMap['model'] });
 
-    const uiRecords = await pushUI({rootPath, conn, member: memberMap['config-pml']});
+    const uiRecords = await pushUI({ rootPath, conn, member: memberMap['config-ui'] });
 
     // Return an object to be displayed with --json
-    return {'pml': pmlRecords, 'ui': uiRecords, 'drl': drlRecords};
+    return { pml: pmlRecords, ui: uiRecords, drl: drlRecords };
   }
 }

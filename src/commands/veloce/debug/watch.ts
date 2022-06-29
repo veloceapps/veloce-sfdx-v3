@@ -1,6 +1,6 @@
+import { cwd } from 'process';
 import { existsSync } from 'node:fs';
 import { EOL } from 'node:os';
-import { cwd } from 'process';
 import { flags } from '@salesforce/command';
 import { Messages, SfdxError } from '@salesforce/core';
 import { AnyJson } from '@salesforce/ts-types';

@@ -1,4 +1,4 @@
-export type IdMap = { [key: string]: string }
+export type IdMap = { [key: string]: string };
 
 export interface CreateResult {
   id: string;
