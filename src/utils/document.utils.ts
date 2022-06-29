@@ -2,33 +2,18 @@ import { gunzipSync } from 'zlib';
 import { Connection, SfdxError } from '@salesforce/core';
 import { Document, DocumentBody } from '../types/document.types';
 import { CreateResult } from '../types/common.types';
-import { ProductModel } from '../types/productModel.types';
 
-export interface DocumentContentReturn {
-  productModel: ProductModel;
-  content: string;
-}
-
-export async function fetchDocumentContent(
-  conn: Connection,
-  documentId: string,
-  productModel: ProductModel,
-): Promise<DocumentContentReturn | undefined> {
+export async function fetchDocumentContent(conn: Connection, documentId: string): Promise<string | undefined> {
   const url: string | undefined = (await fetchDocument(conn, documentId))?.Body;
   if (!url) {
     console.log(`Document Body not found: ${documentId}`);
     return;
   }
 
-  const res = await conn.request({ url });
+  const res = await conn.request({url});
 
   const gzipped = Buffer.from(res.toString(), 'base64');
-  const content = gunzipSync(gzipped).toString();
-
-  return {
-    productModel,
-    content,
-  };
+  return gunzipSync(gzipped).toString();
 }
 
 export async function fetchDocument(conn: Connection, documentId: string): Promise<Document | undefined> {
