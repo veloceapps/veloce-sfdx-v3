@@ -12,6 +12,7 @@
     "@salesforce/command": "^4",
     "@salesforce/core": "^2",
     "axios": "^0.27.1",
+    "chokidar": "^3.5.3",
     "open": "^8.2.1",
     "ts-replace-all": "^1.0.0",
     "tslib": "^2",
