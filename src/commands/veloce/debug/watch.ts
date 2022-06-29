@@ -1,70 +1,109 @@
-import { readFileSync } from 'fs'
-import * as os from 'os'
-import * as path from 'path'
-import { SfdxCommand } from '@salesforce/command'
-import { Messages } from '@salesforce/core'
-import { AnyJson } from '@salesforce/ts-types'
-import { default as axios } from 'axios'
-import {EOL} from 'node:os';
+import { existsSync } from 'node:fs';
+import { EOL } from 'node:os';
+import { cwd } from 'process';
+import { flags } from '@salesforce/command';
+import { Messages, SfdxError } from '@salesforce/core';
+import { AnyJson } from '@salesforce/ts-types';
+import { watch } from 'chokidar';
+import { DebugSfdxCommand } from '../../../common/debug.command';
+import { exec } from '../../../utils/common.utils';
+import { getPath } from '../../../utils/path.utils';
 
 // Initialize Messages with the current plugin directory
-Messages.importMessagesDirectory(__dirname)
+Messages.importMessagesDirectory(__dirname);
 
 // Load the specific messages for this file. Messages from @salesforce/command, @salesforce/core,
 // or any library that is using the messages framework can also be loaded this way.
-const messages = Messages.loadMessages('veloce-sfdx-v3', 'debug-watch')
+const messages = Messages.loadMessages('veloce-sfdx-v3', 'debug-watch');
 
-export default class Org extends SfdxCommand {
-  public static description = messages.getMessage('commandDescription')
+enum DataType {
+  MODEL = 'MODEL',
+}
+
+export default class Org extends DebugSfdxCommand {
+  public static description = messages.getMessage('commandDescription');
   public static examples = messages.getMessage('examples').split(EOL);
 
-  public static args = []
+  public static args = [];
 
-  protected static flagsConfig = {}
+  protected static flagsConfig = {
+    sourcepath: flags.string({
+      char: 'p',
+      required: false,
+      description: messages.getMessage('sourcepathFlagDescription'),
+    }),
+  };
 
   // Comment this out if your command does not require an org username
-  protected static requiresUsername = true
+  protected static requiresUsername = true;
 
   // Comment this out if your command does not support a hub org username
-  protected static supportsDevhubUsername = true
+  protected static supportsDevhubUsername = true;
 
   // Set this to true if your command requires a project workspace; 'requiresProject' is false by default
-  protected static requiresProject = false
+  protected static requiresProject = false;
+
+  private readonly DEFAULT_SOURCE_PATH = 'source';
+  private readonly PATH = {
+    MODEL: 'source/models',
+  };
 
   public async run(): Promise<AnyJson> {
-    const homedir = os.homedir()
-    const debugSessionFile = path.join(homedir, '.veloce-sfdx/debug.session')
-    let debugSession: { [key: string]: any }
-    try {
-      debugSession = JSON.parse(readFileSync(debugSessionFile).toString())
-    } catch (e) {
-      this.ux.log('No active debug session found, please start debug session using veloce:debug')
-      return {}
+    const debugSession = this.getDebugSession();
+    if (!debugSession) {
+      this.ux.log('No active debug session found, please start debug session using veloce:debug');
+      return {};
     }
 
-    const params = {
-      'veloceNamespace': '',
-      'instanceUrl': `${debugSession.instanceUrl as string}`,
-      'organizationId': `${debugSession.orgId as string}`,
-      'oAuthHeaderValue': 'Dummy'
+    const sourcePath = getPath(this.flags.sourcepath) ?? this.DEFAULT_SOURCE_PATH;
+    const exists = existsSync(sourcePath);
+    if (!exists) {
+      throw new SfdxError(messages.getMessage('sourcepathFlagInvalid'));
     }
-    const authorization = Buffer.from(JSON.stringify(params)).toString('base64')
-    const headers = {
-      'dev-token': debugSession.token,
-      'Authorization': authorization,
-      'Content-Type': 'application/json'
-    }
-    const backendUrl: string | undefined = debugSession.backendUrl
 
-    try {
-      await axios.post(`${backendUrl}/services/dev-override/watch`, {}, {
-        headers
-      })
-    } catch ({ data }) {
-      this.ux.log(`Failed to list debug sessions: ${data as string}`)
-      return {}
+    return new Promise(() => {
+      this.ux.log(`Watching files in "${sourcePath}" directory...`);
+
+      const workDir = cwd();
+      const watcher = watch(sourcePath);
+
+      watcher.on('raw', (eventName, path) => {
+        if (!['created', 'modified', 'moved'].includes(eventName)) {
+          return;
+        }
+
+        const filePath = path.replace(`${workDir}/`, '');
+        const type = this.getChangeType(filePath);
+
+        switch (type) {
+          case DataType.MODEL:
+            void this.pushPML(filePath);
+            break;
+          default:
+            break;
+        }
+      });
+    });
+  }
+
+  private getChangeType(filePath: string): DataType | null {
+    if (filePath.startsWith(this.PATH.MODEL)) {
+      return DataType.MODEL;
     }
-    // Return an object to be displayed with --json
-    return { }
+
+    return null;
+  }
+
+  private async pushPML(filePath: string): Promise<void> {
+    const [modelName] = filePath.replace(`${this.PATH.MODEL}/`, '').split('/');
+    const targetUserName = String(this.flags.targetusername);
+
+    this.ux.log(`Pushing Model "${modelName}"`);
+
+    return exec(`sfdx veloce:debug:push -u ${targetUserName} -m ${modelName} -p ./${this.PATH.MODEL}`)
+      .catch((err) => this.ux.log(err))
+      .then((result) => {
+        this.ux.log(result);
+      });
   }
 }
