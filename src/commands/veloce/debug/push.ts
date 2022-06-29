@@ -4,8 +4,12 @@ import {Messages} from '@salesforce/core';
 import {AnyJson} from '@salesforce/ts-types';
 import {default as axios} from 'axios';
 import {DebugSfdxCommand} from '../../../common/debug.command';
-import {Criteria, splitMembers} from '../../../utils/push';
 import {extractGroupsFromFolder} from '../../../utils/drools.utils';
+import {getAuthToken} from '../../../utils/auth.utils';
+import DebugSessionInfo from '../../../types/DebugSessionInfo';
+import {splitMembers} from '../../../utils/push';
+import {Member, MembersMap} from '../../../types/member.types';
+import {getPath} from '../../../utils/path.utils';
 
 // Initialize Messages with the current plugin directory
 Messages.importMessagesDirectory(__dirname);
@@ -42,28 +46,26 @@ export default class Org extends DebugSfdxCommand {
     }
 
     const members = (this.flags.members) as string;
-    const rootPath = ((this.flags.sourcepath || 'source') as string).replace(/\/$/, ''); // trim last slash if present
+    const rootPath = getPath(this.flags.sourcepath) ?? 'source';
 
-    const criteriaMap: {[key: string]: Criteria} = splitMembers(members);
+    const memberMap: MembersMap = splitMembers(members);
 
-    await this.sendDrools(debugSession, rootPath, criteriaMap['drl']);
+    await this.sendDrools(debugSession, rootPath, memberMap['drl']);
     // Return an object to be displayed with --json
     return {};
   }
 
-  private async sendDrools(debugSession: { [p: string]: any }, rootPath: string, criteria: Criteria): Promise<void> {
-    if (criteria === undefined){
+  private async sendDrools(debugSession: DebugSessionInfo, rootPath: string, member: Member): Promise<void> {
+    if (member === undefined){
       return;
     }
     const sourcePath = rootPath +  '/drl';
-    const params = {
-      'veloceNamespace': '',
-      'instanceUrl': `${debugSession.instanceUrl as string}`,
-      'organizationId': `${debugSession.orgId as string}`,
-      'oAuthHeaderValue': 'Dummy'
-    }
-    const authorization = Buffer.from(JSON.stringify(params)).toString('base64')
-    console.log(debugSession.token);
+    const authorization = getAuthToken({
+      veloceNamespace: '',
+      instanceUrl: debugSession.instanceUrl,
+      organizationId: debugSession.orgId,
+      oAuthHeaderValue: 'Dummy',
+    });
     const headers = {
       'dev-token': debugSession.token,
       Authorization: authorization,
@@ -73,7 +75,7 @@ export default class Org extends DebugSfdxCommand {
 
     const result = extractGroupsFromFolder(sourcePath);
     for (const group of result) {
-      if (criteria.all || criteria.names.includes(group.name)) {
+      if (member.all || member.names.includes(group.name)) {
         try {
           await axios.post(`${backendUrl}/services/dev-override/drools/${group.priceListId}`, group, {
             headers

@@ -5,7 +5,7 @@ import { CreateResult } from '../types/common.types';
 import { Document } from '../types/document.types';
 import { Folder } from '../types/folder.types';
 import {ProductModel} from '../types/productModel.types';
-import {Criteria} from '../utils/push';
+import {Member} from '../types/member.types';
 
 async function getDocument(conn: Connection, name: string): Promise<string|null> {
   // TODO: optimize in single query?
@@ -118,27 +118,27 @@ async function uploadModel(sourcepath: string, conn: Connection, pmlName: string
 export interface PushPmlParams {
   rootPath: string;
   conn: Connection;
-  criteria: Criteria | undefined;
+  member: Member | undefined;
 }
 
 export async function pushModel(params: PushPmlParams): Promise<string[]> {
-  const { rootPath, conn, criteria } = params;
-  if (criteria === undefined){
+  const { rootPath, conn, member } = params;
+  if (member === undefined){
     return [];
   }
   const sourcePath: string = rootPath + '/model';
   const retIDs = []
-  if (criteria.all) {
+  if (member.all) {
     // Push ALL
     console.log('Pushing All Models')
     const allModelsToUpload = findAllModels(sourcePath)
     for (const p of allModelsToUpload) {
       retIDs.push(await uploadModel(sourcePath, conn, p))
     }
-  } else if (criteria.names.length > 0) {
+  } else if (member.names.length > 0) {
     // Push some members only
-    console.log(`Pushing Models with names: ${Array.from(criteria.names.values()).join(',')}`)
-    for (const p of criteria.names) {
+    console.log(`Pushing Models with names: ${Array.from(member.names.values()).join(',')}`)
+    for (const p of member.names) {
       retIDs.push(await uploadModel(sourcePath, conn, p))
     }
   }

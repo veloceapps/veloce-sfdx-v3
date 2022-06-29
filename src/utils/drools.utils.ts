@@ -58,7 +58,7 @@ export function getSequenceNumber(rulesRegexResultElement: string): number {
   return parseInt(sequence.toString().trim(), 10)
 }
 
-function extracted(groupFile: string, rulesDirectory: string): Group | undefined {
+function extractGroupFromFile(groupFile: string, rulesDirectory: string): Group | undefined {
   const groupMetaFile = groupFile.replace('.drl', '.json')
   const groupMetaFilePath = rulesDirectory + '/' + groupMetaFile;
   const metadataStr = fs.readFileSync(groupMetaFilePath).toString()
@@ -75,7 +75,6 @@ function extracted(groupFile: string, rulesDirectory: string): Group | undefined
 export function extractGroupsFromFolder(rulesDirectory: string): Group[] {
   const extension = '.drl'
   const groupFiles: string[] = []
-  console.log('reading files')
   fs.readdirSync(rulesDirectory).forEach(ruleGroupFile => {
     if (path.extname(ruleGroupFile).toLowerCase() === extension) {
       groupFiles.push(ruleGroupFile)
@@ -84,10 +83,9 @@ export function extractGroupsFromFolder(rulesDirectory: string): Group[] {
   const result: Group[] = [];
 
   for (const groupFile of groupFiles) {
-    console.log('Processing rules file', groupFile)
-    const items = extracted(groupFile, rulesDirectory);
-    if (items){
-      result.push(items)
+    const group = extractGroupFromFile(groupFile, rulesDirectory);
+    if (group){
+      result.push(group)
     }
   }
   return result;
