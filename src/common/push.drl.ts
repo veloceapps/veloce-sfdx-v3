@@ -9,7 +9,7 @@ export interface PushDRLParams {
 
 export async function pushDRL(params: PushDRLParams): Promise<string[]> {
   const {rootPath, conn, member} = params;
-  if (member === undefined) {
+  if (!member) {
     return []
   }
   const sourcePath: string = rootPath + '/drl';

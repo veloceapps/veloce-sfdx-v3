@@ -123,7 +123,7 @@ export interface PushPmlParams {
 
 export async function pushModel(params: PushPmlParams): Promise<string[]> {
   const { rootPath, conn, member } = params;
-  if (member === undefined){
+  if (!member){
     return [];
   }
   const sourcePath: string = rootPath + '/model';

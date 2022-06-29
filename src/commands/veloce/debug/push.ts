@@ -56,7 +56,7 @@ export default class Org extends DebugSfdxCommand {
   }
 
   private async sendDrools(debugSession: DebugSessionInfo, rootPath: string, member: Member): Promise<void> {
-    if (member === undefined){
+    if (!member){
       return;
     }
     const sourcePath = rootPath +  '/drl';
