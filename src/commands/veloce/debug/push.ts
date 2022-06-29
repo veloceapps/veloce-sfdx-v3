@@ -1,8 +1,9 @@
 import { EOL } from 'node:os';
+import { readdirSync, readFileSync } from 'node:fs';
 import { flags } from '@salesforce/command';
 import { Messages } from '@salesforce/core';
 import { AnyJson } from '@salesforce/ts-types';
-import { default as axios } from 'axios';
+import { AxiosError, default as axios } from 'axios';
 import { DebugSfdxCommand } from '../../../common/debug.command';
 import { extractGroupsFromFolder } from '../../../utils/drools.utils';
 import { getAuthToken } from '../../../utils/auth.utils';
@@ -49,9 +50,58 @@ export default class Org extends DebugSfdxCommand {
     const rootPath = getPath(this.flags.sourcepath) ?? 'source';
     const memberMap = new MembersMap(members);
 
+    await this.sendModel(debugSession, rootPath, memberMap['model']);
     await this.sendDrools(debugSession, rootPath, memberMap.get('drl'));
     // Return an object to be displayed with --json
     return {};
+  }
+
+  private findAllModels(sourcepath: string): Set<string> {
+    const result = new Set<string>();
+    const filenames = readdirSync(`${sourcepath}/model`);
+    filenames.forEach((file) => {
+      result.add(file);
+    });
+    return result;
+  }
+
+  private async sendModel(debugSession: DebugSessionInfo, rootPath: string, member: Member) {
+    if (!member) {
+      return;
+    }
+    const params = {
+      veloceNamespace: '',
+      instanceUrl: `${debugSession.instanceUrl}`,
+      organizationId: `${debugSession.orgId}`,
+      oAuthHeaderValue: 'Dummy',
+    };
+    const authorization = Buffer.from(JSON.stringify(params)).toString('base64');
+    const headers = {
+      'dev-token': debugSession.token,
+      Authorization: authorization,
+      'Content-Type': 'application/json',
+    };
+    const backendUrl: string | undefined = debugSession.backendUrl;
+    const models = this.findAllModels(rootPath);
+    for (const name of models) {
+      if (member.all || member.names.includes(name)) {
+        // load PML
+        const pml = readFileSync(`${rootPath}/model/${name}/${name}.pml`, 'utf8').toString();
+        try {
+          await axios.post(
+            `${backendUrl}/services/dev-override/model/${name}/pml`,
+            { content: pml },
+            {
+              headers,
+            },
+          );
+        } catch (error) {
+          const err = error as AxiosError;
+          this.ux.log(`Failed to deploy ${name}: ${err?.response?.data} code ${err?.response?.status}`);
+        }
+        this.ux.log('PML Successfully Loaded!');
+      }
+    }
   }
 
   private async sendDrools(
@@ -82,8 +132,9 @@ export default class Org extends DebugSfdxCommand {
           await axios.post(`${debugSession.backendUrl}/services/dev-override/drools/${group.priceListId}`, group, {
             headers,
           });
-        } catch ({ data }) {
-          this.ux.log(`Failed to deploy ${group.name}: ${data as string}`);
+        } catch (error) {
+          const err = error as AxiosError;
+          this.ux.log(`Failed to deploy ${group.name}: ${err?.response?.data} code ${err?.response?.status}`);
         }
       }
     }
