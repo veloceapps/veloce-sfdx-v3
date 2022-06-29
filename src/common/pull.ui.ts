@@ -43,7 +43,7 @@ export async function pullUI(params: PullUIParams): Promise<UiReturn> {
   const uiPmsToDump = new Set<string>();
 
   const contents: (DocumentContentReturn|undefined)[] = await Promise.all(
-    uiDefProductModels.map(productModel => fetchDocumentContent(productModel)(conn, productModel.VELOCPQ__UiDefinitionsId__c))
+    uiDefProductModels.map(productModel => fetchDocumentContent(conn, productModel))
   );
 
   contents.forEach((res) => {

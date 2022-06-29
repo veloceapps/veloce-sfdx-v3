@@ -26,7 +26,7 @@ export async function pullPml(params: PullPmlParams): Promise<PmlReturn> {
   const pmlPmsToDump = new Set<string>();
 
   const contents: (DocumentContentReturn|undefined)[] = await Promise.all(
-    pmlProductModels.map(productModel => fetchDocumentContent(productModel)(conn, productModel.VELOCPQ__ContentId__c))
+    pmlProductModels.map(productModel => fetchDocumentContent(conn, productModel))
   );
 
   contents.forEach((res) => {
