@@ -97,8 +97,7 @@ export default class Org extends DebugSfdxCommand {
           );
         } catch (error) {
           if (error instanceof AxiosError) {
-            const err = error as AxiosError;
-            this.ux.log(`Failed to deploy ${name}: ${err?.response?.data} code ${err?.response?.status}`);
+            this.ux.log(`Failed to deploy ${name}: ${error.response?.data} code ${error.response?.status}`);
           } else {
             this.ux.log(`Failed to deploy ${name}: ${JSON.stringify(error)}`);
           }
@@ -138,8 +137,7 @@ export default class Org extends DebugSfdxCommand {
           });
         } catch (error) {
           if (error instanceof AxiosError) {
-            const err = error as AxiosError;
-            this.ux.log(`Failed to deploy ${group.name}: ${err?.response?.data} code ${err?.response?.status}`);
+            this.ux.log(`Failed to deploy ${group.name}: ${error.response?.data} code ${error.response?.status}`);
           } else {
             this.ux.log(`Failed to deploy ${group.name}: ${JSON.stringify(error)}`);
           }
