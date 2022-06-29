@@ -8,7 +8,7 @@ const ruleBodyRegex = /(?<=then\b)([\S\s]*?)(?=end\b)/g
 const ruleSequenceRegex = /(?<=salience\b)([\S\s]*?)(?=when\b)/g
 
 interface Rule {
-  Name: string;
+  name: string;
   action: string;
   active: boolean;
   condition: string;
@@ -35,7 +35,7 @@ export function extractRulesFromGroup(groupFilePath: string): Rule[] {
     const ruleBodyResult = [...rulesRegexResult.match(ruleBodyRegex) ?? []]
 
     const ruleRecord = {
-      'Name': getRuleName(rulesRegexResult),
+      'name': getRuleName(rulesRegexResult),
       'action': ruleBodyResult[0],
       'active': true,
       'condition': preconditionResult[0],
