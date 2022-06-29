@@ -1,6 +1,6 @@
 import { existsSync, mkdirSync } from 'fs';
 import { Connection } from '@salesforce/core';
-import { writeFileSafe } from '../shared/utils/common.utils';
+import { writeFileSafe } from '../utils/common.utils';
 import {
   LegacySection,
   LegacyUiDefinition,
@@ -8,16 +8,11 @@ import {
   UiDefinition,
   UiElement,
   UiMetadata
-} from '../shared/types/ui.types';
-import { extractElementMetadata, fromBase64, isLegacyDefinition } from '../shared/utils/ui.utils';
-import { ProductModel } from '../shared/types/productModel.types';
-import { fetchProductModels } from '../shared/utils/productModel.utils';
-import { fetchDocumentAttachment } from '../shared/utils/document.utils';
-
-interface UiReturn {
-  uiRecords: string[];
-  uiPmsToDump: Set<string>;
-}
+} from '../types/ui.types';
+import { extractElementMetadata, fromBase64, isLegacyDefinition } from '../utils/ui.utils';
+import { ProductModel } from '../types/productModel.types';
+import { fetchProductModels } from '../utils/productModel.utils';
+import { fetchDocumentAttachment } from '../utils/document.utils';
 
 export interface PullUIParams {
   sourcepath: string;
@@ -26,7 +21,7 @@ export interface PullUIParams {
   uisToDump: Set<string>;
 }
 
-export async function pullUI(params: PullUIParams): Promise<UiReturn> {
+export async function pullUI(params: PullUIParams): Promise<string[]> {
   const { sourcepath, conn, dumpAll, uisToDump } = params;
 
   const modelNames = dumpAll ? undefined : Array.from(uisToDump).map(ui => ui.split(':')[0]);
@@ -38,7 +33,7 @@ export async function pullUI(params: PullUIParams): Promise<UiReturn> {
     acc[modelName] = defName;
     return acc;
   }, {} as { [modelName: string]: string });
-  const uiPmsToDump = new Set<string>();
+  const modelsToDump = new Set<string>();
 
   const contents: [ProductModel, string|undefined][] = await Promise.all(uiDefProductModels.map(productModel => Promise.all([
     Promise.resolve(productModel),
@@ -54,7 +49,7 @@ export async function pullUI(params: PullUIParams): Promise<UiReturn> {
       return;
     }
 
-    const path = `${sourcepath}/${Name}`;
+    const path = `${sourcepath}/config-ui/${Name}`;
 
     // legacy ui definitions metadata is stored in global metadata.json as array
     const legacyMetadataArray: LegacyUiDefinition[] = [];
@@ -79,13 +74,10 @@ export async function pullUI(params: PullUIParams): Promise<UiReturn> {
     }
 
     // mark full PM dump as a dependancy (metadata)
-    uiPmsToDump.add(Name);
+    modelsToDump.add(Name);
   })
 
-  return {
-    uiRecords: uiDefProductModels.map(({Id}) => Id),
-    uiPmsToDump
-  }
+  return uiDefProductModels.map(({Id}) => Id)
 }
 
 function saveLegacySections(sections: LegacySection[], path: string, metadata: LegacyUiDefinition, parentId?: string): void {

@@ -8,9 +8,8 @@ import * as os from 'os';
 import {flags, SfdxCommand} from '@salesforce/command';
 import {Messages} from '@salesforce/core';
 import {AnyJson} from '@salesforce/ts-types';
-import {pushPml} from '../../../common/push.pml';
+import {pushModel} from '../../../common/push.model';
 import {pushUI} from '../../../common/push.ui';
-import {pushPM} from '../../../common/push.pm';
 
 // Initialize Messages with the current plugin directory
 Messages.importMessagesDirectory(__dirname);
@@ -51,22 +50,22 @@ export default class Push extends SfdxCommand {
   // Set this to true if your command requires a project workspace; 'requiresProject' is false by default
   protected static requiresProject = false;
 
-  private static splitMembers(members: string): { pmlsToUpload: Set<string>; uisToUpload: Set<string> } {
-    const pmlsToUpload = new Set<string>()
+  private static splitMembers(members: string): { modelsToUpload: Set<string>; uisToUpload: Set<string> } {
+    const modelsToUpload = new Set<string>()
     const uisToUpload = new Set<string>()
     const membersArray = members.split(',')
     for(const m of membersArray) {
       const parts = m.split(':')
       switch (parts[0]) {
-        case 'pml':
-          pmlsToUpload.add(parts[1])
+        case 'model':
+          modelsToUpload.add(parts[1])
           break
         case 'config-ui':
           uisToUpload.add(parts[1])
           break
       }
     }
-    return {pmlsToUpload, uisToUpload}
+    return {modelsToUpload, uisToUpload}
   }
 
   public async run(): Promise<AnyJson> {
@@ -79,20 +78,13 @@ export default class Push extends SfdxCommand {
     const pushAll = members === '';
     const sourcepath = ((this.flags.sourcepath || 'source') as string).replace(/\/$/, ''); // trim last slash if present
 
-    const {pmlsToUpload, uisToUpload} = Push.splitMembers(members)
-    const pmsToUpload = new Set<string>() // PM entities to uplaod
+    const {modelsToUpload, uisToUpload} = Push.splitMembers(members)
 
-    const {pmlPmsToUpload, pmlRecords} = await pushPml({sourcepath, conn, pushAll, pmlsToUpload})
-    // each uploaded pml record adds pm record to set of to be uploaded
-    pmlPmsToUpload.forEach(item => pmsToUpload.add(item))
+    const pmlRecords = await pushModel({sourcepath, conn, pushAll, modelsToUpload})
 
-    const {uiPmsToUpload, uiRecords} = await pushUI({sourcepath, conn, pushAll, uisToUpload})
-    // each uploaded pml record adds pm record to set of to be uploaded
-    uiPmsToUpload.forEach(item => pmsToUpload.add(item))
-
-    const pmRecords = await pushPM({sourcepath, conn, pushAll, pmsToUpload})
+    const uiRecords = await pushUI({sourcepath, conn, pushAll, uisToUpload})
 
     // Return an object to be displayed with --json
-    return {'pml': pmlRecords, 'ui': uiRecords, 'pm': pmRecords};
+    return {'pml': pmlRecords, 'ui': uiRecords};
   }
 }
