@@ -8,8 +8,8 @@ import {extractGroupsFromFolder} from '../../../utils/drools.utils';
 import {getAuthToken} from '../../../utils/auth.utils';
 import DebugSessionInfo from '../../../types/DebugSessionInfo';
 import {splitMembers} from '../../../utils/push';
-import {Member, MembersMap} from '../../../types/member.types';
 import {getPath} from '../../../utils/path.utils';
+import {Member} from '../../../types/member.types';
 
 // Initialize Messages with the current plugin directory
 Messages.importMessagesDirectory(__dirname);
@@ -48,7 +48,7 @@ export default class Org extends DebugSfdxCommand {
     const members = (this.flags.members) as string;
     const rootPath = getPath(this.flags.sourcepath) ?? 'source';
 
-    const memberMap: MembersMap = splitMembers(members);
+    const memberMap = splitMembers(members);
 
     await this.sendDrools(debugSession, rootPath, memberMap['drl']);
     // Return an object to be displayed with --json
@@ -71,13 +71,12 @@ export default class Org extends DebugSfdxCommand {
       Authorization: authorization,
       'Content-Type': 'application/json',
     };
-    const backendUrl: string | undefined = debugSession.backendUrl;
 
     const result = extractGroupsFromFolder(sourcePath);
     for (const group of result) {
       if (member.all || member.names.includes(group.name)) {
         try {
-          await axios.post(`${backendUrl}/services/dev-override/drools/${group.priceListId}`, group, {
+          await axios.post(`${debugSession.backendUrl}/services/dev-override/drools/${group.priceListId}`, group, {
             headers
           })
         } catch ({data}) {

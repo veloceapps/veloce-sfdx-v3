@@ -11,7 +11,6 @@ import {AnyJson} from '@salesforce/ts-types';
 import {pushModel} from '../../../common/push.model';
 import {pushUI} from '../../../common/push.ui';
 import {pushDRL} from '../../../common/push.drl';
-import {MembersMap} from '../../../types/member.types';
 import {splitMembers} from '../../../utils/push';
 
 // Initialize Messages with the current plugin directory
@@ -62,7 +61,7 @@ export default class Push extends SfdxCommand {
     const members = (this.flags.members || '') as string;
     const rootPath = ((this.flags.sourcepath || 'source') as string).replace(/\/$/, ''); // trim last slash if present
 
-    const memberMap: MembersMap = splitMembers(members);
+    const memberMap = splitMembers(members);
     const drlRecords = await pushDRL({rootPath, conn, member: memberMap['drl']});
 
     const pmlRecords = await pushModel({rootPath, conn, member: memberMap['model']});
