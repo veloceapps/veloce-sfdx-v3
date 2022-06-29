@@ -11,9 +11,9 @@ export interface DocumentContentReturn {
 
 export async function fetchDocumentContent(
   conn: Connection,
+  documentId: string,
   productModel: ProductModel,
 ): Promise<DocumentContentReturn | undefined> {
-  const documentId: string = productModel.VELOCPQ__ContentId__c;
   const url: string | undefined = (await fetchDocument(conn, documentId))?.Body;
   if (!url) {
     console.log(`Document Body not found: ${documentId}`);

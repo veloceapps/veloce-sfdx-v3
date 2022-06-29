@@ -13,7 +13,7 @@ export interface PullModelParams {
 
 async function pullPM(sourcepath: string, conn: Connection, dumpAll: boolean, pmsToDump: Set<string>): Promise<void> {
   console.log(
-    `Dumping ${dumpAll ? 'All Product Models' : 'Product Models with names: ' + (Array.from(pmsToDump)?.join() ?? '')}`,
+    `Dumping ${dumpAll ? 'All Product Models' : 'PMs with names: ' + (Array.from(pmsToDump)?.join() ?? '')}`,
   );
   const productModels: ProductModel[] = await fetchProductModels(conn, dumpAll, Array.from(pmsToDump));
   productModels.forEach(
@@ -54,7 +54,7 @@ export async function pullModel(params: PullModelParams): Promise<string[]> {
   const pmsToDump = new Set<string>();
 
   const contents: (DocumentContentReturn | undefined)[] = await Promise.all(
-    productModels.map((productModel) => fetchDocumentContent(conn, productModel)),
+    productModels.map((productModel) => fetchDocumentContent(conn, productModel.VELOCPQ__ContentId__c, productModel)),
   );
 
   contents.forEach((res) => {
