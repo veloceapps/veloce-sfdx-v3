@@ -1,5 +1,5 @@
 import {Connection} from '@salesforce/core';
-import {Criteria} from "../utils/push";
+import {Criteria} from '../utils/push';
 
 export interface PushPmlParams {
   rootPath: string;
