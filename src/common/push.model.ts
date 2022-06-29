@@ -1,10 +1,10 @@
 import {readdirSync, readFileSync, writeFileSync} from 'node:fs';
 import {gzipSync} from 'node:zlib';
 import {Connection, SfdxError} from '@salesforce/core';
-import { CreateResult } from '../shared/types/common.types';
-import { Document } from '../shared/types/document.types';
-import { Folder } from '../shared/types/folder.types';
-import {ProductModel} from '../shared/types/productModel.types';
+import { CreateResult } from '../types/common.types';
+import { Document } from '../types/document.types';
+import { Folder } from '../types/folder.types';
+import {ProductModel} from '../types/productModel.types';
 
 async function getDocument(conn: Connection, name: string): Promise<string|null> {
   // TODO: optimize in single query?

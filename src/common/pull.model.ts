@@ -1,8 +1,8 @@
 import {Connection} from '@salesforce/core';
-import { ProductModel } from '../shared/types/productModel.types';
-import { writeFileSafe } from '../shared/utils/common.utils';
-import { fetchProductModels } from '../shared/utils/productModel.utils';
-import { fetchDocumentAttachment } from '../shared/utils/document.utils';
+import { ProductModel } from '../types/productModel.types';
+import { writeFileSafe } from '../utils/common.utils';
+import { fetchProductModels } from '../utils/productModel.utils';
+import { fetchDocumentAttachment } from '../utils/document.utils';
 
 export interface PullModelParams {
   sourcepath: string;

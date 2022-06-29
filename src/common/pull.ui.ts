@@ -1,6 +1,6 @@
 import { existsSync, mkdirSync } from 'fs';
 import { Connection } from '@salesforce/core';
-import { writeFileSafe } from '../shared/utils/common.utils';
+import { writeFileSafe } from '../utils/common.utils';
 import {
   LegacySection,
   LegacyUiDefinition,
@@ -8,11 +8,11 @@ import {
   UiDefinition,
   UiElement,
   UiMetadata
-} from '../shared/types/ui.types';
-import { extractElementMetadata, fromBase64, isLegacyDefinition } from '../shared/utils/ui.utils';
-import { ProductModel } from '../shared/types/productModel.types';
-import { fetchProductModels } from '../shared/utils/productModel.utils';
-import { fetchDocumentAttachment } from '../shared/utils/document.utils';
+} from '../types/ui.types';
+import { extractElementMetadata, fromBase64, isLegacyDefinition } from '../utils/ui.utils';
+import { ProductModel } from '../types/productModel.types';
+import { fetchProductModels } from '../utils/productModel.utils';
+import { fetchDocumentAttachment } from '../utils/document.utils';
 
 export interface PullUIParams {
   sourcepath: string;
