@@ -3,6 +3,6 @@
   "membersFlagDescription": "Pull only specific type of data or even name of object",
   "sourcepathFlagDescription": "Path where to store sources",
   "examples": [
-    "sfdx veloce:source:pull --targetusername myOrg@example.com --targetdevhubusername devhub@org.com --members pml:OCTA --sourcepath ./source/pmls"
+    "sfdx veloce:source:pull --targetusername myOrg@example.com --targetdevhubusername devhub@org.com --members model:OCTA --sourcepath ./source/pmls"
   ]
 }
