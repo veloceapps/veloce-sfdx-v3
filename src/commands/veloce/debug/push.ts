@@ -96,8 +96,12 @@ export default class Org extends DebugSfdxCommand {
             },
           );
         } catch (error) {
-          const err = error as AxiosError;
-          this.ux.log(`Failed to deploy ${name}: ${err?.response?.data} code ${err?.response?.status}`);
+          if (error instanceof AxiosError) {
+            const err = error as AxiosError;
+            this.ux.log(`Failed to deploy ${name}: ${err?.response?.data} code ${err?.response?.status}`);
+          } else {
+            this.ux.log(`Failed to deploy ${name}: ${JSON.stringify(error)}`);
+          }
         }
         this.ux.log('PML Successfully Loaded!');
       }
@@ -133,8 +137,12 @@ export default class Org extends DebugSfdxCommand {
             headers,
           });
         } catch (error) {
-          const err = error as AxiosError;
-          this.ux.log(`Failed to deploy ${group.name}: ${err?.response?.data} code ${err?.response?.status}`);
+          if (error instanceof AxiosError) {
+            const err = error as AxiosError;
+            this.ux.log(`Failed to deploy ${group.name}: ${err?.response?.data} code ${err?.response?.status}`);
+          } else {
+            this.ux.log(`Failed to deploy ${group.name}: ${JSON.stringify(error)}`);
+          }
         }
       }
     }
