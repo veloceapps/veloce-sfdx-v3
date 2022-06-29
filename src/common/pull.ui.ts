@@ -12,7 +12,7 @@ import {
 import { extractElementMetadata, fromBase64, isLegacyDefinition } from '../shared/utils/ui.utils';
 import { ProductModel } from '../shared/types/productModel.types';
 import { fetchProductModels } from '../shared/utils/productModel.utils';
-import { fetchDocumentAttachment } from '../shared/utils/document.utils';
+import { DocumentContentReturn, fetchDocumentContent } from '../shared/utils/document.utils';
 
 interface UiReturn {
   uiRecords: string[];
@@ -42,12 +42,17 @@ export async function pullUI(params: PullUIParams): Promise<UiReturn> {
   }, {} as { [modelName: string]: string });
   const uiPmsToDump = new Set<string>();
 
-  const contents: [ProductModel, string|undefined][] = await Promise.all(uiDefProductModels.map(productModel => Promise.all([
-    Promise.resolve(productModel),
-    fetchDocumentAttachment(conn, productModel.VELOCPQ__UiDefinitionsId__c)
-  ])));
+  const contents: (DocumentContentReturn|undefined)[] = await Promise.all(
+    uiDefProductModels.map(productModel => fetchDocumentContent(productModel)(conn, productModel.VELOCPQ__UiDefinitionsId__c))
+  );
 
-  contents.forEach(([{Name}, content]) => {
+  contents.forEach((res) => {
+    if (!res) {
+      return;
+    }
+    const { productModel, content } = res;
+    const { Name } = productModel;
+
     let uiDefs: UiDef[] = [];
     try {
       uiDefs = JSON.parse(content ?? '') as UiDef[];

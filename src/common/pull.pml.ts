@@ -2,7 +2,7 @@ import { Connection } from '@salesforce/core';
 import { ProductModel } from '../shared/types/productModel.types';
 import { writeFileSafe } from '../shared/utils/common.utils';
 import { fetchProductModels } from '../shared/utils/productModel.utils';
-import { fetchDocumentAttachment } from '../shared/utils/document.utils';
+import { DocumentContentReturn, fetchDocumentContent } from '../shared/utils/document.utils';
 
 interface PmlReturn {
   pmlRecords: string[];
@@ -25,12 +25,17 @@ export async function pullPml(params: PullPmlParams): Promise<PmlReturn> {
 
   const pmlPmsToDump = new Set<string>();
 
-  const contents: [ProductModel, string|undefined][] = await Promise.all(pmlProductModels.map(productModel => Promise.all([
-    Promise.resolve(productModel),
-    fetchDocumentAttachment(conn, productModel.VELOCPQ__ContentId__c)
-  ])));
+  const contents: (DocumentContentReturn|undefined)[] = await Promise.all(
+    pmlProductModels.map(productModel => fetchDocumentContent(productModel)(conn, productModel.VELOCPQ__ContentId__c))
+  );
 
-  contents.forEach(([{Name}, content]) => {
+  contents.forEach((res) => {
+    if (!res) {
+      return;
+    }
+    const { productModel, content } = res;
+    const {Name} = productModel;
+
     writeFileSafe(sourcepath, `${Name}.pml`, content ?? '', {flag: 'w+'});
 
     // mark full PM dump as a dependancy (metadata)
