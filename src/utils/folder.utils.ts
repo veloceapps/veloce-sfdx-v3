@@ -21,7 +21,7 @@ export async function createFolder(conn: Connection, foldername: string): Promis
     Name: foldername,
     DeveloperName: foldername,
     Type: 'Document',
-    AccessType: 'Public'
+    AccessType: 'Public',
   };
   const result = await conn.sobject('Folder').create(folder);
 

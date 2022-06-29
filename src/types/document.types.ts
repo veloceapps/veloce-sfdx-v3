@@ -1,4 +1,3 @@
-
 export interface Document {
   Id: string;
   Body: string;

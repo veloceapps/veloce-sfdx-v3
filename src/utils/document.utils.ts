@@ -9,8 +9,10 @@ export interface DocumentContentReturn {
   content: string;
 }
 
-export async function fetchDocumentContent(conn: Connection, productModel: ProductModel): Promise<DocumentContentReturn | undefined> {
-
+export async function fetchDocumentContent(
+  conn: Connection,
+  productModel: ProductModel,
+): Promise<DocumentContentReturn | undefined> {
   const documentId: string = productModel.VELOCPQ__ContentId__c;
   const url: string | undefined = (await fetchDocument(conn, documentId))?.Body;
   if (!url) {
@@ -18,15 +20,15 @@ export async function fetchDocumentContent(conn: Connection, productModel: Produ
     return;
   }
 
-  const res = await conn.request({url});
+  const res = await conn.request({ url });
 
   const gzipped = Buffer.from(res.toString(), 'base64');
   const content = gunzipSync(gzipped).toString();
 
   return {
     productModel,
-    content
-  }
+    content,
+  };
 }
 
 export async function fetchDocument(conn: Connection, documentId: string): Promise<Document | undefined> {
@@ -49,7 +51,7 @@ export async function updateDocument(conn: Connection, documentId: string, data:
   return await conn.request({
     url: `/services/data/v${conn.getApiVersion()}/sobjects/Document/${documentId}`,
     body: JSON.stringify(data),
-    method: 'PATCH'
+    method: 'PATCH',
   });
 }
 
@@ -57,13 +59,13 @@ export async function createDocument(conn: Connection, data: DocumentBody): Prom
   const result = await conn.request<CreateResult>({
     url: `/services/data/v${conn.getApiVersion()}/sobjects/Document`,
     body: JSON.stringify(data),
-    method: 'POST'
+    method: 'POST',
   });
 
   if (result.success) {
-    console.log(`New Document ${result.name} created with id ${result.id}`)
+    console.log(`New Document ${result.name} created with id ${result.id}`);
   } else {
-    throw new SfdxError(`Failed to create document: ${JSON.stringify(result)}`)
+    throw new SfdxError(`Failed to create document: ${JSON.stringify(result)}`);
   }
 
   return result;

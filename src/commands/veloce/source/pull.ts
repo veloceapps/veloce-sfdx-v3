@@ -6,11 +6,10 @@
  */
 import * as os from 'os';
 import { flags, SfdxCommand } from '@salesforce/command';
-import {Messages} from '@salesforce/core';
+import { Messages } from '@salesforce/core';
 import { AnyJson } from '@salesforce/ts-types';
-import { pullPml } from '../../../common/pull.pml';
+import { pullModel } from '../../../common/pull.model';
 import { pullUI } from '../../../common/pull.ui';
-import { pullPM } from '../../../common/pull.pm';
 
 // Initialize Messages with the current plugin directory
 Messages.importMessagesDirectory(__dirname);
@@ -50,26 +49,26 @@ export default class Pull extends SfdxCommand {
   // Set this to true if your command requires a project workspace; 'requiresProject' is false by default
   protected static requiresProject = false;
 
-  private static spitMembers(members: string): { pmlsToDump: Set<string>; uisToDump: Set<string> } {
-    const pmlsToDump = new Set<string>()
-    const uisToDump = new Set<string>()
-    const membersArray = members.split(',')
-    for(const m of membersArray) {
-      const parts = m.split(':')
+  private static spitMembers(members: string): { modelsToDump: Set<string>; uisToDump: Set<string> } {
+    const modelsToDump = new Set<string>();
+    const uisToDump = new Set<string>();
+    const membersArray = members.split(',');
+    for (const m of membersArray) {
+      const parts = m.split(':');
       switch (parts[0]) {
-        case 'pml':
-          pmlsToDump.add(parts[1])
-          break
+        case 'model':
+          modelsToDump.add(parts[1]);
+          break;
         case 'config-ui':
-          uisToDump.add(parts[1] + ':' + (parts[2] ?? ''))
-          break
+          uisToDump.add(parts[1] + ':' + (parts[2] ?? ''));
+          break;
       }
     }
-    return {pmlsToDump, uisToDump}
+    return { modelsToDump, uisToDump };
   }
 
   public async run(): Promise<AnyJson> {
-    if(!this.org) {
+    if (!this.org) {
       return Promise.reject('Org is not defined');
     }
 
@@ -78,20 +77,13 @@ export default class Pull extends SfdxCommand {
     const dumpAll = members === '';
     const sourcepath = ((this.flags.sourcepath || 'source') as string).replace(/\/$/, ''); // trim last slash if present
 
-    const {pmlsToDump, uisToDump} = Pull.spitMembers(members)
-    const pmsToDump = new Set<string>()
+    const { modelsToDump, uisToDump } = Pull.spitMembers(members);
 
-    const {pmlRecords, pmlPmsToDump} = await pullPml({sourcepath, conn, dumpAll, pmlsToDump})
-    // each dumped pml record adds pm record to set of to be dumped
-    pmlPmsToDump.forEach(item => pmsToDump.add(item))
+    const modelRecords = await pullModel({ sourcepath, conn, dumpAll, modelsToDump });
 
-    const {uiRecords, uiPmsToDump} = await pullUI({sourcepath, conn, dumpAll, uisToDump})
-    // each dumped ui record adds pm record to set of to be dumped
-    uiPmsToDump.forEach(item => pmsToDump.add(item))
-
-    const pmRecords = await pullPM({sourcepath, conn, dumpAll, pmsToDump})
+    const uiRecords = await pullUI({ sourcepath, conn, dumpAll, uisToDump });
 
     // Return an object to be displayed with --json
-    return { 'pml': pmlRecords, 'config-ui': uiRecords, 'pm': pmRecords };
+    return { model: modelRecords, 'config-ui': uiRecords };
   }
 }

@@ -5,12 +5,13 @@
  * For full license text, see LICENSE.txt file in the repo root or https://opensource.org/licenses/BSD-3-Clause
  */
 import * as os from 'os';
-import {flags, SfdxCommand} from '@salesforce/command';
-import {Messages} from '@salesforce/core';
-import {AnyJson} from '@salesforce/ts-types';
-import {pushPml} from '../../../common/push.pml';
-import {pushUI} from '../../../common/push.ui';
-import {pushPM} from '../../../common/push.pm';
+import { flags, SfdxCommand } from '@salesforce/command';
+import { Messages } from '@salesforce/core';
+import { AnyJson } from '@salesforce/ts-types';
+import { pushModel } from '../../../common/push.model';
+import { pushUI } from '../../../common/push.ui';
+import { pushDRL } from '../../../common/push.drl';
+import { splitMembers } from '../../../utils/push';
 
 // Initialize Messages with the current plugin directory
 Messages.importMessagesDirectory(__dirname);
@@ -51,49 +52,23 @@ export default class Push extends SfdxCommand {
   // Set this to true if your command requires a project workspace; 'requiresProject' is false by default
   protected static requiresProject = false;
 
-  private static splitMembers(members: string): { pmlsToUpload: Set<string>; uisToUpload: Set<string> } {
-    const pmlsToUpload = new Set<string>()
-    const uisToUpload = new Set<string>()
-    const membersArray = members.split(',')
-    for(const m of membersArray) {
-      const parts = m.split(':')
-      switch (parts[0]) {
-        case 'pml':
-          pmlsToUpload.add(parts[1])
-          break
-        case 'config-ui':
-          // Todo support Ui Definition Names: -m config-ui:Cato:Default\ UI
-          uisToUpload.add(parts[1])
-          break
-      }
-    }
-    return {pmlsToUpload, uisToUpload}
-  }
-
   public async run(): Promise<AnyJson> {
-    if(!this.org) {
+    if (!this.org) {
       return Promise.reject('Org is not defined');
     }
 
     const conn = this.org.getConnection();
     const members = (this.flags.members || '') as string;
-    const pushAll = members === '';
-    const sourcepath = ((this.flags.sourcepath || 'source') as string).replace(/\/$/, ''); // trim last slash if present
+    const rootPath = ((this.flags.sourcepath || 'source') as string).replace(/\/$/, ''); // trim last slash if present
 
-    const {pmlsToUpload, uisToUpload} = Push.splitMembers(members)
-    const pmsToUpload = new Set<string>() // PM entities to uplaod
+    const memberMap = splitMembers(members);
+    const drlRecords = await pushDRL({ rootPath, conn, member: memberMap['drl'] });
 
-    const {pmlPmsToUpload, pmlRecords} = await pushPml({sourcepath, conn, pushAll, pmlsToUpload})
-    // each uploaded pml record adds pm record to set of to be uploaded
-    pmlPmsToUpload.forEach(item => pmsToUpload.add(item))
+    const pmlRecords = await pushModel({ rootPath, conn, member: memberMap['model'] });
 
-    const {uiPmsToUpload, uiRecords} = await pushUI({sourcepath, conn, pushAll, uisToUpload})
-    // each uploaded pml record adds pm record to set of to be uploaded
-    uiPmsToUpload.forEach(item => pmsToUpload.add(item))
-
-    const pmRecords = await pushPM({sourcepath, conn, pushAll, pmsToUpload})
+    const uiRecords = await pushUI({ rootPath, conn, member: memberMap['config-pml'] });
 
     // Return an object to be displayed with --json
-    return {'pml': pmlRecords, 'ui': uiRecords, 'pm': pmRecords};
+    return { pml: pmlRecords, ui: uiRecords, drl: drlRecords };
   }
 }
