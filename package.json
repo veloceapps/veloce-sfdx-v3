@@ -88,6 +88,12 @@
     "posttest": "eslint src/**/*.ts test/**/*.ts",
     "prepack": "rm -rf lib && tsc -b && oclif-dev manifest && oclif-dev readme",
     "test": "mocha -r ts-node/register --timeout 10000 --forbid-only \"test/**/*.test.ts\"",
-    "version": "oclif-dev readme && git add README.md"
+    "version": "oclif-dev readme && git add README.md",
+    "pretty-quick": "pretty-quick --staged"
+  },
+  "husky": {
+    "hooks": {
+      "pre-commit": "npm run pretty-quick && npm run fix"
+    }
   }
 }
