@@ -1,0 +1,4 @@
+{
+  "commandDescription": "Copy rules to csv for salesforce import",
+  "inputdirFlagDescription": "Input directory to read rule files"
+}

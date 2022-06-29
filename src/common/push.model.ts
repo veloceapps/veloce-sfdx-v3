@@ -5,6 +5,7 @@ import { CreateResult } from '../types/common.types';
 import { Document } from '../types/document.types';
 import { Folder } from '../types/folder.types';
 import {ProductModel} from '../types/productModel.types';
+import {Criteria} from '../utils/push';
 
 async function getDocument(conn: Connection, name: string): Promise<string|null> {
   // TODO: optimize in single query?
@@ -115,28 +116,30 @@ async function uploadModel(sourcepath: string, conn: Connection, pmlName: string
 }
 
 export interface PushPmlParams {
-  sourcepath: string;
+  rootPath: string;
   conn: Connection;
-  pushAll: boolean;
-  modelsToUpload: Set<string>;
+  criteria: Criteria | undefined;
 }
 
 export async function pushModel(params: PushPmlParams): Promise<string[]> {
-  const { sourcepath, conn, pushAll, modelsToUpload } = params;
-
+  const { rootPath, conn, criteria } = params;
+  if (criteria === undefined){
+    return [];
+  }
+  const sourcePath: string = rootPath + '/model';
   const retIDs = []
-  if (pushAll) {
+  if (criteria.all) {
     // Push ALL
     console.log('Pushing All Models')
-    const allModelsToUpload = findAllModels(sourcepath)
+    const allModelsToUpload = findAllModels(sourcePath)
     for (const p of allModelsToUpload) {
-      retIDs.push(await uploadModel(sourcepath, conn, p))
+      retIDs.push(await uploadModel(sourcePath, conn, p))
     }
-  } else if (modelsToUpload.size > 0) {
+  } else if (criteria.names.length > 0) {
     // Push some members only
-    console.log(`Pushing Models with names: ${Array.from(modelsToUpload.values()).join(',')}`)
-    for (const p of modelsToUpload) {
-      retIDs.push(await uploadModel(sourcepath, conn, p))
+    console.log(`Pushing Models with names: ${Array.from(criteria.names.values()).join(',')}`)
+    for (const p of criteria.names) {
+      retIDs.push(await uploadModel(sourcePath, conn, p))
     }
   }
   return retIDs
