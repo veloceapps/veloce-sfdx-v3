@@ -10,6 +10,8 @@ import {Messages} from '@salesforce/core';
 import {AnyJson} from '@salesforce/ts-types';
 import {pushModel} from '../../../common/push.model';
 import {pushUI} from '../../../common/push.ui';
+import {pushDRL} from '../../../common/push.drl';
+import {splitMembers} from '../../../utils/push';
 
 // Initialize Messages with the current plugin directory
 Messages.importMessagesDirectory(__dirname);
@@ -50,24 +52,6 @@ export default class Push extends SfdxCommand {
   // Set this to true if your command requires a project workspace; 'requiresProject' is false by default
   protected static requiresProject = false;
 
-  private static splitMembers(members: string): { modelsToUpload: Set<string>; uisToUpload: Set<string> } {
-    const modelsToUpload = new Set<string>()
-    const uisToUpload = new Set<string>()
-    const membersArray = members.split(',')
-    for(const m of membersArray) {
-      const parts = m.split(':')
-      switch (parts[0]) {
-        case 'model':
-          modelsToUpload.add(parts[1])
-          break
-        case 'config-ui':
-          uisToUpload.add(parts[1])
-          break
-      }
-    }
-    return {modelsToUpload, uisToUpload}
-  }
-
   public async run(): Promise<AnyJson> {
     if(!this.org) {
       return Promise.reject('Org is not defined');
@@ -75,16 +59,16 @@ export default class Push extends SfdxCommand {
 
     const conn = this.org.getConnection();
     const members = (this.flags.members || '') as string;
-    const pushAll = members === '';
-    const sourcepath = ((this.flags.sourcepath || 'source') as string).replace(/\/$/, ''); // trim last slash if present
+    const rootPath = ((this.flags.sourcepath || 'source') as string).replace(/\/$/, ''); // trim last slash if present
 
-    const {modelsToUpload, uisToUpload} = Push.splitMembers(members)
+    const memberMap = splitMembers(members);
+    const drlRecords = await pushDRL({rootPath, conn, member: memberMap['drl']});
 
-    const pmlRecords = await pushModel({sourcepath, conn, pushAll, modelsToUpload})
+    const pmlRecords = await pushModel({rootPath, conn, member: memberMap['model']});
 
-    const uiRecords = await pushUI({sourcepath, conn, pushAll, uisToUpload})
+    const uiRecords = await pushUI({rootPath, conn, member: memberMap['config-pml']});
 
     // Return an object to be displayed with --json
-    return {'pml': pmlRecords, 'ui': uiRecords};
+    return {'pml': pmlRecords, 'ui': uiRecords, 'drl': drlRecords};
   }
 }

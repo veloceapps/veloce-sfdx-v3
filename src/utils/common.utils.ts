@@ -43,6 +43,14 @@ export const readFileSafe = (path: string, ux?: UX): string => {
   }
 }
 
+export const parseJsonSafe = (str: string): any | undefined => {
+  try {
+    return JSON.parse(str);
+  } catch (err) {
+    return undefined;
+  }
+}
+
 export const writeFileSafe = (dir: string, filename: string, data: string, options?: WriteFileOptions): void => {
   if (!existsSync(dir)) {
     mkdirSync(dir, { recursive: true })
