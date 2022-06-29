@@ -101,9 +101,11 @@ export default class Org extends DebugSfdxCommand {
     this.ux.log(`Pushing Model "${modelName}"`);
 
     return exec(`sfdx veloce:debug:push -u ${targetUserName} -m ${modelName} -p ./${this.PATH.MODEL}`)
-      .catch((err) => this.ux.log(err))
       .then((result) => {
         this.ux.log(result);
+      })
+      .catch((err) => {
+        this.ux.error(err);
       });
   }
 }

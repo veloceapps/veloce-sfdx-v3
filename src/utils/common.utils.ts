@@ -1,6 +1,6 @@
 import { exec as nodeExec } from 'node:child_process';
 
-export const exec = (cmd: string): Promise<any> => {
+export const exec = (cmd: string): Promise<string> => {
   return new Promise((resolve, reject) => {
     nodeExec(cmd, (error, result) => {
       if (error) {
