@@ -5,7 +5,7 @@ import { LegacySection, LegacyUiDefinition, UiDef, UiDefinition, UiElement, UiMe
 import { extractElementMetadata, fromBase64, isLegacyDefinition } from '../utils/ui.utils';
 import { ProductModel } from '../types/productModel.types';
 import { fetchProductModels } from '../utils/productModel.utils';
-import { DocumentContentReturn, fetchDocumentContent } from '../utils/document.utils';
+import { fetchDocumentContent } from '../utils/document.utils';
 
 export interface PullUIParams {
   sourcepath: string;
@@ -29,15 +29,14 @@ export async function pullUI(params: PullUIParams): Promise<string[]> {
     return acc;
   }, {} as { [modelName: string]: string });
 
-  const contents: (DocumentContentReturn | undefined)[] = await Promise.all(
-    uiDefProductModels.map((productModel) => fetchDocumentContent(conn, productModel.VELOCPQ__UiDefinitionsId__c, productModel)),
+  const contents: {productModel: ProductModel; content: string|undefined}[] = await Promise.all(
+    uiDefProductModels.map(
+      (productModel) => fetchDocumentContent(conn, productModel.VELOCPQ__UiDefinitionsId__c)
+        .then((content) => ({content, productModel}))
+    ),
   );
 
-  contents.forEach((res) => {
-    if (!res) {
-      return;
-    }
-    const { productModel, content } = res;
+  contents.forEach(({ productModel, content }) => {
     const { Name } = productModel;
 
     let uiDefs: UiDef[] = [];

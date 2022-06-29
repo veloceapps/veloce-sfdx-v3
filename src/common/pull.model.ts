@@ -2,7 +2,7 @@ import { Connection } from '@salesforce/core';
 import { ProductModel } from '../types/productModel.types';
 import { writeFileSafe } from '../utils/common.utils';
 import { fetchProductModels } from '../utils/productModel.utils';
-import { DocumentContentReturn, fetchDocumentContent } from '../utils/document.utils';
+import { fetchDocumentContent } from '../utils/document.utils';
 
 export interface PullModelParams {
   sourcepath: string;
@@ -53,15 +53,14 @@ export async function pullModel(params: PullModelParams): Promise<string[]> {
   const productModels: ProductModel[] = await fetchProductModels(conn, dumpAll, Array.from(modelsToDump));
   const pmsToDump = new Set<string>();
 
-  const contents: (DocumentContentReturn | undefined)[] = await Promise.all(
-    productModels.map((productModel) => fetchDocumentContent(conn, productModel.VELOCPQ__ContentId__c, productModel)),
+  const contents: {productModel: ProductModel; content: string|undefined}[] = await Promise.all(
+    productModels.map(
+      (productModel) => fetchDocumentContent(conn, productModel.VELOCPQ__ContentId__c)
+        .then((content) => ({content, productModel}))
+    ),
   );
 
-  contents.forEach((res) => {
-    if (!res) {
-      return;
-    }
-    const { productModel, content } = res;
+  contents.forEach(({ productModel, content }) => {
     const { Name } = productModel;
 
     writeFileSafe(`${sourcepath}/model/${Name}`, `${Name}.pml`, content ?? '', { flag: 'w+' });
