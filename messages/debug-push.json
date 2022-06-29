@@ -5,6 +5,6 @@
   "membersFlagDescription": "Type of meta data to deploy",
   "examples": [
     "sfdx veloce:debug:push --targetusername myOrg@example.com --targetdevhubusername devhub@org.com",
-    "sfdx veloce:debug:push --targetusername myOrg@example.com --targetdevhubusername devhub@org.com"
+    "sfdx veloce:debug:push --targetusername myOrg@example.com --targetdevhubusername devhub@org.com -m model:name_of_my_model -p ./source/my-alternative-model-folder"
   ]
 }
