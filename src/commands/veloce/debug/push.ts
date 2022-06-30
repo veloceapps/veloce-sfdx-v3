@@ -1,5 +1,5 @@
 import { EOL } from 'node:os';
-import { readdirSync, readFileSync } from 'node:fs';
+import { existsSync, readdirSync, readFileSync } from 'node:fs';
 import { flags } from '@salesforce/command';
 import { Messages } from '@salesforce/core';
 import { AnyJson } from '@salesforce/ts-types';
@@ -28,6 +28,10 @@ export default class Push extends DebugSfdxCommand {
   protected static flagsConfig = {
     members: flags.string({ char: 'm', description: messages.getMessage('membersFlagDescription'), required: true }),
     sourcepath: flags.string({ char: 'p', description: messages.getMessage('sourcepathFlagDescription') }),
+    noproject: flags.boolean({
+      char: 'P',
+      description: messages.getMessage('noprojectFlagDescription'),
+    }),
   };
 
   // Comment this out if your command does not require an org username
@@ -40,6 +44,10 @@ export default class Push extends DebugSfdxCommand {
   protected static requiresProject = false;
 
   public async run(): Promise<AnyJson> {
+    if (!existsSync('sfdx-project.json') && this.flags.noproject === false) {
+      return Promise.reject('You must have sfdx-project.json while runnign this plugin.');
+    }
+
     const debugSession = this.getDebugSession();
     if (!debugSession) {
       this.ux.log('No active debug session found, please start debug session using veloce:debug');

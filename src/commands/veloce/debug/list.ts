@@ -4,6 +4,8 @@ import { AnyJson } from '@salesforce/ts-types';
 import { default as axios } from 'axios';
 import { getDebugClientHeaders } from '../../../utils/auth.utils';
 import { DebugSfdxCommand } from '../../../common/debug.command';
+import { flags } from '@salesforce/command';
+import { existsSync } from 'node:fs';
 
 // Initialize Messages with the current plugin directory
 Messages.importMessagesDirectory(__dirname);
@@ -18,7 +20,12 @@ export default class Org extends DebugSfdxCommand {
 
   public static args = [];
 
-  protected static flagsConfig = {};
+  protected static flagsConfig = {
+    noproject: flags.boolean({
+      char: 'P',
+      description: messages.getMessage('noprojectFlagDescription'),
+    }),
+  };
 
   // Comment this out if your command does not require an org username
   protected static requiresUsername = true;
@@ -30,6 +37,10 @@ export default class Org extends DebugSfdxCommand {
   protected static requiresProject = false;
 
   public async run(): Promise<AnyJson> {
+    if (!existsSync('sfdx-project.json') && this.flags.noproject === false) {
+      return Promise.reject('You must have sfdx-project.json while runnign this plugin.');
+    }
+
     const debugSession = this.getDebugSession();
     if (!debugSession) {
       this.ux.log('No active debug session found, please start debug session using veloce:debug');

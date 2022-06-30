@@ -3,6 +3,7 @@
   "targetFlagDescription": "Alias of existing org",
   "sourcepathFlagDescription": "Path to meta data",
   "membersFlagDescription": "Type of meta data to deploy",
+  "noprojectFlagDescription": "Bypass check of sfdx-project.json to exist",
   "examples": [
     "sfdx veloce:debug:push --targetusername myOrg@example.com --targetdevhubusername devhub@org.com",
     "sfdx veloce:debug:push --targetusername myOrg@example.com --targetdevhubusername devhub@org.com -m model:name_of_my_model -p ./source/my-alternative-model-folder"

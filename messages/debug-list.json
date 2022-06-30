@@ -1,7 +1,6 @@
 {
   "commandDescription": "Lists debug sessions",
   "targetFlagDescription": "Alias of existing org",
-  "examples": [
-    "sfdx veloce:debug:list --targetusername myOrg@example.com --targetdevhubusername devhub@org.com"
-  ]
+  "noprojectFlagDescription": "Bypass check of sfdx-project.json to exist",
+  "examples": ["sfdx veloce:debug:list --targetusername myOrg@example.com --targetdevhubusername devhub@org.com"]
 }

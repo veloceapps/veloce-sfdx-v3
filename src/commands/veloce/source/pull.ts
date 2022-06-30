@@ -10,6 +10,7 @@ import { Messages } from '@salesforce/core';
 import { AnyJson } from '@salesforce/ts-types';
 import { pullModel } from '../../../common/pull.model';
 import { pullUI } from '../../../common/pull.ui';
+import { existsSync } from 'node:fs';
 
 // Initialize Messages with the current plugin directory
 Messages.importMessagesDirectory(__dirname);
@@ -37,6 +38,10 @@ export default class Pull extends SfdxCommand {
     sourcepath: flags.string({
       char: 'p',
       description: messages.getMessage('sourcepathFlagDescription'),
+    }),
+    noproject: flags.boolean({
+      char: 'P',
+      description: messages.getMessage('noprojectFlagDescription'),
     }),
   };
 
@@ -70,6 +75,9 @@ export default class Pull extends SfdxCommand {
   public async run(): Promise<AnyJson> {
     if (!this.org) {
       return Promise.reject('Org is not defined');
+    }
+    if (!existsSync('sfdx-project.json') && this.flags.noproject === false) {
+      return Promise.reject('You must have sfdx-project.json while runnign this plugin.');
     }
 
     const conn = this.org.getConnection();

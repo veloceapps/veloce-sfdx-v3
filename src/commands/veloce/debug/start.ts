@@ -1,7 +1,7 @@
-import { mkdirSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, writeFileSync } from 'node:fs';
 import { EOL, homedir } from 'node:os';
 import { join } from 'node:path';
-import { SfdxCommand } from '@salesforce/command';
+import { flags, SfdxCommand } from '@salesforce/command';
 import { Messages, Org as oorg } from '@salesforce/core';
 import { AnyJson } from '@salesforce/ts-types';
 import axios from 'axios';
@@ -23,7 +23,12 @@ export default class Start extends SfdxCommand {
   public static examples = messages.getMessage('examples').split(EOL);
 
   public static args = [];
-  protected static flagsConfig = {};
+  protected static flagsConfig = {
+    noproject: flags.boolean({
+      char: 'P',
+      description: messages.getMessage('noprojectFlagDescription'),
+    }),
+  };
 
   // Comment this out if your command does not require an org username
   protected static requiresUsername = true;
@@ -37,6 +42,9 @@ export default class Start extends SfdxCommand {
   public async run(): Promise<AnyJson> {
     if (!this.org) {
       return Promise.reject('Org is not defined');
+    }
+    if (!existsSync('sfdx-project.json') && this.flags.noproject === false) {
+      return Promise.reject('You must have sfdx-project.json while runnign this plugin.');
     }
 
     await this.org.refreshAuth(); // we need a live accessToken for the frontdoor url

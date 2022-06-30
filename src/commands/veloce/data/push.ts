@@ -8,6 +8,7 @@ import * as os from 'os';
 import { flags, SfdxCommand } from '@salesforce/command';
 import { Messages, SfdxError } from '@salesforce/core';
 import { AnyJson } from '@salesforce/ts-types';
+import { existsSync } from 'node:fs';
 
 // Initialize Messages with the current plugin directory
 Messages.importMessagesDirectory(__dirname);
@@ -32,6 +33,10 @@ export default class Push extends SfdxCommand {
       char: 'p',
       description: messages.getMessage('sourcepathFlagDescription'),
     }),
+    noproject: flags.boolean({
+      char: 'P',
+      description: messages.getMessage('noprojectFlagDescription'),
+    }),
   };
 
   // Comment this out if your command does not require an org username
@@ -44,8 +49,11 @@ export default class Push extends SfdxCommand {
   protected static requiresProject = false;
 
   public async run(): Promise<AnyJson> {
-    if(!this.org) {
+    if (!this.org) {
       return Promise.reject('Org is not defined');
+    }
+    if (!existsSync('sfdx-project.json') && this.flags.noproject === false) {
+      return Promise.reject('You must have sfdx-project.json while runnign this plugin.');
     }
 
     const name = (this.flags.name || 'world') as string;

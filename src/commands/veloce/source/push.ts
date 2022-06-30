@@ -12,6 +12,7 @@ import { pushModel } from '../../../common/push.model';
 import { pushUI } from '../../../common/push.ui';
 import { pushDRL } from '../../../common/push.drl';
 import { MembersMap } from '../../../common/members.map';
+import { existsSync } from 'node:fs';
 // Initialize Messages with the current plugin directory
 Messages.importMessagesDirectory(__dirname);
 
@@ -40,6 +41,10 @@ export default class Push extends SfdxCommand {
       char: 'p',
       description: messages.getMessage('sourcepathFlagDescription'),
     }),
+    noproject: flags.boolean({
+      char: 'P',
+      description: messages.getMessage('noprojectFlagDescription'),
+    }),
   };
 
   // Comment this out if your command does not require an org username
@@ -54,6 +59,9 @@ export default class Push extends SfdxCommand {
   public async run(): Promise<AnyJson> {
     if (!this.org) {
       return Promise.reject('Org is not defined');
+    }
+    if (!existsSync('sfdx-project.json') && this.flags.noproject === false) {
+      return Promise.reject('You must have sfdx-project.json while runnign this plugin.');
     }
 
     const conn = this.org.getConnection();
