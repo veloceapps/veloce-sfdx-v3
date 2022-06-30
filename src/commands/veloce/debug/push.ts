@@ -70,7 +70,7 @@ export default class Org extends DebugSfdxCommand {
       return;
     }
     const headers = getDebugClientHeaders(debugSession);
-    const backendUrl: string | undefined = debugSession.backendUrl;
+    const backendUrl: string = debugSession.backendUrl;
     const models = this.findAllModels(rootPath);
     for (const name of models) {
       // TODO: consider parallelizing if this will be slow?
