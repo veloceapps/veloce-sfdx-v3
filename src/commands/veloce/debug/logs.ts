@@ -1,9 +1,11 @@
-import { EOL } from 'node:os';
+import { readFileSync } from 'fs';
+import * as os from 'os';
+import * as path from 'path';
+import { SfdxCommand } from '@salesforce/command';
 import { Messages } from '@salesforce/core';
 import { AnyJson } from '@salesforce/ts-types';
-import { default as axios } from 'axios';
-import { getAuthToken } from '../../../utils/auth.utils';
-import { DebugSfdxCommand } from '../../../common/debug.command';
+import { AxiosError, default as axios } from 'axios';
+import { EOL } from 'node:os';
 
 // Initialize Messages with the current plugin directory
 Messages.importMessagesDirectory(__dirname);
@@ -12,7 +14,7 @@ Messages.importMessagesDirectory(__dirname);
 // or any library that is using the messages framework can also be loaded this way.
 const messages = Messages.loadMessages('veloce-sfdx-v3', 'debug-logs');
 
-export default class Org extends DebugSfdxCommand {
+export default class Org extends SfdxCommand {
   public static description = messages.getMessage('commandDescription');
   public static examples = messages.getMessage('examples').split(EOL);
 
@@ -30,38 +32,53 @@ export default class Org extends DebugSfdxCommand {
   protected static requiresProject = false;
 
   public async run(): Promise<AnyJson> {
-    const debugSession = this.getDebugSession();
-    if (!debugSession) {
+    const homedir = os.homedir();
+    const debugSessionFile = path.join(homedir, '.veloce-sfdx/debug.session');
+    let debugSession: { [key: string]: any };
+    try {
+      debugSession = JSON.parse(readFileSync(debugSessionFile).toString());
+    } catch (e) {
       this.ux.log('No active debug session found, please start debug session using veloce:debug');
       return {};
     }
 
-    const authorization = getAuthToken({
+    const params = {
       veloceNamespace: '',
-      instanceUrl: `${debugSession.instanceUrl}`,
-      organizationId: `${debugSession.orgId}`,
+      instanceUrl: `${debugSession.instanceUrl as string}`,
+      organizationId: `${debugSession.orgId as string}`,
       oAuthHeaderValue: 'Dummy',
-    });
+    };
+    const authorization = Buffer.from(JSON.stringify(params)).toString('base64');
     const headers = {
       'dev-token': debugSession.token,
       Authorization: authorization,
-      'Content-Type': 'application/json',
     };
     const backendUrl: string | undefined = debugSession.backendUrl;
 
-    try {
-      await axios.post(
-        `${backendUrl}/services/dev-override/logs`,
-        {},
-        {
-          headers,
-        },
-      );
-    } catch ({ data }) {
-      this.ux.log(`Failed to list debug sessions: ${data as string}`);
-      return {};
-    }
-    // Return an object to be displayed with --json
+    this.ux.log('Following the backend logs...');
+
+    await new Promise(() => void this.callToGetLogs(backendUrl, headers));
+
     return {};
+  }
+
+  private async callToGetLogs(
+    backendUrl: string | undefined,
+    headers: { Authorization: string; 'dev-token': any },
+  ): Promise<void> {
+    try {
+      const response = await axios.get(`${backendUrl}/services/dev-override/logs`, { headers });
+      if (response.data !== '') {
+        this.ux.log(response.data);
+      }
+    } catch (error) {
+      if (error instanceof AxiosError) {
+        this.ux.log(`Failed to get logs: ${error.response?.data} code ${error.response?.status}`);
+      } else {
+        this.ux.log(`Failed to get logs: ${JSON.stringify(error)}`);
+      }
+    } finally {
+      setTimeout(() => void this.callToGetLogs(backendUrl, headers), 1000);
+    }
   }
 }
