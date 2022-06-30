@@ -2,7 +2,7 @@ import { EOL } from 'node:os';
 import { Messages } from '@salesforce/core';
 import { AnyJson } from '@salesforce/ts-types';
 import { default as axios } from 'axios';
-import { getAuthToken } from '../../../utils/auth.utils';
+import { getDebugClientHeaders } from '../../../utils/auth.utils';
 import { DebugSfdxCommand } from '../../../common/debug.command';
 
 // Initialize Messages with the current plugin directory
@@ -35,17 +35,7 @@ export default class Org extends DebugSfdxCommand {
       this.ux.log('No active debug session found, please start debug session using veloce:debug');
       return {};
     }
-    const authorization = getAuthToken({
-      veloceNamespace: '',
-      instanceUrl: `${debugSession.instanceUrl}`,
-      organizationId: `${debugSession.orgId}`,
-      oAuthHeaderValue: 'Dummy',
-    });
-    const headers = {
-      'dev-token': debugSession.token,
-      Authorization: authorization,
-      'Content-Type': 'application/json',
-    };
+    const headers = getDebugClientHeaders(debugSession);
     const backendUrl: string | undefined = debugSession.backendUrl;
 
     try {

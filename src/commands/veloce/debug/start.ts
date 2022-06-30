@@ -8,7 +8,7 @@ import axios from 'axios';
 import * as open from 'open';
 import { v4 as uuidv4 } from 'uuid';
 import DebugSessionInfo from '../../../types/DebugSessionInfo';
-import { getAuthToken } from '../../../utils/auth.utils';
+import { getDebugClientHeaders } from '../../../utils/auth.utils';
 
 // Initialize Messages with the current plugin directory
 Messages.importMessagesDirectory(__dirname);
@@ -63,19 +63,14 @@ export default class Start extends SfdxCommand {
     const backendUrl = orgInfo.data['BackendURL'];
     this.ux.log(`Starting debug of backend: ${backendUrl}`);
 
-    const authorization = getAuthToken({
-      veloceNamespace: '',
-      instanceUrl: `${instanceUrlClean}`,
-      organizationId: `${orgId}`,
-      oAuthHeaderValue: `Bearer ${accessToken}`,
-    });
-    const headers = {
-      'dev-token': `${devToken}`,
-      Authorization: authorization,
-      'Content-Type': 'application/json',
-      'Veloce-Accept-Encoding': 'none',
+    const debugSession: DebugSessionInfo = {
+      token: devToken,
+      backendUrl,
+      orgId,
+      instanceUrl: instanceUrlClean,
+      accessToken,
     };
-
+    const headers = getDebugClientHeaders(debugSession);
     try {
       await axios.post(`${backendUrl}/services/dev-override/auth`, {}, { headers });
     } catch (e: any) {
@@ -93,7 +88,6 @@ export default class Start extends SfdxCommand {
     }
 
     const debugSessionFile = join(veloceHome, 'debug.session');
-    const debugSession: DebugSessionInfo = { token: devToken, backendUrl, orgId, instanceUrl: instanceUrlClean };
 
     try {
       writeFileSync(debugSessionFile, JSON.stringify(debugSession), {

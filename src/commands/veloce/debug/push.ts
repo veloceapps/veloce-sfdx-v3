@@ -6,7 +6,7 @@ import { AnyJson } from '@salesforce/ts-types';
 import { AxiosError, default as axios } from 'axios';
 import { DebugSfdxCommand } from '../../../common/debug.command';
 import { extractGroupsFromFolder } from '../../../utils/drools.utils';
-import { getAuthToken } from '../../../utils/auth.utils';
+import { getDebugClientHeaders } from '../../../utils/auth.utils';
 import DebugSessionInfo from '../../../types/DebugSessionInfo';
 import { getPath } from '../../../utils/path.utils';
 import { Member } from '../../../types/member.types';
@@ -69,21 +69,11 @@ export default class Org extends DebugSfdxCommand {
     if (!member) {
       return;
     }
-    const params = {
-      veloceNamespace: '',
-      instanceUrl: `${debugSession.instanceUrl}`,
-      organizationId: `${debugSession.orgId}`,
-      oAuthHeaderValue: 'Dummy',
-    };
-    const authorization = Buffer.from(JSON.stringify(params)).toString('base64');
-    const headers = {
-      'dev-token': debugSession.token,
-      Authorization: authorization,
-      'Content-Type': 'application/json',
-    };
+    const headers = getDebugClientHeaders(debugSession);
     const backendUrl: string | undefined = debugSession.backendUrl;
     const models = this.findAllModels(rootPath);
     for (const name of models) {
+      // TODO: consider parallelizing if this will be slow?
       if (member.all || member.names.includes(name)) {
         // load PML
         const pml = readFileSync(`${rootPath}/model/${name}/${name}.pml`, 'utf8').toString();
@@ -116,18 +106,7 @@ export default class Org extends DebugSfdxCommand {
       return;
     }
     const sourcePath = rootPath + '/drl';
-    const authorization = getAuthToken({
-      veloceNamespace: '',
-      instanceUrl: debugSession.instanceUrl,
-      organizationId: debugSession.orgId,
-      oAuthHeaderValue: 'Dummy',
-    });
-    const headers = {
-      'dev-token': debugSession.token,
-      Authorization: authorization,
-      'Content-Type': 'application/json',
-    };
-
+    const headers = getDebugClientHeaders(debugSession);
     const result = extractGroupsFromFolder(sourcePath);
     for (const group of result) {
       if (member.all || member.names.includes(group.name)) {

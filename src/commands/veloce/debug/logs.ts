@@ -5,6 +5,7 @@ import { SfdxCommand } from '@salesforce/command';
 import { Messages } from '@salesforce/core';
 import { AnyJson } from '@salesforce/ts-types';
 import { AxiosError, default as axios } from 'axios';
+import { getDebugClientHeaders } from '../../../utils/auth.utils';
 import { EOL } from 'node:os';
 
 // Initialize Messages with the current plugin directory
@@ -42,17 +43,7 @@ export default class Org extends SfdxCommand {
       return {};
     }
 
-    const params = {
-      veloceNamespace: '',
-      instanceUrl: `${debugSession.instanceUrl as string}`,
-      organizationId: `${debugSession.orgId as string}`,
-      oAuthHeaderValue: 'Dummy',
-    };
-    const authorization = Buffer.from(JSON.stringify(params)).toString('base64');
-    const headers = {
-      'dev-token': debugSession.token,
-      Authorization: authorization,
-    };
+    const headers = getDebugClientHeaders(debugSession);
     const backendUrl: string | undefined = debugSession.backendUrl;
 
     this.ux.log('Following the backend logs...');
