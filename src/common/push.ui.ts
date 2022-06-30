@@ -29,7 +29,7 @@ export async function pushUI(params: PushUIParams): Promise<string[]> {
   console.log(`Dumping Uis result count: ${productModels.length}`);
 
   // Check if veloce folder exists:
-  const folderId: string = (await fetchFolder(conn, FOLDER_NAME))?.Id ?? (await createFolder(conn, FOLDER_NAME))?.id;
+  const folderId: string = (await fetchFolder(conn, FOLDER_NAME))?.Id ?? (await createFolder(conn, FOLDER_NAME)).id;
 
   const result: string[] = await Promise.all(
     productModels.map(({ VELOCPQ__UiDefinitionsId__c, Name }) => {
