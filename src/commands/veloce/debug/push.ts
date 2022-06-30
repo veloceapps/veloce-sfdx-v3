@@ -19,7 +19,7 @@ Messages.importMessagesDirectory(__dirname);
 // or any library that is using the messages framework can also be loaded this way.
 const messages = Messages.loadMessages('veloce-sfdx-v3', 'debug-push');
 
-export default class Org extends DebugSfdxCommand {
+export default class Push extends DebugSfdxCommand {
   public static description = messages.getMessage('commandDescription');
   public static examples = messages.getMessage('examples').split(EOL);
 
@@ -50,7 +50,7 @@ export default class Org extends DebugSfdxCommand {
     const rootPath = getPath(this.flags.sourcepath) ?? 'source';
     const memberMap = new MembersMap(members);
 
-    await this.sendModel(debugSession, rootPath, memberMap['model']);
+    await this.sendModel(debugSession, rootPath, memberMap.get('model'));
     await this.sendDrools(debugSession, rootPath, memberMap.get('drl'));
     // Return an object to be displayed with --json
     return {};
@@ -65,7 +65,7 @@ export default class Org extends DebugSfdxCommand {
     return result;
   }
 
-  private async sendModel(debugSession: DebugSessionInfo, rootPath: string, member: Member) {
+  private async sendModel(debugSession: DebugSessionInfo, rootPath: string, member: Member | undefined) {
     if (!member) {
       return;
     }
