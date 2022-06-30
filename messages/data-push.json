@@ -1,6 +1,7 @@
 {
   "commandDescription": "Uploads Data from CSVs to Salesforce org",
   "sourcepathFlagDescription": "Path where to get data",
+  "noprojectFlagDescription": "Bypass check of sfdx-project.json to exist",
   "examples": [
     "sfdx veloce:data:pull --targetusername myOrg@example.com --targetdevhubusername devhub@org.com --members model:Octa --sourcepath ./source/templates"
   ]

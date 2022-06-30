@@ -32,6 +32,10 @@ export default class Org extends DebugSfdxCommand {
       required: false,
       description: messages.getMessage('sourcepathFlagDescription'),
     }),
+    noproject: flags.boolean({
+      char: 'P',
+      description: messages.getMessage('noprojectFlagDescription'),
+    }),
   };
 
   // Comment this out if your command does not require an org username
@@ -49,6 +53,10 @@ export default class Org extends DebugSfdxCommand {
   };
 
   public async run(): Promise<AnyJson> {
+    if (!existsSync('sfdx-project.json') && this.flags.noproject === false) {
+      return Promise.reject('You must have sfdx-project.json while runnign this plugin.');
+    }
+
     const debugSession = this.getDebugSession();
     if (!debugSession) {
       this.ux.log('No active debug session found, please start debug session using veloce:debug');

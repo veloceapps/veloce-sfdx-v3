@@ -3,6 +3,7 @@
   "targetFlagDescription": "Alias of existing org",
   "sourcepathFlagDescription": "Path where to watch data",
   "sourcepathFlagInvalid": "Sourcepath: No such file or directory",
+  "noprojectFlagDescription": "Bypass check of sfdx-project.json to exist",
   "examples": [
     "sfdx veloce:debug:watch --targetusername myOrg@example.com --targetdevhubusername devhub@org.com --sourcepath source/models"
   ]

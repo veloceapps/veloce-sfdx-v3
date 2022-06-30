@@ -1,4 +1,4 @@
-import { readFileSync } from 'node:fs'
+import { readFileSync } from 'node:fs';
 import { flags, SfdxCommand } from '@salesforce/command';
 import { Aliases, AuthInfo, ConfigGroup, Messages, SfdxError } from '@salesforce/core';
 import { AnyJson, getString } from '@salesforce/ts-types';
@@ -59,8 +59,8 @@ export default class Login extends SfdxCommand {
   protected static requiresProject = false;
 
   public async run(): Promise<AnyJson> {
-    const url = (this.flags.instanceurl as string).trim()
-    const securitytoken = ((this.flags.securitytoken as string) || '' ).trim();
+    const url = (this.flags.instanceurl as string).trim();
+    const securitytoken = ((this.flags.securitytoken as string) || '').trim();
     const user = (this.flags.user as string).trim();
     const alias = (this.flags.alias as string).trim();
 
