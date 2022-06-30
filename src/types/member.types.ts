@@ -3,5 +3,3 @@ export interface Member {
   all: boolean;
   names: string[];
 }
-
-export type MembersMap = { [key: string]: Member };

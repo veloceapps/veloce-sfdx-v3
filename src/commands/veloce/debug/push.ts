@@ -7,9 +7,9 @@ import { DebugSfdxCommand } from '../../../common/debug.command';
 import { extractGroupsFromFolder } from '../../../utils/drools.utils';
 import { getAuthToken } from '../../../utils/auth.utils';
 import DebugSessionInfo from '../../../types/DebugSessionInfo';
-import { splitMembers } from '../../../utils/push';
 import { getPath } from '../../../utils/path.utils';
 import { Member } from '../../../types/member.types';
+import { MembersMap } from '../../../common/members.map';
 
 // Initialize Messages with the current plugin directory
 Messages.importMessagesDirectory(__dirname);
@@ -47,15 +47,18 @@ export default class Org extends DebugSfdxCommand {
 
     const members = this.flags.members as string;
     const rootPath = getPath(this.flags.sourcepath) ?? 'source';
+    const memberMap = new MembersMap(members);
 
-    const memberMap = splitMembers(members);
-
-    await this.sendDrools(debugSession, rootPath, memberMap['drl']);
+    await this.sendDrools(debugSession, rootPath, memberMap.get('drl'));
     // Return an object to be displayed with --json
     return {};
   }
 
-  private async sendDrools(debugSession: DebugSessionInfo, rootPath: string, member: Member): Promise<void> {
+  private async sendDrools(
+    debugSession: DebugSessionInfo,
+    rootPath: string,
+    member: Member | undefined,
+  ): Promise<void> {
     if (!member) {
       return;
     }

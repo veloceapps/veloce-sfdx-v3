@@ -11,8 +11,7 @@ import { AnyJson } from '@salesforce/ts-types';
 import { pushModel } from '../../../common/push.model';
 import { pushUI } from '../../../common/push.ui';
 import { pushDRL } from '../../../common/push.drl';
-import { splitMembers } from '../../../utils/push';
-
+import { MembersMap } from '../../../common/members.map';
 // Initialize Messages with the current plugin directory
 Messages.importMessagesDirectory(__dirname);
 
@@ -61,12 +60,12 @@ export default class Push extends SfdxCommand {
     const members = (this.flags.members || '') as string;
     const rootPath = ((this.flags.sourcepath || 'source') as string).replace(/\/$/, ''); // trim last slash if present
 
-    const memberMap = splitMembers(members);
-    const drlRecords = await pushDRL({ rootPath, conn, member: memberMap['drl'] });
+    const memberMap = new MembersMap(members);
+    const drlRecords = await pushDRL({ rootPath, conn, member: memberMap.get('drl') });
 
-    const pmlRecords = await pushModel({ rootPath, conn, member: memberMap['model'] });
+    const pmlRecords = await pushModel({ rootPath, conn, member: memberMap.get('model') });
 
-    const uiRecords = await pushUI({ rootPath, conn, member: memberMap['config-ui'] });
+    const uiRecords = await pushUI({ rootPath, conn, member: memberMap.get('config-ui') });
 
     // Return an object to be displayed with --json
     return { pml: pmlRecords, ui: uiRecords, drl: drlRecords };
