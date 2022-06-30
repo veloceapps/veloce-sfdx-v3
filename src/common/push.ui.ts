@@ -29,10 +29,7 @@ export async function pushUI(params: PushUIParams): Promise<string[]> {
   console.log(`Dumping Uis result count: ${productModels.length}`);
 
   // Check if veloce folder exists:
-  let folderId = (await fetchFolder(conn, FOLDER_NAME))?.Id;
-  if (!folderId) {
-    folderId = (await createFolder(conn, FOLDER_NAME))?.id;
-  }
+  const folderId: string = (await fetchFolder(conn, FOLDER_NAME))?.Id ?? (await createFolder(conn, FOLDER_NAME))?.id;
 
   const result: string[] = await Promise.all(
     productModels.map(({ VELOCPQ__UiDefinitionsId__c, Name }) => {
@@ -44,7 +41,7 @@ export async function pushUI(params: PushUIParams): Promise<string[]> {
       // Encode to base64 TWICE!, first time is requirement of POST/PATCH, and it will be decoded on reads automatically by SF.
       const b64Data = Buffer.from(gzipped.toString('base64')).toString('base64');
 
-      const documentBody: DocumentBody = { folderId: folderId as string, body: b64Data, name: Name };
+      const documentBody: DocumentBody = { folderId, body: b64Data, name: Name };
 
       return fetchDocument(conn, VELOCPQ__UiDefinitionsId__c).then((document) =>
         document?.Id
