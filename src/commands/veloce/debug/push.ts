@@ -1,11 +1,12 @@
 import { EOL } from 'node:os';
+import { readdirSync, readFileSync } from 'node:fs';
 import { flags } from '@salesforce/command';
 import { Messages } from '@salesforce/core';
 import { AnyJson } from '@salesforce/ts-types';
-import { default as axios } from 'axios';
+import { AxiosError, default as axios } from 'axios';
 import { DebugSfdxCommand } from '../../../common/debug.command';
 import { extractGroupsFromFolder } from '../../../utils/drools.utils';
-import { getAuthToken } from '../../../utils/auth.utils';
+import { getDebugClientHeaders } from '../../../utils/auth.utils';
 import DebugSessionInfo from '../../../types/DebugSessionInfo';
 import { getPath } from '../../../utils/path.utils';
 import { Member } from '../../../types/member.types';
@@ -18,7 +19,7 @@ Messages.importMessagesDirectory(__dirname);
 // or any library that is using the messages framework can also be loaded this way.
 const messages = Messages.loadMessages('veloce-sfdx-v3', 'debug-push');
 
-export default class Org extends DebugSfdxCommand {
+export default class Push extends DebugSfdxCommand {
   public static description = messages.getMessage('commandDescription');
   public static examples = messages.getMessage('examples').split(EOL);
 
@@ -49,9 +50,51 @@ export default class Org extends DebugSfdxCommand {
     const rootPath = getPath(this.flags.sourcepath) ?? 'source';
     const memberMap = new MembersMap(members);
 
+    await this.sendModel(debugSession, rootPath, memberMap.get('model'));
     await this.sendDrools(debugSession, rootPath, memberMap.get('drl'));
     // Return an object to be displayed with --json
     return {};
+  }
+
+  private findAllModels(sourcepath: string): Set<string> {
+    const result = new Set<string>();
+    const filenames = readdirSync(`${sourcepath}/model`);
+    filenames.forEach((file) => {
+      result.add(file);
+    });
+    return result;
+  }
+
+  private async sendModel(debugSession: DebugSessionInfo, rootPath: string, member: Member | undefined) {
+    if (!member) {
+      return;
+    }
+    const headers = getDebugClientHeaders(debugSession);
+    const backendUrl: string = debugSession.backendUrl;
+    const models = this.findAllModels(rootPath);
+    for (const name of models) {
+      // TODO: consider parallelizing if this will be slow?
+      if (member.all || member.names.includes(name)) {
+        // load PML
+        const pml = readFileSync(`${rootPath}/model/${name}/${name}.pml`, 'utf8').toString();
+        try {
+          await axios.post(
+            `${backendUrl}/services/dev-override/model/${name}/pml`,
+            { content: pml },
+            {
+              headers,
+            },
+          );
+        } catch (error) {
+          if (error instanceof AxiosError) {
+            this.ux.log(`Failed to deploy ${name}: ${error.response?.data} code ${error.response?.status}`);
+          } else {
+            this.ux.log(`Failed to deploy ${name}: ${JSON.stringify(error)}`);
+          }
+        }
+        this.ux.log('PML Successfully Loaded!');
+      }
+    }
   }
 
   private async sendDrools(
@@ -63,18 +106,7 @@ export default class Org extends DebugSfdxCommand {
       return;
     }
     const sourcePath = rootPath + '/drl';
-    const authorization = getAuthToken({
-      veloceNamespace: '',
-      instanceUrl: debugSession.instanceUrl,
-      organizationId: debugSession.orgId,
-      oAuthHeaderValue: 'Dummy',
-    });
-    const headers = {
-      'dev-token': debugSession.token,
-      Authorization: authorization,
-      'Content-Type': 'application/json',
-    };
-
+    const headers = getDebugClientHeaders(debugSession);
     const result = extractGroupsFromFolder(sourcePath);
     for (const group of result) {
       if (member.all || member.names.includes(group.name)) {
@@ -82,8 +114,12 @@ export default class Org extends DebugSfdxCommand {
           await axios.post(`${debugSession.backendUrl}/services/dev-override/drools/${group.priceListId}`, group, {
             headers,
           });
-        } catch ({ data }) {
-          this.ux.log(`Failed to deploy ${group.name}: ${data as string}`);
+        } catch (error) {
+          if (error instanceof AxiosError) {
+            this.ux.log(`Failed to deploy ${group.name}: ${error.response?.data} code ${error.response?.status}`);
+          } else {
+            this.ux.log(`Failed to deploy ${group.name}: ${JSON.stringify(error)}`);
+          }
         }
       }
     }

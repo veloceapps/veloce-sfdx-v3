@@ -1,11 +1,9 @@
-import { readFileSync } from 'fs';
-import * as os from 'os';
-import * as path from 'path';
-import { SfdxCommand } from '@salesforce/command';
 import { Messages } from '@salesforce/core';
 import { AnyJson } from '@salesforce/ts-types';
 import { AxiosError, default as axios } from 'axios';
+import { getDebugClientHeaders } from '../../../utils/auth.utils';
 import { EOL } from 'node:os';
+import { DebugSfdxCommand } from '../../../common/debug.command';
 
 // Initialize Messages with the current plugin directory
 Messages.importMessagesDirectory(__dirname);
@@ -14,7 +12,7 @@ Messages.importMessagesDirectory(__dirname);
 // or any library that is using the messages framework can also be loaded this way.
 const messages = Messages.loadMessages('veloce-sfdx-v3', 'debug-logs');
 
-export default class Org extends SfdxCommand {
+export default class Org extends DebugSfdxCommand {
   public static description = messages.getMessage('commandDescription');
   public static examples = messages.getMessage('examples').split(EOL);
 
@@ -32,27 +30,13 @@ export default class Org extends SfdxCommand {
   protected static requiresProject = false;
 
   public async run(): Promise<AnyJson> {
-    const homedir = os.homedir();
-    const debugSessionFile = path.join(homedir, '.veloce-sfdx/debug.session');
-    let debugSession: { [key: string]: any };
-    try {
-      debugSession = JSON.parse(readFileSync(debugSessionFile).toString());
-    } catch (e) {
+    const debugSession = this.getDebugSession();
+    if (!debugSession) {
       this.ux.log('No active debug session found, please start debug session using veloce:debug');
       return {};
     }
 
-    const params = {
-      veloceNamespace: '',
-      instanceUrl: `${debugSession.instanceUrl as string}`,
-      organizationId: `${debugSession.orgId as string}`,
-      oAuthHeaderValue: 'Dummy',
-    };
-    const authorization = Buffer.from(JSON.stringify(params)).toString('base64');
-    const headers = {
-      'dev-token': debugSession.token,
-      Authorization: authorization,
-    };
+    const headers = getDebugClientHeaders(debugSession);
     const backendUrl: string | undefined = debugSession.backendUrl;
 
     this.ux.log('Following the backend logs...');
@@ -62,10 +46,7 @@ export default class Org extends SfdxCommand {
     return {};
   }
 
-  private async callToGetLogs(
-    backendUrl: string | undefined,
-    headers: { Authorization: string; 'dev-token': any },
-  ): Promise<void> {
+  private async callToGetLogs(backendUrl: string | undefined, headers: { [key: string]: string }): Promise<void> {
     try {
       const response = await axios.get(`${backendUrl}/services/dev-override/logs`, { headers });
       if (response.data !== '') {

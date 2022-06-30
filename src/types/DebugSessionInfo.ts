@@ -3,4 +3,5 @@ export default interface DebugSessionInfo {
   backendUrl: string;
   orgId: string;
   instanceUrl: string;
+  accessToken: string;
 }
