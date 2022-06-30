@@ -11,9 +11,10 @@ Extension to sfdx which allows veloce specific data pull and push
 
 <!-- toc -->
 
-<!-- tocstop -->
-<!-- install -->
-<!-- usage -->
+- [veloce](#veloce)
+  <!-- tocstop -->
+  <!-- install -->
+  <!-- usage -->
 
 ```sh-session
 $ npm install -g veloce-sfdx-v3
@@ -200,7 +201,8 @@ OPTIONS
 
 EXAMPLES
   sfdx veloce:debug:push --targetusername myOrg@example.com --targetdevhubusername devhub@org.com
-  sfdx veloce:debug:push --targetusername myOrg@example.com --targetdevhubusername devhub@org.com
+  sfdx veloce:debug:push --targetusername myOrg@example.com --targetdevhubusername devhub@org.com -m
+  model:name_of_my_model -p ./source/my-alternative-model-folder
 ```
 
 _See code: [src/commands/veloce/debug/push.ts](https://github.com/veloceapps/veloce-sfdx-v3/blob/v0.0.6/src/commands/veloce/debug/push.ts)_
