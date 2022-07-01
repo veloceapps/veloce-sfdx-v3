@@ -24,7 +24,7 @@ export async function pushUI(params: PushUIParams): Promise<string[]> {
   const sourcepath: string = rootPath + '/config-ui';
 
   const modelNames: string[] = Array.from(member.names);
-  console.log(`Dumping ${member.all ? 'All Uis' : 'Uis with names: ' + modelNames.join()}`);
+  console.log(`Uploading ${member.all ? 'All Uis' : 'Uis with names: ' + modelNames.join()}`);
   const productModels: ProductModel[] = await fetchProductModels(conn, member.all, modelNames);
   console.log(`Uploading Uis result count: ${productModels.length}`);
 
