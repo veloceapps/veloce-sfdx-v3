@@ -26,7 +26,7 @@ export async function pushUI(params: PushUIParams): Promise<string[]> {
   const modelNames: string[] = Array.from(member.names);
   console.log(`Dumping ${member.all ? 'All Uis' : 'Uis with names: ' + modelNames.join()}`);
   const productModels: ProductModel[] = await fetchProductModels(conn, member.all, modelNames);
-  console.log(`Dumping Uis result count: ${productModels.length}`);
+  console.log(`Uploading Uis result count: ${productModels.length}`);
 
   // Check if veloce folder exists:
   const folderId: string = (await fetchFolder(conn, FOLDER_NAME))?.Id ?? (await createFolder(conn, FOLDER_NAME)).id;
