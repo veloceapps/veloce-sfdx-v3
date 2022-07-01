@@ -13,6 +13,7 @@ import { pushModel } from '../../../common/push.model';
 import { pushUI } from '../../../common/push.ui';
 import { pushDRL } from '../../../common/push.drl';
 import { MembersMap } from '../../../common/members.map';
+import { pushSettings } from '../../../common/push.settings';
 // Initialize Messages with the current plugin directory
 Messages.importMessagesDirectory(__dirname);
 
@@ -75,7 +76,9 @@ export default class Push extends SfdxCommand {
 
     const uiRecords = await pushUI({ rootPath, conn, member: memberMap.get('config-ui') });
 
+    const configSettingRecords = await pushSettings({ rootPath, conn, members });
+
     // Return an object to be displayed with --json
-    return { pml: pmlRecords, ui: uiRecords, drl: drlRecords };
+    return { pml: pmlRecords, ui: uiRecords, drl: drlRecords, 'config-settings': configSettingRecords };
   }
 }
