@@ -151,7 +151,7 @@ export async function fetchDroolGroups(conn: Connection, groupNames: string[]): 
   let query =
     'SELECT Id,Name, VELOCPQ__Active__c,VELOCPQ__Description__c,VELOCPQ__ReferenceId__c,' +
     'VELOCPQ__Sequence__c,VELOCPQ__Type__c,VELOCPQ__PriceListId__c from VELOCPQ__PriceRuleGroup__c';
-  if (groupNames) {
+  if (groupNames.length > 0) {
     query += ` WHERE Name IN ('${groupNames.join("','")}')`;
   }
   const result = await conn.query<PriceRuleGroup>(query);
