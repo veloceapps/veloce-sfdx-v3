@@ -74,7 +74,7 @@ export default class Pull extends SfdxCommand {
 
     const uiRecords = await pullUI({ sourcepath, conn, member: memberMap.get('config-ui') });
 
-    const configSettingRecords = await pullSettings({ sourcepath, conn, members });
+    const configSettingRecords = await pullSettings({ sourcepath, conn, member: memberMap.get('config-settings') });
 
     // Return an object to be displayed with --json
     return { model: modelRecords, 'config-ui': uiRecords, 'config-settings': configSettingRecords };

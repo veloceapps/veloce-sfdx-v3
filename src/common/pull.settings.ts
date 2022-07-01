@@ -2,16 +2,17 @@ import { Connection } from '@salesforce/core';
 import { parseJsonSafe, writeFileSafe } from '../utils/common.utils';
 import { fetchConfigurationSettings } from '../utils/configurationSetting.utils';
 import { ConfigurationSetting } from '../types/configurationSetting.types';
+import { Member } from '../types/member.types';
 
 export interface PullSettingsParams {
   sourcepath: string;
   conn: Connection;
-  members: string;
+  member: Member | undefined;
 }
 
 export async function pullSettings(params: PullSettingsParams): Promise<string[]> {
-  const {sourcepath, conn, members} = params;
-  if (members !== 'config-settings') {
+  const {sourcepath, conn, member} = params;
+  if (!member) {
     return [];
   }
 
