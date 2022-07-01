@@ -76,7 +76,7 @@ export default class Push extends SfdxCommand {
 
     const uiRecords = await pushUI({ rootPath, conn, member: memberMap.get('config-ui') });
 
-    const configSettingRecords = await pushSettings({ rootPath, conn, members });
+    const configSettingRecords = await pushSettings({ rootPath, conn, member: memberMap.get('config-settings') });
 
     // Return an object to be displayed with --json
     return { pml: pmlRecords, ui: uiRecords, drl: drlRecords, 'config-settings': configSettingRecords };

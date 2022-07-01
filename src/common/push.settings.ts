@@ -2,16 +2,17 @@ import { Connection, SfdxError } from '@salesforce/core';
 import { readdirSync, readFileSync } from 'fs';
 import { createConfigurationSetting, fetchConfigurationSettings } from '../utils/configurationSetting.utils';
 import { ConfigurationSetting } from '../types/configurationSetting.types';
+import { Member } from '../types/member.types';
 
 export interface PushSettingsParams {
   rootPath: string;
   conn: Connection;
-  members: string;
+  member: Member | undefined;
 }
 
 export async function pushSettings(params: PushSettingsParams): Promise<string[]> {
-  const { rootPath, conn, members } = params;
-  if (members !== 'config-settings') {
+  const { rootPath, conn, member } = params;
+  if (!member) {
     return [];
   }
 
