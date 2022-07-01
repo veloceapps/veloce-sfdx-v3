@@ -11,6 +11,7 @@ import { Messages } from '@salesforce/core';
 import { AnyJson } from '@salesforce/ts-types';
 import { pullModel } from '../../../common/pull.model';
 import { pullUI } from '../../../common/pull.ui';
+import { MembersMap } from '../../../common/members.map';
 
 // Initialize Messages with the current plugin directory
 Messages.importMessagesDirectory(__dirname);
@@ -54,24 +55,6 @@ export default class Pull extends SfdxCommand {
   // Set this to true if your command requires a project workspace; 'requiresProject' is false by default
   protected static requiresProject = false;
 
-  private static spitMembers(members: string): { modelsToDump: Set<string>; uisToDump: Set<string> } {
-    const modelsToDump = new Set<string>();
-    const uisToDump = new Set<string>();
-    const membersArray = members.split(',');
-    for (const m of membersArray) {
-      const parts = m.split(':');
-      switch (parts[0]) {
-        case 'model':
-          modelsToDump.add(parts[1]);
-          break;
-        case 'config-ui':
-          uisToDump.add(parts[1] + ':' + (parts[2] ?? ''));
-          break;
-      }
-    }
-    return { modelsToDump, uisToDump };
-  }
-
   public async run(): Promise<AnyJson> {
     if (!this.org) {
       return Promise.reject('Org is not defined');
@@ -82,14 +65,13 @@ export default class Pull extends SfdxCommand {
 
     const conn = this.org.getConnection();
     const members = (this.flags.members || '') as string;
-    const dumpAll = members === '';
     const sourcepath = ((this.flags.sourcepath || 'source') as string).replace(/\/$/, ''); // trim last slash if present
 
-    const { modelsToDump, uisToDump } = Pull.spitMembers(members);
+    const memberMap = new MembersMap(members);
 
-    const modelRecords = await pullModel({ sourcepath, conn, dumpAll, modelsToDump });
+    const modelRecords = await pullModel({ sourcepath, conn, member: memberMap.get('model') });
 
-    const uiRecords = await pullUI({ sourcepath, conn, dumpAll, uisToDump });
+    const uiRecords = await pullUI({ sourcepath, conn, member: memberMap.get('config-ui') });
 
     // Return an object to be displayed with --json
     return { model: modelRecords, 'config-ui': uiRecords };

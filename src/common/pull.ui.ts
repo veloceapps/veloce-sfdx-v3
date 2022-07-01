@@ -6,33 +6,37 @@ import { extractElementMetadata, fromBase64, isLegacyDefinition } from '../utils
 import { ProductModel } from '../types/productModel.types';
 import { fetchProductModels } from '../utils/productModel.utils';
 import { fetchDocumentContent } from '../utils/document.utils';
+import { Member } from '../types/member.types';
 
 export interface PullUIParams {
   sourcepath: string;
   conn: Connection;
-  dumpAll: boolean;
-  uisToDump: Set<string>;
+  member: Member | undefined;
 }
 
 export async function pullUI(params: PullUIParams): Promise<string[]> {
-  const { sourcepath, conn, dumpAll, uisToDump } = params;
+  const { sourcepath, conn, member } = params;
+  if (!member) {
+    return [];
+  }
+  const modelNames = member.all ? undefined : Array.from(member.names).map((ui) => ui.split(':')[0]);
 
-  const modelNames = dumpAll ? undefined : Array.from(uisToDump).map((ui) => ui.split(':')[0]);
-
-  console.log(`Dumping ${dumpAll ? 'All Uis' : 'Uis with names: ' + (modelNames?.join() ?? '')}`);
-  const uiDefProductModels: ProductModel[] = await fetchProductModels(conn, dumpAll, modelNames);
+  console.log(`Dumping ${member.all ? 'All Uis' : 'Uis with names: ' + (modelNames?.join() ?? '')}`);
+  const uiDefProductModels: ProductModel[] = await fetchProductModels(conn, member.all, modelNames);
   console.log(`Dumping Uis result count: ${uiDefProductModels.length}`);
 
-  const uiDefNamesMap = Array.from(uisToDump).reduce((acc, ui) => {
+  const uiDefNamesMap = Array.from(member.names).reduce((acc, ui) => {
     const [modelName, defName] = ui.split(':');
     acc[modelName] = defName;
     return acc;
   }, {} as { [modelName: string]: string });
 
-  const contents: {productModel: ProductModel; content: string|undefined}[] = await Promise.all(
-    uiDefProductModels.map(
-      (productModel) => fetchDocumentContent(conn, productModel.VELOCPQ__UiDefinitionsId__c)
-        .then((content) => ({content, productModel}))
+  const contents: { productModel: ProductModel; content: string | undefined }[] = await Promise.all(
+    uiDefProductModels.map((productModel) =>
+      fetchDocumentContent(conn, productModel.VELOCPQ__UiDefinitionsId__c).then((content) => ({
+        content,
+        productModel,
+      })),
     ),
   );
 
@@ -53,7 +57,7 @@ export async function pullUI(params: PullUIParams): Promise<string[]> {
     const legacyMetadataArray: LegacyUiDefinition[] = [];
 
     uiDefs?.forEach((ui) => {
-      const includeUiName = dumpAll || !uiDefNamesMap[Name] || uiDefNamesMap[Name] === ui.name;
+      const includeUiName = member.all || !uiDefNamesMap[Name] || uiDefNamesMap[Name] === ui.name;
       if (!includeUiName) {
         return;
       }
