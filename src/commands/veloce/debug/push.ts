@@ -3,7 +3,7 @@ import { existsSync, readdirSync, readFileSync } from 'node:fs';
 import { flags } from '@salesforce/command';
 import { Messages } from '@salesforce/core';
 import { AnyJson } from '@salesforce/ts-types';
-import { AxiosError, default as axios } from 'axios';
+import { default as axios } from 'axios';
 import { DebugSfdxCommand } from '../../../common/debug.command';
 import { extractGroupsFromFolder } from '../../../utils/drools.utils';
 import { getDebugClientHeaders } from '../../../utils/auth.utils';
@@ -11,6 +11,7 @@ import DebugSessionInfo from '../../../types/DebugSessionInfo';
 import { getPath } from '../../../utils/path.utils';
 import { Member } from '../../../types/member.types';
 import { MembersMap } from '../../../common/members.map';
+import { logError } from '../../../common/log.handler';
 
 // Initialize Messages with the current plugin directory
 Messages.importMessagesDirectory(__dirname);
@@ -73,7 +74,7 @@ export default class Push extends DebugSfdxCommand {
     return result;
   }
 
-  private async sendModel(debugSession: DebugSessionInfo, rootPath: string, member: Member | undefined) {
+  private async sendModel(debugSession: DebugSessionInfo, rootPath: string, member: Member | undefined): Promise<void> {
     if (!member) {
       return;
     }
@@ -94,11 +95,7 @@ export default class Push extends DebugSfdxCommand {
             },
           );
         } catch (error) {
-          if (error instanceof AxiosError) {
-            this.ux.log(`Failed to deploy ${name}: ${error.response?.data} code ${error.response?.status}`);
-          } else {
-            this.ux.log(`Failed to deploy ${name}: ${JSON.stringify(error)}`);
-          }
+          logError(this.ux, 'Failed to deploy', error);
         }
         this.ux.log('PML Successfully Loaded!');
       }
@@ -123,11 +120,7 @@ export default class Push extends DebugSfdxCommand {
             headers,
           });
         } catch (error) {
-          if (error instanceof AxiosError) {
-            this.ux.log(`Failed to deploy ${group.name}: ${error.response?.data} code ${error.response?.status}`);
-          } else {
-            this.ux.log(`Failed to deploy ${group.name}: ${JSON.stringify(error)}`);
-          }
+          logError(this.ux, 'Failed to deploy', error);
         }
       }
     }

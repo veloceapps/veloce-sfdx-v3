@@ -1,11 +1,12 @@
+import { EOL } from 'node:os';
+import { existsSync } from 'node:fs';
+import { flags } from '@salesforce/command';
 import { Messages } from '@salesforce/core';
 import { AnyJson } from '@salesforce/ts-types';
-import { AxiosError, default as axios } from 'axios';
+import { default as axios } from 'axios';
 import { getDebugClientHeaders } from '../../../utils/auth.utils';
-import { EOL } from 'node:os';
 import { DebugSfdxCommand } from '../../../common/debug.command';
-import { flags } from '@salesforce/command';
-import { existsSync } from 'node:fs';
+import { logError } from '../../../common/log.handler';
 
 // Initialize Messages with the current plugin directory
 Messages.importMessagesDirectory(__dirname);
@@ -64,11 +65,7 @@ export default class Org extends DebugSfdxCommand {
         this.ux.log(response.data);
       }
     } catch (error) {
-      if (error instanceof AxiosError) {
-        this.ux.log(`Failed to get logs: ${error.response?.data} code ${error.response?.status}`);
-      } else {
-        this.ux.log(`Failed to get logs: ${JSON.stringify(error)}`);
-      }
+      logError(this.ux, 'Failed to get logs', error);
     } finally {
       setTimeout(() => void this.callToGetLogs(backendUrl, headers), 1000);
     }

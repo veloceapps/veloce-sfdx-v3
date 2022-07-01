@@ -5,10 +5,10 @@
  * For full license text, see LICENSE.txt file in the repo root or https://opensource.org/licenses/BSD-3-Clause
  */
 import * as os from 'os';
+import { existsSync } from 'node:fs';
 import { flags, SfdxCommand } from '@salesforce/command';
 import { Messages, SfdxError } from '@salesforce/core';
 import { AnyJson } from '@salesforce/ts-types';
-import { existsSync } from 'node:fs';
 
 // Initialize Messages with the current plugin directory
 Messages.importMessagesDirectory(__dirname);
