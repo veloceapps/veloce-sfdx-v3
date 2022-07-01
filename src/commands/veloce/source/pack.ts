@@ -5,45 +5,36 @@
  * For full license text, see LICENSE.txt file in the repo root or https://opensource.org/licenses/BSD-3-Clause
  */
 import * as os from 'os';
-import { existsSync } from 'node:fs';
 import { flags, SfdxCommand } from '@salesforce/command';
 import { Messages } from '@salesforce/core';
 import { AnyJson } from '@salesforce/ts-types';
-import { pullModel } from '../../../common/pull.model';
-import { pullUI } from '../../../common/pull.ui';
+import { getPath } from '../../../utils/path.utils';
+import { UiDefinitionsBuilder } from '../../../utils/ui.utils';
 import { MembersMap } from '../../../common/members.map';
-import { pullSettings } from '../../../common/pull.settings';
 
 // Initialize Messages with the current plugin directory
 Messages.importMessagesDirectory(__dirname);
 
 // Load the specific messages for this file. Messages from @salesforce/command, @salesforce/core,
 // or any library that is using the messages framework can also be loaded this way.
-const messages = Messages.loadMessages('veloce-sfdx-v3', 'source-pull');
+const messages = Messages.loadMessages('veloce-sfdx-v3', 'source-push');
 
-export default class Pull extends SfdxCommand {
+export default class Pack extends SfdxCommand {
   public static description = messages.getMessage('commandDescription');
 
   public static examples = messages.getMessage('examples').split(os.EOL);
 
   public static args = [];
 
-  // -u quick-guide
-  // -m model:Octa
-  // -p ./source/templates
   protected static flagsConfig = {
-    // flag with a value (-m, --members=VALUE)
     members: flags.string({
       char: 'm',
       description: messages.getMessage('membersFlagDescription'),
+      required: true,
     }),
     sourcepath: flags.string({
       char: 'p',
       description: messages.getMessage('sourcepathFlagDescription'),
-    }),
-    noproject: flags.boolean({
-      char: 'P',
-      description: messages.getMessage('noprojectFlagDescription'),
     }),
   };
 
@@ -60,23 +51,20 @@ export default class Pull extends SfdxCommand {
     if (!this.org) {
       return Promise.reject('Org is not defined');
     }
-    if (!existsSync('sfdx-project.json') && this.flags.noproject === false) {
-      return Promise.reject('You must have sfdx-project.json while runnign this plugin.');
+
+    const memberMap = new MembersMap(this.flags.members ?? '');
+    const rootPath = getPath(this.flags.sourcepath) ?? 'source';
+
+    if (memberMap.get('config-ui')) {
+      const modelName = memberMap.get('config-ui')?.names[0];
+      if (!modelName) {
+        return [];
+      }
+
+      const uiBuilder = new UiDefinitionsBuilder(`${rootPath}/config-ui`, modelName);
+      return uiBuilder.pack() as [];
     }
 
-    const conn = this.org.getConnection();
-    const members = (this.flags.members || '') as string;
-    const sourcepath = ((this.flags.sourcepath || 'source') as string).replace(/\/$/, ''); // trim last slash if present
-
-    const memberMap = new MembersMap(members);
-
-    const modelRecords = await pullModel({ sourcepath, conn, member: memberMap.get('model') });
-
-    const uiRecords = await pullUI({ sourcepath, conn, member: memberMap.get('config-ui') });
-
-    const configSettingRecords = await pullSettings({ sourcepath, conn, members });
-
-    // Return an object to be displayed with --json
-    return { model: modelRecords, 'config-ui': uiRecords, 'config-settings': configSettingRecords };
+    return {};
   }
 }

@@ -13,9 +13,9 @@ describe('veloce:debug:list', () => {
     // `
     //    writeFileSync("/tmp/VELOCPQ__ProductModel__c.csv", dataCSV)
     // FIXME: times out!
-    // const cmdResult = await exec('sfdx veloce:debug -u sfdx-test');
+    // const cmdResult = await exec('sfdx veloce:debug -u studio-dev');
     // console.log(cmdResult.stdout);
-    // var check = await exec(`sfdx force:data:soql:query  -u sfdx-test -q "select fields(all) from VELOCPQ__ProductModel__c where Name = '${name}' limit 10" --json`)
+    // var check = await exec(`sfdx force:data:soql:query  -u studio-dev -q "select fields(all) from VELOCPQ__ProductModel__c where Name = '${name}' limit 10" --json`)
     // var checkParsed = JSON.parse(check.stdout)
     // console.log(checkParsed)
   });

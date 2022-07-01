@@ -6,33 +6,37 @@ import { extractElementMetadata, fromBase64, isLegacyDefinition } from '../utils
 import { ProductModel } from '../types/productModel.types';
 import { fetchProductModels } from '../utils/productModel.utils';
 import { fetchDocumentContent } from '../utils/document.utils';
+import { Member } from '../types/member.types';
 
 export interface PullUIParams {
   sourcepath: string;
   conn: Connection;
-  dumpAll: boolean;
-  uisToDump: Set<string>;
+  member: Member | undefined;
 }
 
 export async function pullUI(params: PullUIParams): Promise<string[]> {
-  const { sourcepath, conn, dumpAll, uisToDump } = params;
+  const { sourcepath, conn, member } = params;
+  if (!member) {
+    return [];
+  }
+  const modelNames = member.all ? undefined : Array.from(member.names).map((ui) => ui.split(':')[0]);
 
-  const modelNames = dumpAll ? undefined : Array.from(uisToDump).map((ui) => ui.split(':')[0]);
-
-  console.log(`Dumping ${dumpAll ? 'All Uis' : 'Uis with names: ' + (modelNames?.join() ?? '')}`);
-  const uiDefProductModels: ProductModel[] = await fetchProductModels(conn, dumpAll, modelNames);
+  console.log(`Dumping ${member.all ? 'All Uis' : 'Uis with names: ' + (modelNames?.join() ?? '')}`);
+  const uiDefProductModels: ProductModel[] = await fetchProductModels(conn, member.all, modelNames);
   console.log(`Dumping Uis result count: ${uiDefProductModels.length}`);
 
-  const uiDefNamesMap = Array.from(uisToDump).reduce((acc, ui) => {
+  const uiDefNamesMap = Array.from(member.names).reduce((acc, ui) => {
     const [modelName, defName] = ui.split(':');
     acc[modelName] = defName;
     return acc;
   }, {} as { [modelName: string]: string });
 
-  const contents: {productModel: ProductModel; content: string|undefined}[] = await Promise.all(
-    uiDefProductModels.map(
-      (productModel) => fetchDocumentContent(conn, productModel.VELOCPQ__UiDefinitionsId__c)
-        .then((content) => ({content, productModel}))
+  const contents: { productModel: ProductModel; content: string | undefined }[] = await Promise.all(
+    uiDefProductModels.map((productModel) =>
+      fetchDocumentContent(conn, productModel.VELOCPQ__UiDefinitionsId__c).then((content) => ({
+        content,
+        productModel,
+      })),
     ),
   );
 
@@ -53,7 +57,7 @@ export async function pullUI(params: PullUIParams): Promise<string[]> {
     const legacyMetadataArray: LegacyUiDefinition[] = [];
 
     uiDefs?.forEach((ui) => {
-      const includeUiName = dumpAll || !uiDefNamesMap[Name] || uiDefNamesMap[Name] === ui.name;
+      const includeUiName = member.all || !uiDefNamesMap[Name] || uiDefNamesMap[Name] === ui.name;
       if (!includeUiName) {
         return;
       }
@@ -61,7 +65,7 @@ export async function pullUI(params: PullUIParams): Promise<string[]> {
       const uiDir = `${path}/${ui.name}`;
 
       if (isLegacyDefinition(ui)) {
-        saveLegacyUiDefinition(ui, uiDir, legacyMetadataArray);
+        saveLegacyUiDefinition(ui, path, ui.name, legacyMetadataArray);
       } else {
         saveUiDefinition(ui, uiDir);
       }
@@ -77,6 +81,7 @@ export async function pullUI(params: PullUIParams): Promise<string[]> {
 
 function saveLegacySections(
   sections: LegacySection[],
+  sourcePath: string,
   path: string,
   metadata: LegacyUiDefinition,
   parentId?: string,
@@ -87,52 +92,63 @@ function saveLegacySections(
     const childPath = `${path}/${c.label}`;
 
     // save files
-    saveLegacySectionFiles(c, childPath, metadata);
+    saveLegacySectionFiles(c, sourcePath, childPath, metadata);
 
     // save grandchildren
-    saveLegacySections(sections, childPath, metadata, c.id);
+    saveLegacySections(sections, sourcePath, childPath, metadata, c.id);
   });
 }
 
-function saveLegacyUiDefinition(ui: LegacyUiDefinition, path: string, metadataArray: LegacyUiDefinition[]): void {
+function saveLegacyUiDefinition(
+  ui: LegacyUiDefinition,
+  sourcePath: string,
+  uiName: string,
+  metadataArray: LegacyUiDefinition[],
+): void {
   const legacyMetadata: LegacyUiDefinition = { ...ui, sections: [] };
 
   ui.tabs.forEach((tab) => {
-    const tabPath = `${path}/${tab.name}`;
+    const path = `${uiName}/${tab.name}`;
     const tabSections = ui.sections.filter((section) => section.page === tab.id);
 
-    saveLegacySections(tabSections, tabPath, legacyMetadata);
+    saveLegacySections(tabSections, sourcePath, path, legacyMetadata);
   });
 
   metadataArray.push(legacyMetadata);
 }
 
-function saveLegacySectionFiles(section: LegacySection, dir: string, metadata: LegacyUiDefinition): void {
+function saveLegacySectionFiles(
+  section: LegacySection,
+  sourcePath: string,
+  path: string,
+  metadata: LegacyUiDefinition,
+): void {
   const sectionMeta = { ...section };
+  const fullDir = `${sourcePath}/${path}`;
 
   if (section.script) {
     const fileName = `${section.label}.js`;
-    writeFileSafe(dir, fileName, fromBase64(section.script));
+    writeFileSafe(fullDir, fileName, fromBase64(section.script));
     delete sectionMeta.script;
-    sectionMeta.scriptUrl = `${dir}/${fileName}`;
+    sectionMeta.scriptUrl = `${path}/${fileName}`;
   }
   if (section.styles) {
     const fileName = `${section.label}.css`;
-    writeFileSafe(dir, fileName, fromBase64(section.styles));
+    writeFileSafe(fullDir, fileName, fromBase64(section.styles));
     delete sectionMeta.styles;
-    sectionMeta.scriptUrl = `${dir}/${fileName}`;
+    sectionMeta.scriptUrl = `${path}/${fileName}`;
   }
   if (section.template) {
     const fileName = `${section.label}.html`;
-    writeFileSafe(dir, fileName, fromBase64(section.template));
+    writeFileSafe(fullDir, fileName, fromBase64(section.template));
     delete sectionMeta.template;
-    sectionMeta.templateUrl = `${dir}/${fileName}`;
+    sectionMeta.templateUrl = `${path}/${fileName}`;
   }
   if (section.properties) {
     const fileName = `${section.label}.json`;
-    writeFileSafe(dir, fileName, JSON.stringify(section.properties, null, 2));
+    writeFileSafe(fullDir, fileName, JSON.stringify(section.properties, null, 2));
     delete sectionMeta.properties;
-    sectionMeta.propertiesUrl = `${dir}/${fileName}`;
+    sectionMeta.propertiesUrl = `${path}/${fileName}`;
   }
 
   metadata.sections.push(sectionMeta);

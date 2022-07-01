@@ -128,18 +128,11 @@ export async function pushModel(params: PushPmlParams): Promise<string[]> {
     return [];
   }
   const retIDs = [];
-  if (member.all) {
-    // Push ALL
-    console.log('Pushing All Models');
-    const allModelsToUpload = findAllModels(rootPath);
-    for (const p of allModelsToUpload) {
-      retIDs.push(await uploadModel(rootPath, conn, p));
-    }
-  } else if (member.names.length > 0) {
-    // Push some members only
-    console.log(`Pushing Models with names: ${Array.from(member.names.values()).join(',')}`);
-    for (const p of member.names) {
-      retIDs.push(await uploadModel(rootPath, conn, p));
+  const allModels = findAllModels(rootPath);
+  for (const name of allModels) {
+    // TODO: consider parallelizing if this will be slow?
+    if (member.all || member.names.includes(name)) {
+      retIDs.push(await uploadModel(rootPath, conn, name));
     }
   }
   return retIDs;

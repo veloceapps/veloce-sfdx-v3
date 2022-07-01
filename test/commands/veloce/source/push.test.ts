@@ -12,9 +12,9 @@ describe('veloce:source:push', () => {
     // aBQ040000008RMfGAM,${name},false,false,"Super cool company",01504000000ISZRAA4,,,,aBQ040000008RMfDAM,,01504000000ISZWAA4,
     // `
     //    writeFileSync("/tmp/VELOCPQ__ProductModel__c.csv", dataCSV)
-    const cmdResult = await exec('sfdx veloce:source:push -u sfdx-test -m model:OCTA -p test-data/source');
+    const cmdResult = await exec('sfdx veloce:source:push -u studio-dev -m model:OCTA -p test-data/source');
     console.log(cmdResult.stdout);
-    // var check = await exec(`sfdx force:data:soql:query  -u sfdx-test -q "select fields(all) from VELOCPQ__ProductModel__c where Name = '${name}' limit 10" --json`)
+    // var check = await exec(`sfdx force:data:soql:query  -u studio-dev -q "select fields(all) from VELOCPQ__ProductModel__c where Name = '${name}' limit 10" --json`)
     // var checkParsed = JSON.parse(check.stdout)
     // console.log(checkParsed)
   });
@@ -24,9 +24,9 @@ describe('veloce:source:push', () => {
     // aBQ040000008RMfGAM,${name},false,false,"Super cool company",01504000000ISZRAA4,,,,aBQ040000008RMfDAM,,01504000000ISZWAA4,
     // `
     //    writeFileSync("/tmp/VELOCPQ__ProductModel__c.csv", dataCSV)
-    const cmdResult = await exec('sfdx veloce:source:push -u sfdx-test -m config-ui:OCTA -p test-data/source');
+    const cmdResult = await exec('sfdx veloce:source:push -u studio-dev -m config-ui:OCTA -p test-data/source');
     console.log(cmdResult.stdout);
-    // var check = await exec(`sfdx force:data:soql:query  -u sfdx-test -q "select fields(all) from VELOCPQ__ProductModel__c where Name = '${name}' limit 10" --json`)
+    // var check = await exec(`sfdx force:data:soql:query  -u studio-dev -q "select fields(all) from VELOCPQ__ProductModel__c where Name = '${name}' limit 10" --json`)
     // var checkParsed = JSON.parse(check.stdout)
     // console.log(checkParsed)
   });
@@ -36,9 +36,11 @@ describe('veloce:source:push', () => {
     // aBQ040000008RMfGAM,${name},false,false,"Super cool company",01504000000ISZRAA4,,,,aBQ040000008RMfDAM,,01504000000ISZWAA4,
     // `
     //    writeFileSync("/tmp/VELOCPQ__ProductModel__c.csv", dataCSV)
-    const cmdResult = await exec('sfdx veloce:source:push -u sfdx-test -m pml:OCTA,config-ui:OCTA -p test-data/source');
+    const cmdResult = await exec(
+      'sfdx veloce:source:push -u studio-dev -m pml:OCTA,config-ui:OCTA -p test-data/source',
+    );
     console.log(cmdResult.stdout);
-    // var check = await exec(`sfdx force:data:soql:query  -u sfdx-test -q "select fields(all) from VELOCPQ__ProductModel__c where Name = '${name}' limit 10" --json`)
+    // var check = await exec(`sfdx force:data:soql:query  -u studio-dev -q "select fields(all) from VELOCPQ__ProductModel__c where Name = '${name}' limit 10" --json`)
     // var checkParsed = JSON.parse(check.stdout)
     // console.log(checkParsed)
   });
