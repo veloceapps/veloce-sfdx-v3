@@ -1,6 +1,9 @@
 import path = require('path');
 import fs = require('fs');
 import { SfdxError } from '@salesforce/core';
+import { Connection } from '@salesforce/core';
+import { PriceRule } from '../types/priceRule.types';
+import { PriceRuleGroup } from '../types/priceRuleGroup.types';
 import { parseJsonSafe } from './common.utils';
 
 const ruleExtractRegex = /(rule\b)([\S\s]*?)(end\b)/g;
@@ -132,4 +135,24 @@ export function extractGroupsFromFolder(rulesDirectory: string): Group[] {
     result.push(extractGroupFromFile(groupFile, rulesDirectory));
   }
   return result;
+}
+
+export async function fetchDroolsByGroup(conn: Connection, groupName: string): Promise<PriceRule[]> {
+  let query =
+    'SELECT Id,VELOCPQ__Action__c,VELOCPQ__Active__c,VELOCPQ__Condition__c,' +
+    'VELOCPQ__Description__c,VELOCPQ__ReferenceId__c,VELOCPQ__PriceRuleGroupId__c,VELOCPQ__Sequence__c from VELOCPQ__PriceRule__c';
+  query += ` WHERE Id = '${groupName}')`;
+
+  const result = await conn.query<PriceRule>(query);
+  return result?.records ?? [];
+}
+
+export async function fetchDroolGroups(conn: Connection, groupName: string): Promise<PriceRuleGroup[]> {
+  let query =
+    'SELECT Id,VELOCPQ__Active__c,VELOCPQ__Description__c,VELOCPQ__ReferenceId__c,' +
+    'VELOCPQ__Sequence__c,VELOCPQ__Type__c,VELOCPQ__PriceListId__c from VELOCPQ__PriceRuleGroup__c';
+  query += ` WHERE Id = '${groupName}')`;
+
+  const result = await conn.query<PriceRuleGroup>(query);
+  return result?.records ?? [];
 }
