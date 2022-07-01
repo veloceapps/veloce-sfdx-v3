@@ -1,6 +1,6 @@
 import { Connection, SfdxError } from '@salesforce/core';
-import { ConfigurationSetting, ConfigurationSettingNew } from '../types/configurationSetting.types';
 import { SuccessResult } from 'jsforce/record-result';
+import { ConfigurationSetting, ConfigurationSettingNew } from '../types/configurationSetting.types';
 
 export async function fetchConfigurationSettings(conn: Connection): Promise<ConfigurationSetting[]> {
   const query = 'SELECT Id,VELOCPQ__Key__c,VELOCPQ__Value__c FROM VELOCPQ__ConfigurationSetting__c';

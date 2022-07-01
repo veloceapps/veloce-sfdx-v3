@@ -15,7 +15,7 @@ export async function pullSettings(params: PullSettingsParams): Promise<string[]
     return [];
   }
 
-  const dir: string = `${sourcepath}/settings`;
+  const dir = `${sourcepath}/settings`;
 
   const settings: ConfigurationSetting[] = await fetchConfigurationSettings(conn);
   console.log(`Dumping ConfigurationSettings result count: ${settings.length}`);

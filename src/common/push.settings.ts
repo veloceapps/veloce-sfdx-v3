@@ -1,5 +1,5 @@
-import { Connection, SfdxError } from '@salesforce/core';
 import { readdirSync, readFileSync } from 'fs';
+import { Connection, SfdxError } from '@salesforce/core';
 import { createConfigurationSetting, fetchConfigurationSettings } from '../utils/configurationSetting.utils';
 import { ConfigurationSetting } from '../types/configurationSetting.types';
 import { Member } from '../types/member.types';
@@ -16,10 +16,10 @@ export async function pushSettings(params: PushSettingsParams): Promise<string[]
     return [];
   }
 
-  const dir: string = `${rootPath}/settings`;
+  const dir = `${rootPath}/settings`;
   const existingSettings: ConfigurationSetting[] = await fetchConfigurationSettings(conn);
   const files = readdirSync(dir);
-  const ids = [];
+  const ids: string[] = [];
 
   for (const file of files) {
     const content = readFileSync(`${dir}/${file}`, 'utf8');
@@ -47,7 +47,7 @@ export async function pushSettings(params: PushSettingsParams): Promise<string[]
       acc.push(Id);
     }
     return acc;
-  }, []);
+  }, [] as string[]);
   const deleteResult = await conn.sobject('VELOCPQ__ConfigurationSetting__c').delete(settingsToDelete);
   deleteResult.forEach((result) => {
     if (result.success) {
