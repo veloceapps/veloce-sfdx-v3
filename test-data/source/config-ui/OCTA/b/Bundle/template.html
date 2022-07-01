@@ -1,0 +1,36 @@
+<ng-container [ngTemplateOutlet]="templatesService.get('MessagesPanel')"></ng-container>
+
+<ng-container *ngIf="tabs?.length > 1">
+  <div class="tabs" *ngIf="(activeTab | async) as active">
+    <div class="tab" *ngFor="let tab of tabs" [class.active]="tab.name === active.name" (click)="activeTab.next(tab)">
+      {{ tab.name }}
+    </div>
+  </div>
+</ng-container>
+
+<div class="content">
+  <element-children class="children-wrapper"></element-children>
+</div>
+
+<div class="footer">
+  <div class="metrics">
+    <span class="metric"> Total Recurring Revenue <strong> {{ totalRecurring$ | async }} </strong> </span>
+    <span class="metric"> Total Non-Recurring Revenue <strong> {{ totalNonRecurring$ | async }} </strong> </span>
+  </div>
+
+  <div class="actions">
+    <button *ngIf="(docgenEnabled | async) === 'true'" class="secondary" (click)="docgenHandler()">Generate Doc</button>
+
+    <button class="secondary" (click)="cancelHandler()">Cancel</button>
+
+    <button (click)="saveHandler()" [class.disabled]="saveInProgress$ | async">
+      <div class="spinner" *ngIf="saveInProgress$ | async"></div>
+      Save
+    </button>
+
+    <button (click)="submitHandler()" [class.disabled]="submitInProgress$ | async">
+      <div class="spinner" *ngIf="submitInProgress$ | async"></div>
+      Submit
+    </button>
+  </div>
+</div>

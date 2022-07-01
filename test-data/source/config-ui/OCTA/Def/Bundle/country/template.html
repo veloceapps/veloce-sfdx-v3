@@ -1,0 +1,48 @@
+<div class="wrapper">
+  <label>{{ boundName }}</label>
+
+  <ng-container *ngIf="type$ | async as type">
+    <ng-container [ngSwitch]="type">
+      <ng-container *ngSwitchCase="'text'">
+        <ng-container *ngIf="options$ | async as options">
+          <select
+            *ngIf="options.length && control.enabled; else textInput"
+            [formControl]="control"
+            (change)="patch($event.target.value)"
+          >
+            <option *ngFor="let option of options" [value]="option">{{option}}</option>
+          </select>
+
+          <ng-template #textInput>
+            <input [formControl]="control" (change)="patch($event.target.value)" />
+          </ng-template>
+        </ng-container>
+      </ng-container>
+
+      <ng-container *ngSwitchCase="'number'">
+        <input type="number" [formControl]="control" (change)="patch($event.target.value)" />
+      </ng-container>
+
+      <ng-container *ngSwitchCase="'boolean'">
+        <div class="switch-buttons">
+          <button
+            class="button yes-button"
+            [class.active]="control.value"
+            [class.disabled]="control.disabled"
+            (click)="control.enabled && patch(1)"
+          >
+            Yes
+          </button>
+          <button
+            class="button no-button"
+            [class.active]="!control.value"
+            [class.disabled]="control.disabled"
+            (click)="control.enabled && patch(0)"
+          >
+            No
+          </button>
+        </div>
+      </ng-container>
+    </ng-container>
+  </ng-container>
+</div>

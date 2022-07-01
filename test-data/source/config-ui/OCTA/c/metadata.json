@@ -1,0 +1,13 @@
+{
+  "name": "c",
+  "primary": false,
+  "type": "CONFIGURATION",
+  "version": 2,
+  "createdTimestamp": 1655735599057,
+  "properties": {
+    "rootType": "Bundle",
+    "pricingEnabled": false,
+    "priceList": null
+  },
+  "children": ["Bundle"]
+}

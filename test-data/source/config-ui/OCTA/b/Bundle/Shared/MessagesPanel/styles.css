@@ -1,0 +1,53 @@
+.messages {
+  height: 26px;
+}
+
+.messages .approvals {
+  height: 100%;
+  display: flex;
+  padding: 0 8px;
+  align-items: center;
+  background: #fcefb6;
+  color: #b05c0d;
+}
+
+.messages .reason {
+  flex-grow: 1;
+  display: flex;
+  justify-content: center;
+}
+
+.messages .counter {
+  display: flex;
+  align-items: center;
+}
+
+.messages .counter .icon {
+  padding: 6px;
+  font-size: 16px;
+  cursor: pointer;
+}
+.messages .counter .icon.disabled {
+  opacity: 0.5;
+  cursor: inherit;
+}
+
+.arrow-left {
+  display: block;
+  width: 0;
+  height: 0;
+  border-top: 4px solid transparent;
+  border-bottom: 4px solid transparent;
+
+  border-right: 6px solid #b05c0d;
+}
+
+.arrow-right {
+  display: block;
+  width: 0;
+  height: 0;
+  border-top: 4px solid transparent;
+  border-bottom: 4px solid transparent;
+
+  border-left: 6px solid #b05c0d;
+}

@@ -1,0 +1,109 @@
+:host {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  margin: 24px;
+  border: 1px solid #e6e6e6;
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+:host ::ng-deep * {
+  box-sizing: border-box;
+}
+
+:host ::ng-deep {
+  font-size: 12px;
+}
+
+.tabs {
+  display: flex;
+  width: 100%;
+  border-bottom: 1px solid #e6e6e6;
+}
+
+.tab {
+  padding: 12px;
+  padding-bottom: 8px;
+  cursor: pointer;
+}
+
+.tab.active {
+  font-weight: bold;
+  color: #0070d2;
+  box-shadow: inset 0 -2px 0px 0px #0070d2;
+}
+
+.content {
+  flex-grow: 1;
+  overflow: auto;
+}
+
+.children-wrapper {
+  display: flex;
+  flex-wrap: wrap;
+}
+
+.footer {
+  display: flex;
+  align-items: center;
+  padding: 6px 12px;
+  border-top: 1px solid #e6e6e6;
+}
+
+.footer .metrics {
+  display: flex;
+  flex-grow: 1;
+  gap: 40px;
+}
+
+.footer .metrics .metric {
+  flex-shrink: 0;
+}
+
+.footer .actions {
+  display: flex;
+  gap: 8px;
+}
+
+button {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  background: #0070d2;
+  color: #fff;
+  padding: 8px 26px;
+  border-radius: 4px;
+  border: unset;
+  cursor: pointer;
+}
+
+button.disabled {
+  opacity: 0.7;
+  cursor: inherit;
+}
+
+button.secondary {
+  background: #ffffff;
+  border: 1px solid #0070d2;
+  color: #0070d2;
+}
+
+.spinner {
+  border: 2px solid #f3f3f3;
+  border-top: 2px solid #3498db;
+  border-radius: 50%;
+  width: 16px;
+  height: 16px;
+  animation: spin 2s linear infinite;
+}
+
+@keyframes spin {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}

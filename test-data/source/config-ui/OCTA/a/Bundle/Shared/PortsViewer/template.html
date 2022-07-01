@@ -1,0 +1,142 @@
+<div class="sidebar" *ngIf="sidebarMode; else inlineMode" [class.opened]="!(hidden$ | async)">
+  <div class="backdrop" (click)="closeHandler()"></div>
+  <div class="slideout">
+    <div class="content-wrapper" *ngIf="!(hidden$ | async)">
+      <div class="header">
+        <span class="back-icon" (click)="backHandler()"> {{ (lineItem$ | async)?.port }} </span>
+        <span class="icon close-icon" (click)="closeHandler()"></span>
+      </div>
+
+      <div class="content">
+        <ng-container [ngTemplateOutlet]="tablesList"></ng-container>
+      </div>
+    </div>
+  </div>
+</div>
+
+<ng-template #inlineMode>
+  <ng-container *ngIf="!(hidden$ | async)">
+    <ng-container [ngTemplateOutlet]="tablesList"></ng-container>
+  </ng-container>
+</ng-template>
+
+<ng-template #tablesList>
+  <ng-container *ngFor="let data of tables$ | async">
+    <ng-container [ngTemplateOutlet]="table" [ngTemplateOutletContext]="{data}"></ng-container>
+  </ng-container>
+</ng-template>
+
+<ng-template #table let-data="data">
+  <div class="data-table-wrapper">
+    <div class="title">{{ data.portDomain.name }}</div>
+
+    <ng-container *ngIf="data.rows as rows">
+      <table class="data-table" *ngIf="data.selectionMode as selectionMode">
+        <thead>
+          <tr>
+            <th class="technical-col" [style.height]="'36px'">
+              <input
+                type="checkbox"
+                *ngIf="selectionMode === 'multiple'"
+                [checked]="data.allSelected"
+                (change)="onToggleSelectAll($event.target.checked, data)"
+              />
+            </th>
+            <th [class]="col.class" *ngFor="let col of cols">{{ col.headerName }}</th>
+            <th class="technical-col"></th>
+          </tr>
+        </thead>
+
+        <tbody>
+          <tr *ngFor="let row of rows">
+            <td class="technical-col">
+              <input
+                type="checkbox"
+                *ngIf="selectionMode === 'multiple'"
+                [checked]="row.selected"
+                (change)="onRowSelect(row, data)"
+              />
+              <input
+                type="radio"
+                *ngIf="selectionMode === 'single'"
+                [checked]="row.selected"
+                (change)="onRowSelect(row, data)"
+              />
+            </td>
+
+            <ng-container *ngFor="let col of cols">
+              <ng-container
+                *ngTemplateOutlet="cell; context: { row, col, value: getCellValue(row, col) }"
+              ></ng-container>
+            </ng-container>
+
+            <td class="technical-col">
+              <div *ngIf="row.model" class="icon options-btn" (click)="openAttrsSidebar.next(row.model)">
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  xmlns:v="https://vecta.io/nano"
+                  width="16"
+                  height="16"
+                  fill="none"
+                  stroke="currentcolor"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="3"
+                  viewBox="-6 -6 44 44"
+                >
+                  <path
+                    _ngcontent-jos-c223=""
+                    _ngcontent-cgj-c223=""
+                    d="M28 6H4m24 10H4m24 10H4M24 3v6M8 13v6m12 4v6"
+                  ></path>
+                </svg>
+              </div>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </ng-container>
+  </div>
+</ng-template>
+
+<ng-template #cell let-row="row" let-col="col" let-value="value">
+  <td
+    [class]="col.class"
+    [class.editable]="col.editFormat"
+    [style.width]="col.width"
+    (click)="col.onClick && col.onClick(row)"
+  >
+    <div class="cell-content" [ngClass]="col.classRules && col.classRules(row)">
+      <div *ngIf="col.tooltip && col.tooltip(row) as tooltip" class="tooltip" [innerHTML]="tooltip"></div>
+
+      <ng-container *ngIf="row.model" [ngSwitch]="col.editFormat">
+        <ng-container *ngSwitchCase="'text'">
+          <input
+            type="text"
+            [formControl]="row.controls[col.field]"
+            (change)="col.onValueChange && col.onValueChange($event.target.value, row)"
+          />
+        </ng-container>
+        <ng-container *ngSwitchCase="'number'">
+          <input
+            type="number"
+            class="text-right"
+            [formControl]="row.controls[col.field]"
+            (change)="col.onValueChange && col.onValueChange($event.target.value, row)"
+          />
+        </ng-container>
+        <ng-container *ngSwitchCase="'select'">
+          <select
+            [formControl]="row.controls[col.field]"
+            (change)="col.onValueChange && col.onValueChange($event.target.value, row)"
+          >
+            <option *ngFor="let option of col.valueOptions(row)" [value]="option.value">{{option.label}}</option>
+          </select>
+        </ng-container>
+        <ng-container *ngSwitchDefault> {{ value }} </ng-container>
+      </ng-container>
+
+      <ng-container *ngIf="!row.model"> {{ value }} </ng-container>
+    </div>
+  </td>
+</ng-template>

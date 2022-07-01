@@ -1,0 +1,65 @@
+<div class="wrapper" [class.opened]="isOpened$ | async">
+  <div class="backdrop" (click)="closeHandler()"></div>
+  <div class="slideout">
+    <div class="content-wrapper" *ngIf="isOpened$ | async">
+      <div class="header">
+        <span>{{ (lineItem$ | async)?.name }} Attributes</span>
+        <span class="icon close-icon" (click)="closeHandler()"></span>
+      </div>
+
+      <ng-container *ngIf="(attributesForm$ | async) as form">
+        <form [formGroup]="form" class="content">
+          <div class="attribute-field" *ngFor="let attribute of (attributes$ | async)">
+            <ng-container *ngIf="form.controls[attribute.name] as control">
+              <ng-container *ngIf="attribute.type === 'BOOLEAN'; else notBoolean">
+                <div class="switch-buttons">
+                  <label>{{ attribute.name }}</label>
+                  <button
+                    class="button yes-button"
+                    [class.active]="control.value"
+                    [class.disabled]="control.disabled"
+                    (click)="control.enabled && control.setValue(1)"
+                  >
+                    Yes
+                  </button>
+                  <button
+                    class="button no-button"
+                    [class.active]="!control.value"
+                    [class.disabled]="control.disabled"
+                    (click)="control.enabled && control.setValue(0)"
+                  >
+                    No
+                  </button>
+                </div>
+              </ng-container>
+
+              <ng-template #notBoolean>
+                <label>{{ attribute.name }}</label>
+
+                <ng-container
+                  *ngIf="control.enabled && attribute.domain?.length && attribute.type === 'GENERIC'; else textInput"
+                >
+                  <select [formControlName]="attribute.name">
+                    <option *ngFor="let option of attribute.domain" [value]="option">{{option}}</option>
+                  </select>
+                </ng-container>
+
+                <ng-template #textInput>
+                  <input
+                    [type]="['INT', 'DOUBLE', 'DECIMAL'].includes(attribute.type) ? 'number' : 'text'"
+                    [formControlName]="attribute.name"
+                  />
+                </ng-template>
+              </ng-template>
+            </ng-container>
+          </div>
+        </form>
+
+        <div class="footer">
+          <button class="secondary" (click)="discardHandler()">Discard Changes</button>
+          <button (click)="saveHandler(form)">Save Attributes</button>
+        </div>
+      </ng-container>
+    </div>
+  </div>
+</div>

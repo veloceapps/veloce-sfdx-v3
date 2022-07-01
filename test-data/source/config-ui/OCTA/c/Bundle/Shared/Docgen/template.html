@@ -1,0 +1,214 @@
+<ng-container *ngIf="(inline | async) !== 'true'; else docgen">
+  <div class="wrapper" *ngIf="visible$ | async">
+    <div class="backdrop" (click)="closeHandler()"></div>
+
+    <ng-container [ngTemplateOutlet]="docgen"></ng-container>
+  </div>
+</ng-container>
+
+<ng-template #docgen>
+  <div class="modal">
+    <div class="header">
+      <span>Generate Document</span>
+      <span class="icon ion-md-close header__close-icon" (click)="closeHandler()"></span>
+    </div>
+
+    <div class="content">
+      <div class="templates-list">
+        <div class="field">
+          <span class="field__label">Template</span>
+          <div class="field__control">
+            <select [formControl]="templateControl">
+              <option *ngFor="let template of templates$ | async" [value]="template.id">{{ template.name }}</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <div class="template">
+        <div class="template__tabs">
+          <div
+            class="tab"
+            [class.tab--active]="tab.id === activeTab"
+            *ngFor="let tab of tabs"
+            (click)="selectTabHandler(tab.id)"
+          >
+            {{ tab.name }}
+          </div>
+        </div>
+
+        <div class="template__general" *ngIf="activeTab === 'GENERAL'">
+          <ng-container [formGroup]="attributesForm">
+            <ng-container *ngFor="let attribute of attributes$ | async">
+              <div class="field" *ngIf="attributesForm.get(attribute.name) as control">
+                <span class="field__label">{{ attribute.label }}</span>
+
+                <div class="field__control">
+                  <ng-container [ngSwitch]="attribute.type">
+                    <ng-container
+                      *ngSwitchCase="'CHECKBOX'"
+                      [ngTemplateOutlet]="checkbox"
+                      [ngTemplateOutletContext]="{attribute, control}"
+                    ></ng-container>
+
+                    <ng-container
+                      *ngSwitchCase="'RADIO'"
+                      [ngTemplateOutlet]="radio"
+                      [ngTemplateOutletContext]="{attribute, control}"
+                    ></ng-container>
+
+                    <ng-container
+                      *ngSwitchCase="'SELECT'"
+                      [ngTemplateOutlet]="select"
+                      [ngTemplateOutletContext]="{attribute, control}"
+                    ></ng-container>
+
+                    <ng-container
+                      *ngSwitchCase="'DATE'"
+                      [ngTemplateOutlet]="date"
+                      [ngTemplateOutletContext]="{attribute, control}"
+                    ></ng-container>
+
+                    <ng-container
+                      *ngSwitchDefault
+                      [ngTemplateOutlet]="text"
+                      [ngTemplateOutletContext]="{attribute, control}"
+                    ></ng-container>
+                  </ng-container>
+                </div>
+              </div>
+            </ng-container>
+          </ng-container>
+        </div>
+
+        <div
+          class="template__attachments"
+          *ngIf="activeTab === 'ATTACHMENTS'"
+          cdkDropList
+          (cdkDropListDropped)="attachmentDropHandler($event)"
+        >
+          <div class="template__attachments__errors" *ngIf="attachmentControl.errors?.fileType">
+            Incorrect document format. Should be .pdf.
+          </div>
+
+          <div class="template__attachments__list">
+            <ng-container *ngIf="attachmentsFormArray.controls as attachments">
+              <ng-container *ngFor="let attachment of attachmentsFormArray?.controls">
+                <div class="attachment" cdkDrag>
+                  <div class="attachment__reorder-icon" cdkDragHandle>
+                    <ng-container [ngTemplateOutlet]="reorderIcon"></ng-container>
+                  </div>
+
+                  <input type="checkbox" [formControl]="attachment.get('checked')" />
+
+                  <div class="attachment__name">{{ attachment.value.name }}</div>
+
+                  <ng-container *ngIf="!isPreview">
+                    <div
+                      class="attachment__remove-icon"
+                      *ngIf="!attachment.value.isRemoving; else removingSpinner"
+                      (click)="removeAttachmentHandler(attachment)"
+                    >
+                      <ng-container [ngTemplateOutlet]="removeIcon"></ng-container>
+                    </div>
+
+                    <ng-template #removingSpinner>
+                      <div class="spinner"></div>
+                    </ng-template>
+                  </ng-container>
+
+                  <div class="attachment__placeholder" *cdkDragPlaceholder></div>
+                </div>
+
+                <div class="separator"></div>
+              </ng-container>
+            </ng-container>
+
+            <div class="attachments-add">
+              <input
+                [style.display]="'none'"
+                type="file"
+                [accept]="allowedAttachmentTypes"
+                (change)="fileSelectHandler($event)"
+                #fileUpload
+              />
+              <button
+                class="button--secondary"
+                [class.button--disabled]="isPreview || !recordId"
+                (click)="isPreview || recordId && !attachmentInProgress$.value && fileUpload.click()"
+              >
+                <div class="spinner" *ngIf="attachmentInProgress$ | async"></div>
+                Add New Attachment
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="actions">
+        <div class="actions__left">
+          <button class="button--disabled">Send with DocuSign</button>
+        </div>
+        <div class="actions__right">
+          <button class="button--secondary" (click)="closeHandler()">Cancel</button>
+          <button
+            [class.button--disabled]="isPreview || !recordId"
+            (click)="isPreview || recordId && !generateInProgress$.value && generateHandler()"
+          >
+            <div class="spinner" *ngIf="generateInProgress$ | async"></div>
+            Generate
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</ng-template>
+
+<ng-template #checkbox let-attribute="attribute" let-control="control">
+  <input type="checkbox" [formControl]="control" />
+</ng-template>
+
+<ng-template #radio let-attribute="attribute" let-control="control">
+  <div class="radio-item" *ngFor="let item of attribute.lov">
+    <ng-container *ngIf="item?.code || item as value">
+      <input type="radio" [checked]="control.value === value" (change)="control.setValue(value)" />
+      <label>{{ item?.value || item }}</label>
+    </ng-container>
+  </div>
+</ng-template>
+
+<ng-template #text let-attribute="attribute" let-control="control">
+  <input type="text" [formControl]="control" />
+</ng-template>
+
+<ng-template #select let-attribute="attribute" let-control="control">
+  <select [formControl]="control">
+    <option *ngFor="let item of attribute.lov" [value]="item?.code || item">{{ item?.value || item }}</option>
+  </select>
+</ng-template>
+
+<ng-template #date let-attribute="attribute" let-control="control">
+  <input type="date" [formControl]="control" />
+</ng-template>
+
+<ng-template #reorderIcon>
+  <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <path
+      fill-rule="evenodd"
+      clip-rule="evenodd"
+      d="M4 2C4.55228 2 5 2.44772 5 3V13C5 13.5523 4.55228 14 4 14C3.44772 14 3 13.5523 3 13V3C3 2.44772 3.44772 2 4 2ZM8 2C8.55228 2 9 2.44772 9 3V13C9 13.5523 8.55228 14 8 14C7.44772 14 7 13.5523 7 13V3C7 2.44772 7.44772 2 8 2ZM13 3C13 2.44772 12.5523 2 12 2C11.4477 2 11 2.44772 11 3V13C11 13.5523 11.4477 14 12 14C12.5523 14 13 13.5523 13 13V3Z"
+      fill="#DCE5EF"
+    />
+  </svg>
+</ng-template>
+
+<ng-template #removeIcon>
+  <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <path
+      fill-rule="evenodd"
+      clip-rule="evenodd"
+      d="M6 1C6 0.447715 6.44772 0 7 0H9C9.55229 0 10 0.447715 10 1H14C14.5523 1 15 1.44772 15 2C15 2.55228 14.5523 3 14 3H2C1.44772 3 1 2.55228 1 2C1 1.44772 1.44772 1 2 1H6ZM14 4H2V15C2 15.5523 2.44772 16 3 16H13C13.5523 16 14 15.5523 14 15V4ZM11 6.5C11 6.22386 10.7761 6 10.5 6C10.2239 6 10 6.22386 10 6.5V13.5C10 13.7761 10.2239 14 10.5 14C10.7761 14 11 13.7761 11 13.5V6.5ZM5.5 6C5.77614 6 6 6.22386 6 6.5V13.5C6 13.7761 5.77614 14 5.5 14C5.22386 14 5 13.7761 5 13.5V6.5C5 6.22386 5.22386 6 5.5 6Z"
+      fill="#DCE5EF"
+    />
+  </svg>
+</ng-template>

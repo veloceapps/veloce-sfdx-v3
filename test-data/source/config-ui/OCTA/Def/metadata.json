@@ -1,0 +1,13 @@
+{
+  "name": "Def",
+  "primary": true,
+  "type": "CONFIGURATION",
+  "version": 2,
+  "createdTimestamp": 1655284304254,
+  "properties": {
+    "rootType": "Bundle",
+    "pricingEnabled": false,
+    "priceList": null
+  },
+  "children": ["Bundle"]
+}
