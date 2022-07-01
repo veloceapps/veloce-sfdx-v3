@@ -3,7 +3,7 @@ import { ElementDefinition } from '@veloce/sdk/cms';
 @ElementDefinition({
   name: 'Shared',
   type: 'CONTAINER',
-  children: ['PortsViewer', 'MessagesPanel', 'AttributesSidebar', 'PortsSidebar', 'Docgen'],
+  children: ['AttributesSidebar', 'MessagesPanel', 'PortsViewer', 'PortsSidebar', 'Docgen'],
 })
 export class Script {
   constructor() {}

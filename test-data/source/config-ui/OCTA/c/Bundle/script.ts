@@ -38,7 +38,7 @@ interface Tab {
 @ElementDefinition({
   name: 'Bundle',
   type: 'CUSTOM',
-  children: ['a', 'bundleName', 'country', 'Phones', 'Plans', 'Deliveries', 'Shared'],
+  children: ['bundleName', 'country', 'Phones', 'Plans', 'Deliveries', 'Shared'],
   model: {
     lineItem: '/Bundle',
   },
