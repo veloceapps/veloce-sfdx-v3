@@ -35,6 +35,7 @@ export async function pushSettings(params: PushSettingsParams): Promise<string[]
         body: JSON.stringify(body),
         method: 'PATCH'
       });
+      console.log(`ConfigurationSetting ${body.VELOCPQ__Key__c} with id ${existingSetting.Id} is updated`);
       ids.push(existingSetting.Id);
     } else {
       const result = await createConfigurationSetting(conn, body);
