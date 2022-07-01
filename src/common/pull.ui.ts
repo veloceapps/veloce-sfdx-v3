@@ -65,7 +65,7 @@ export async function pullUI(params: PullUIParams): Promise<string[]> {
       const uiDir = `${path}/${ui.name}`;
 
       if (isLegacyDefinition(ui)) {
-        saveLegacyUiDefinition(ui, uiDir, legacyMetadataArray);
+        saveLegacyUiDefinition(ui, path, ui.name, legacyMetadataArray);
       } else {
         saveUiDefinition(ui, uiDir);
       }
@@ -81,6 +81,7 @@ export async function pullUI(params: PullUIParams): Promise<string[]> {
 
 function saveLegacySections(
   sections: LegacySection[],
+  sourcePath: string,
   path: string,
   metadata: LegacyUiDefinition,
   parentId?: string,
@@ -91,52 +92,63 @@ function saveLegacySections(
     const childPath = `${path}/${c.label}`;
 
     // save files
-    saveLegacySectionFiles(c, childPath, metadata);
+    saveLegacySectionFiles(c, sourcePath, childPath, metadata);
 
     // save grandchildren
-    saveLegacySections(sections, childPath, metadata, c.id);
+    saveLegacySections(sections, sourcePath, childPath, metadata, c.id);
   });
 }
 
-function saveLegacyUiDefinition(ui: LegacyUiDefinition, path: string, metadataArray: LegacyUiDefinition[]): void {
+function saveLegacyUiDefinition(
+  ui: LegacyUiDefinition,
+  sourcePath: string,
+  uiName: string,
+  metadataArray: LegacyUiDefinition[],
+): void {
   const legacyMetadata: LegacyUiDefinition = { ...ui, sections: [] };
 
   ui.tabs.forEach((tab) => {
-    const tabPath = `${path}/${tab.name}`;
+    const path = `${uiName}/${tab.name}`;
     const tabSections = ui.sections.filter((section) => section.page === tab.id);
 
-    saveLegacySections(tabSections, tabPath, legacyMetadata);
+    saveLegacySections(tabSections, sourcePath, path, legacyMetadata);
   });
 
   metadataArray.push(legacyMetadata);
 }
 
-function saveLegacySectionFiles(section: LegacySection, dir: string, metadata: LegacyUiDefinition): void {
+function saveLegacySectionFiles(
+  section: LegacySection,
+  sourcePath: string,
+  path: string,
+  metadata: LegacyUiDefinition,
+): void {
   const sectionMeta = { ...section };
+  const fullDir = `${sourcePath}/${path}`;
 
   if (section.script) {
     const fileName = `${section.label}.js`;
-    writeFileSafe(dir, fileName, fromBase64(section.script));
+    writeFileSafe(fullDir, fileName, fromBase64(section.script));
     delete sectionMeta.script;
-    sectionMeta.scriptUrl = `${dir}/${fileName}`;
+    sectionMeta.scriptUrl = `${path}/${fileName}`;
   }
   if (section.styles) {
     const fileName = `${section.label}.css`;
-    writeFileSafe(dir, fileName, fromBase64(section.styles));
+    writeFileSafe(fullDir, fileName, fromBase64(section.styles));
     delete sectionMeta.styles;
-    sectionMeta.scriptUrl = `${dir}/${fileName}`;
+    sectionMeta.scriptUrl = `${path}/${fileName}`;
   }
   if (section.template) {
     const fileName = `${section.label}.html`;
-    writeFileSafe(dir, fileName, fromBase64(section.template));
+    writeFileSafe(fullDir, fileName, fromBase64(section.template));
     delete sectionMeta.template;
-    sectionMeta.templateUrl = `${dir}/${fileName}`;
+    sectionMeta.templateUrl = `${path}/${fileName}`;
   }
   if (section.properties) {
     const fileName = `${section.label}.json`;
-    writeFileSafe(dir, fileName, JSON.stringify(section.properties, null, 2));
+    writeFileSafe(fullDir, fileName, JSON.stringify(section.properties, null, 2));
     delete sectionMeta.properties;
-    sectionMeta.propertiesUrl = `${dir}/${fileName}`;
+    sectionMeta.propertiesUrl = `${path}/${fileName}`;
   }
 
   metadata.sections.push(sectionMeta);

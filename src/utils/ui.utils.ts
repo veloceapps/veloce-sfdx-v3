@@ -93,7 +93,7 @@ export class UiDefinitionsBuilder {
     for (const ui of legacyDefinitions) {
       for (const section of ui.sections) {
         if (section.templateUrl) {
-          const p = `${this.dir}/${section.templateUrl.trim()}`;
+          const p = `${dir}/${section.templateUrl.trim()}`;
           this.assertPath(p);
           const b = readFileSync(p);
           const base64 = b.toString('base64');
@@ -101,7 +101,7 @@ export class UiDefinitionsBuilder {
           delete section.templateUrl;
         }
         if (section.scriptUrl) {
-          const p = `${this.dir}/${section.scriptUrl.trim()}`;
+          const p = `${dir}/${section.scriptUrl.trim()}`;
           this.assertPath(p);
           const b = readFileSync(p);
           const base64 = b.toString('base64');
@@ -109,7 +109,7 @@ export class UiDefinitionsBuilder {
           delete section.scriptUrl;
         }
         if (section.stylesUrl) {
-          const p = `${this.dir}/${section.stylesUrl.trim()}`;
+          const p = `${dir}/${section.stylesUrl.trim()}`;
           this.assertPath(p);
           const b = readFileSync(p);
           const base64 = b.toString('base64');
@@ -117,7 +117,7 @@ export class UiDefinitionsBuilder {
           delete section.stylesUrl;
         }
         if (section.propertiesUrl) {
-          const p = `${this.dir}/${section.propertiesUrl.trim()}`;
+          const p = `${dir}/${section.propertiesUrl.trim()}`;
           this.assertPath(p);
           section.properties = this.parseJsonFile(p);
           delete section.propertiesUrl;
