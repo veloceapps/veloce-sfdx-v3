@@ -61,6 +61,9 @@ export class UiDefinitionsBuilder {
   private packUiElement(dir: string): UiElement {
     const script = readFileSafe(`${dir}/script.ts`);
     const metadata = extractElementMetadata(script);
+    if (!metadata) {
+      throw new Error(`Cannot read element metadata "${dir}"`);
+    }
 
     const element: UiElement = {
       script: toBase64(script),
