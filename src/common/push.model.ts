@@ -127,20 +127,19 @@ export async function pushModel(params: PushPmlParams): Promise<string[]> {
   if (!member) {
     return [];
   }
-  const sourcePath: string = rootPath + '/model';
   const retIDs = [];
   if (member.all) {
     // Push ALL
     console.log('Pushing All Models');
-    const allModelsToUpload = findAllModels(sourcePath);
+    const allModelsToUpload = findAllModels(rootPath);
     for (const p of allModelsToUpload) {
-      retIDs.push(await uploadModel(sourcePath, conn, p));
+      retIDs.push(await uploadModel(rootPath, conn, p));
     }
   } else if (member.names.length > 0) {
     // Push some members only
     console.log(`Pushing Models with names: ${Array.from(member.names.values()).join(',')}`);
     for (const p of member.names) {
-      retIDs.push(await uploadModel(sourcePath, conn, p));
+      retIDs.push(await uploadModel(rootPath, conn, p));
     }
   }
   return retIDs;

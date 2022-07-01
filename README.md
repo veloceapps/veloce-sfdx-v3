@@ -13,8 +13,8 @@ Extension to sfdx which allows veloce specific data pull and push
 
 - [veloce](#veloce)
   <!-- tocstop -->
-      <!-- install -->
-      <!-- usage -->
+        <!-- install -->
+        <!-- usage -->
 
 ```sh-session
 $ npm install -g veloce-sfdx-v3
