@@ -23,11 +23,17 @@ export async function pushUI(params: PushUIParams): Promise<string[]> {
   }
   const sourcepath: string = rootPath + '/config-ui';
 
-  const modelNames: string[] = Array.from(member.names);
+  const modelNames: string[] = Array.from(member.names).map((ui) => ui.split(':')[0]);
   console.log(`Uploading ${member.all ? 'All Uis' : 'Uis with names: ' + modelNames.join()}`);
   const productModels: ProductModel[] = await fetchProductModels(conn, member.all, modelNames);
   console.log(`Uploading Uis result count: ${productModels.length}`);
 
+  Array.from(member.names).forEach((ui) => {
+    const [modelName, uiDefName] = ui.split(':');
+    if (uiDefName) {
+      console.log(`Push for separate UI Definition is not supported. Pushing All UI Definitions for ${modelName}`);
+    }
+  });
   // Check if veloce folder exists:
   const folderId: string = (await fetchFolder(conn, FOLDER_NAME))?.Id ?? (await createFolder(conn, FOLDER_NAME)).id;
 
