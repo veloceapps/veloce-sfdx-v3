@@ -11,7 +11,7 @@ import { Member } from '../types/member.types';
 export interface PushUIParams {
   rootPath: string;
   conn: Connection;
-  member: Member | undefined;
+  member?: Member;
 }
 
 const FOLDER_NAME = 'velo_product_models';

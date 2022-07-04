@@ -11,7 +11,7 @@ import { Member } from '../types/member.types';
 export interface PullUIParams {
   sourcepath: string;
   conn: Connection;
-  member: Member | undefined;
+  member?: Member;
 }
 
 export async function pullUI(params: PullUIParams): Promise<string[]> {
