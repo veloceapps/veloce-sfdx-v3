@@ -95,7 +95,7 @@ export default class Push extends DebugSfdxCommand {
             },
           );
         } catch (error) {
-          logError(this.ux, 'Failed to deploy', error);
+          logError('Failed to deploy', error);
         }
         this.ux.log('PML Successfully Loaded!');
       }
@@ -120,7 +120,7 @@ export default class Push extends DebugSfdxCommand {
             headers,
           });
         } catch (error) {
-          logError(this.ux, 'Failed to deploy', error);
+          logError('Failed to deploy', error);
         }
       }
     }

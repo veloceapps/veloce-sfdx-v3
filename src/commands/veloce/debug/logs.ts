@@ -65,7 +65,7 @@ export default class Org extends DebugSfdxCommand {
         this.ux.log(response.data);
       }
     } catch (error) {
-      logError(this.ux, 'Failed to get logs', error);
+      logError('Failed to get logs', error);
     } finally {
       setTimeout(() => void this.callToGetLogs(backendUrl, headers), 1000);
     }

@@ -46,21 +46,7 @@ export default class Org extends DebugSfdxCommand {
       this.ux.log('No active debug session found, please start debug session using veloce:debug');
       return {};
     }
-    const headers = getDebugClientHeaders(debugSession);
-    const backendUrl: string | undefined = debugSession.backendUrl;
-
-    try {
-      await axios.post(
-        `${backendUrl}/services/dev-override/stop`,
-        {},
-        {
-          headers,
-        },
-      );
-    } catch (error) {
-      logError(this.ux, 'Failed to stop session', error);
-      return {};
-    }
+    await this.stopDebugSession(debugSession);
     // Return an object to be displayed with --json
     return {};
   }
