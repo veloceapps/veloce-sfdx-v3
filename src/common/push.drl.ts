@@ -10,11 +10,14 @@ export interface PushDRLParams {
 }
 
 async function saveRule(group: Group, rule: Rule, conn: Connection): Promise<void> {
-  const action = JSON.stringify(rule.action);
+  const action = JSON.stringify(rule.action).replaceAll("'", "\\'");
   const actionWithoutQuotes = action.substring(1, action.length - 1);
-  const condition = JSON.stringify(rule.condition);
+  const condition = JSON.stringify(rule.condition).replaceAll("'", "\\'");
   const conditionWithoutQuotes = condition.substring(1, condition.length - 1);
   const code = `
+    String action = '${actionWithoutQuotes}';
+    String condition = '${conditionWithoutQuotes}';
+
     VELOCPQ__PriceRuleGroup__c[] gs = [SELECT Id FROM VELOCPQ__PriceRuleGroup__c WHERE VELOCPQ__ReferenceId__c = '${
       group.referenceId
     }' LIMIT 1];
@@ -27,9 +30,9 @@ async function saveRule(group: Group, rule: Rule, conn: Connection): Promise<voi
         if (oldRule.VELOCPQ__PriceRuleGroupId__c.equals(g.Id)){
             VELOCPQ__PriceRule__c o = oldRule;
             o.Name = '${rule.name}';
-            o.VELOCPQ__Action__c = '${actionWithoutQuotes}';
+            o.VELOCPQ__Action__c = action;
             o.VELOCPQ__Active__c = ${rule.active};
-            o.VELOCPQ__Condition__c = '${conditionWithoutQuotes}';
+            o.VELOCPQ__Condition__c = condition;
             o.VELOCPQ__Description__c = '${rule.description || rule.name}';
             o.VELOCPQ__Sequence__c = ${rule.sequence};
             update o;
@@ -37,9 +40,9 @@ async function saveRule(group: Group, rule: Rule, conn: Connection): Promise<voi
             VELOCPQ__PriceRule__c o = new VELOCPQ__PriceRule__c(VELOCPQ__ReferenceId__c = '${rule.referenceId}');
             o.VELOCPQ__PriceRuleGroupId__c = g.Id;
             o.Name = '${rule.name}';
-            o.VELOCPQ__Action__c = '${actionWithoutQuotes}';
+            o.VELOCPQ__Action__c = action;
             o.VELOCPQ__Active__c = ${rule.active};
-            o.VELOCPQ__Condition__c = '${conditionWithoutQuotes}';
+            o.VELOCPQ__Condition__c = condition;
             o.VELOCPQ__Description__c = '${rule.description || rule.name}';
             o.VELOCPQ__Sequence__c = ${rule.sequence};
             insert o;
@@ -48,9 +51,9 @@ async function saveRule(group: Group, rule: Rule, conn: Connection): Promise<voi
     } else {
         VELOCPQ__PriceRule__c o = new VELOCPQ__PriceRule__c(VELOCPQ__ReferenceId__c = '${rule.referenceId}');
         o.Name = '${rule.name}';
-        o.VELOCPQ__Action__c = '${actionWithoutQuotes}';
+        o.VELOCPQ__Action__c = action;
         o.VELOCPQ__Active__c = ${rule.active};
-        o.VELOCPQ__Condition__c = '${conditionWithoutQuotes}';
+        o.VELOCPQ__Condition__c = condition;
         o.VELOCPQ__Description__c = '${rule.description || rule.name}';
         o.VELOCPQ__Sequence__c = ${rule.sequence};
         o.VELOCPQ__PriceRuleGroupId__c = g.Id;

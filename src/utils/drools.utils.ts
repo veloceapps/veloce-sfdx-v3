@@ -1,7 +1,10 @@
 import path = require('path');
 import fs = require('fs');
 import { SfdxError } from '@salesforce/core';
-import { parseJsonSafe } from './common.utils';
+import { Connection } from '@salesforce/core';
+import { PriceRuleGroup } from '../types/priceRuleGroup.types';
+import { PriceRule } from '../types/priceRule.types';
+import { parseJsonSafe, writeFileSafe } from './common.utils';
 
 const ruleExtractRegex = /(rule\b)([\S\s]*?)(end\b)/g;
 const rulePreconditionRegex = /(?<=when\b)([\S\s]*?)(?=then\b)/g;
@@ -10,12 +13,12 @@ const ruleSequenceRegex = /(?<=salience\b)([\S\s]*?)(?=when\b)/g;
 
 export interface Rule {
   name: string;
-  action: string;
   active: boolean;
-  condition: string;
   description: string;
-  sequence: number;
   referenceId: string;
+  action?: string;
+  condition?: string;
+  sequence?: number;
 }
 
 export interface Group {
@@ -85,7 +88,7 @@ export function validateGroupMeta(groupRecord: Group, groupFile: string): void {
   if (!groupRecord.priceListId) {
     throw new SfdxError(`Property 'priceListId' is missing from MetaFile of group ${groupFile}`);
   }
-  if (!groupRecord.sequence) {
+  if (groupRecord.sequence == null) {
     throw new SfdxError(`Property 'sequence' is missing from MetaFile of group ${groupFile}`);
   }
   if (!groupRecord.type) {
@@ -130,6 +133,105 @@ export function extractGroupsFromFolder(rulesDirectory: string): Group[] {
 
   for (const groupFile of groupFiles) {
     result.push(extractGroupFromFile(groupFile, rulesDirectory));
+  }
+  return result;
+}
+
+export async function fetchDroolsByGroup(conn: Connection, groupName: string): Promise<PriceRule[]> {
+  let query =
+    'SELECT Id,Name, VELOCPQ__Action__c,VELOCPQ__Active__c,VELOCPQ__Condition__c,' +
+    'VELOCPQ__Description__c,VELOCPQ__ReferenceId__c,VELOCPQ__PriceRuleGroupId__c,VELOCPQ__Sequence__c from VELOCPQ__PriceRule__c';
+  query += ` WHERE VELOCPQ__PriceRuleGroupId__c = '${groupName}'`;
+
+  const result = await conn.query<PriceRule>(query);
+  return result?.records ?? [];
+}
+
+export async function fetchDroolGroups(conn: Connection, groupNames: string[]): Promise<PriceRuleGroup[]> {
+  let query =
+    'SELECT Id,Name, VELOCPQ__Active__c,VELOCPQ__Description__c,VELOCPQ__ReferenceId__c,' +
+    'VELOCPQ__Sequence__c,VELOCPQ__Type__c,VELOCPQ__PriceListId__c from VELOCPQ__PriceRuleGroup__c';
+  if (groupNames.length > 0) {
+    query += ` WHERE Name IN ('${groupNames.join("','")}')`;
+  }
+  const result = await conn.query<PriceRuleGroup>(query);
+  return result?.records ?? [];
+}
+
+export function saveDroolGroups(groups: Group[], savePath: string): void {
+  for (const group of groups) {
+    const groupToSave: Group = {
+      active: group.active,
+      description: group.description,
+      name: group.name,
+      priceListId: group.priceListId,
+      referenceId: group.referenceId,
+      sequence: group.sequence,
+      type: group.type,
+      priceRules: [],
+    };
+    for (const rule of group.priceRules) {
+      const ruleToSave: Rule = {
+        active: rule.active,
+        description: rule.description,
+        name: rule.name,
+        referenceId: rule.referenceId,
+      };
+      groupToSave.priceRules.push(ruleToSave);
+    }
+    const fileName: string = getFileNameForGroup(group.type, group.sequence, group.name);
+    writeFileSafe(savePath, `${fileName}.json`, JSON.stringify(groupToSave, null, 2) + '\n');
+    let drlFileContent = '';
+    for (const rule of group.priceRules) {
+      drlFileContent += `
+rule "${rule.name}" salience ${rule.sequence}
+when
+${rule.condition}
+then
+${rule.action}
+end
+`;
+    }
+    writeFileSafe(savePath, `${fileName}.drl`, drlFileContent);
+  }
+}
+
+function getFileNameForGroup(type: string, sequence: number, name: string): string {
+  return `${type}_${sequence}_${name.replaceAll(' ', '_')}`;
+}
+
+export async function getDroolGroups(conn: Connection, groupNames: string[]): Promise<Group[]> {
+  const salesforceGroups: PriceRuleGroup[] = await fetchDroolGroups(conn, groupNames);
+  const result: Group[] = [];
+  for (const salesforceGroup of salesforceGroups) {
+    const salesforceGroupId: string = salesforceGroup.Id;
+
+    const group: Group = {
+      active: salesforceGroup.VELOCPQ__Active__c,
+      description: salesforceGroup.VELOCPQ__Description__c,
+      name: salesforceGroup.Name,
+      priceListId: salesforceGroup.VELOCPQ__PriceListId__c,
+      referenceId: salesforceGroup.VELOCPQ__ReferenceId__c,
+      sequence: salesforceGroup.VELOCPQ__Sequence__c,
+      type: salesforceGroup.VELOCPQ__Type__c,
+      priceRules: [],
+    };
+
+    const salesforceRules: PriceRule[] = await fetchDroolsByGroup(conn, salesforceGroupId);
+    for (const salesforceRule of salesforceRules) {
+      const rule: Rule = {
+        action: salesforceRule.VELOCPQ__Action__c,
+        active: salesforceRule.VELOCPQ__Active__c,
+        condition: salesforceRule.VELOCPQ__Condition__c,
+        description: salesforceRule.VELOCPQ__Description__c,
+        name: salesforceRule.Name,
+        referenceId: salesforceRule.VELOCPQ__ReferenceId__c,
+        sequence: salesforceRule.VELOCPQ__Sequence__c,
+      };
+      group.priceRules.push(rule);
+    }
+    group.priceRules.sort((a, b) => (a.sequence ?? 0) - (b.sequence ?? 0));
+    result.push(group);
   }
   return result;
 }
