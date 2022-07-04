@@ -12,6 +12,7 @@ import { AnyJson } from '@salesforce/ts-types';
 import { pullModel } from '../../../common/pull.model';
 import { pullUI } from '../../../common/pull.ui';
 import { MembersMap } from '../../../common/members.map';
+import { pullDRL } from '../../../common/pull.drl';
 import { pullSettings } from '../../../common/pull.settings';
 
 // Initialize Messages with the current plugin directory
@@ -74,9 +75,11 @@ export default class Pull extends SfdxCommand {
 
     const uiRecords = await pullUI({ sourcepath, conn, member: memberMap.get('config-ui') });
 
+    const drl = await pullDRL({ sourcepath, conn, member: memberMap.get('drl') });
+
     const configSettingRecords = await pullSettings({ sourcepath, conn, member: memberMap.get('config-settings') });
 
     // Return an object to be displayed with --json
-    return { model: modelRecords, 'config-ui': uiRecords, 'config-settings': configSettingRecords };
+    return { model: modelRecords, 'config-ui': uiRecords, drl, 'config-settings': configSettingRecords };
   }
 }
