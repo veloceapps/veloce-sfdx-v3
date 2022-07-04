@@ -6,6 +6,7 @@ import { default as axios } from 'axios';
 import { flags } from '@salesforce/command';
 import { DebugSfdxCommand } from '../../../common/debug.command';
 import { getDebugClientHeaders } from '../../../utils/auth.utils';
+import { logError } from '../../../common/log.handler';
 
 // Initialize Messages with the current plugin directory
 Messages.importMessagesDirectory(__dirname);
@@ -56,8 +57,8 @@ export default class Org extends DebugSfdxCommand {
           headers,
         },
       );
-    } catch ({ data }) {
-      this.ux.log(`Failed to stop debug session: ${data as string}`);
+    } catch (error) {
+      logError(this.ux, 'Failed to stop session', error);
       return {};
     }
     // Return an object to be displayed with --json
