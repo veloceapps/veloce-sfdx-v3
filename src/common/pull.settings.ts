@@ -22,8 +22,11 @@ export async function pullSettings(params: PullSettingsParams): Promise<string[]
   console.log(`Dumping ConfigurationSettings result count: ${settings.length}`);
 
   settings.forEach(({ VELOCPQ__Key__c, VELOCPQ__Value__c }) => {
-    const isObject = typeof parseJsonSafe(VELOCPQ__Value__c) === 'object';
-    writeFileSafe(dir, `${VELOCPQ__Key__c}.${isObject ? 'json' : 'js'}`, VELOCPQ__Value__c, { flag: 'w+' });
+    const parsedValue = parseJsonSafe(VELOCPQ__Value__c);
+    const isObject = typeof parsedValue === 'object';
+    const valueToWrite = isObject ? JSON.stringify(parsedValue ?? '', null, 2) : VELOCPQ__Value__c;
+
+    writeFileSafe(dir, `${VELOCPQ__Key__c}.${isObject ? 'json' : 'js'}`, valueToWrite, { flag: 'w+' });
   });
 
   return settings.map(({Id}) => Id);
