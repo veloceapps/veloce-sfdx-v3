@@ -17,6 +17,10 @@ export async function fetchDocumentContent(conn: Connection, documentId: string)
 }
 
 export async function fetchDocument(conn: Connection, documentId: string): Promise<Document | undefined> {
+  if (!documentId) {
+    console.debug('DocumentId is null');
+    return;
+  }
   const query = `Select Id, Body, FolderId from Document WHERE Id='${documentId}'`;
 
   const result = await conn.query<Document>(query);
