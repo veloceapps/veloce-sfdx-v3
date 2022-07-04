@@ -18,4 +18,21 @@ describe('veloce:source:pull', () => {
     // var checkParsed = JSON.parse(check.stdout)
     // console.log(checkParsed)
   });
+
+  it('should pull UI sources from org', async () => {
+    const cmdResult = await exec('sfdx veloce:source:pull -u studio-dev -m config-ui:OCTA -p /tmp/');
+    console.log(cmdResult.stdout);
+  });
+  it('should pull UI+PML sources from org', async () => {
+    const cmdResult = await exec(
+      'sfdx veloce:source:pull -u studio-dev -m model:OCTA,config-ui:OCTA -p /tmp/',
+    );
+    console.log(cmdResult.stdout);
+  });
+  it('should pull Configuration Settings sources from org', async () => {
+    const cmdResult = await exec(
+      'sfdx veloce:source:pull -u studio-dev -m config-settings -p /tmp/',
+    );
+    console.log(cmdResult.stdout);
+  });
 });

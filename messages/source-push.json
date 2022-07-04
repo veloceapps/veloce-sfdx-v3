@@ -3,6 +3,7 @@
   "membersFlagDescription": "Push only specific type of data or even name of object",
   "sourcepathFlagDescription": "Path where to get sources",
   "noprojectFlagDescription": "Bypass check of sfdx-project.json to exist",
+  "skipdeleteFlagDescription": "Only for upload, skip db clean up",
   "examples": [
     "sfdx veloce:source:push --targetusername myOrg@example.com --targetdevhubusername devhub@org.com --members model:OCTA --sourcepath ./source/pmls"
   ]

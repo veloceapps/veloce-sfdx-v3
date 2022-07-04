@@ -46,6 +46,10 @@ export default class Push extends SfdxCommand {
       char: 'P',
       description: messages.getMessage('noprojectFlagDescription'),
     }),
+    skipdelete: flags.boolean({
+      char: 'd',
+      description: messages.getMessage('skipdeleteFlagDescription'),
+    }),
   };
 
   // Comment this out if your command does not require an org username
@@ -76,7 +80,7 @@ export default class Push extends SfdxCommand {
 
     const uiRecords = await pushUI({ rootPath, conn, member: memberMap.get('config-ui') });
 
-    const configSettingRecords = await pushSettings({ rootPath, conn, member: memberMap.get('config-settings') });
+    const configSettingRecords = await pushSettings({ rootPath, conn, member: memberMap.get('config-settings'), skipdelete: this.flags.skipdelete});
 
     // Return an object to be displayed with --json
     return { pml: pmlRecords, ui: uiRecords, drl: drlRecords, 'config-settings': configSettingRecords };
