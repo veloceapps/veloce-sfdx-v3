@@ -6,7 +6,7 @@ export const getDebugClientHeaders = (debugSession: DebugSessionInfo): { [key: s
       veloceNamespace: '',
       instanceUrl: debugSession.instanceUrl,
       organizationId: debugSession.orgId,
-      oAuthHeaderValue: debugSession.accessToken,
+      oAuthHeaderValue: `Bearer ${debugSession.accessToken}`,
     }),
   ).toString('base64');
   const authorization = authToken;
