@@ -1,7 +1,7 @@
 import { existsSync, mkdirSync, writeFileSync } from 'node:fs';
 import { EOL, homedir } from 'node:os';
 import { join } from 'node:path';
-import { flags, SfdxCommand } from '@salesforce/command';
+import { flags } from '@salesforce/command';
 import { Messages, Org as oorg } from '@salesforce/core';
 import { AnyJson } from '@salesforce/ts-types';
 import axios from 'axios';

@@ -2,11 +2,8 @@ import { EOL } from 'node:os';
 import { existsSync } from 'node:fs';
 import { Messages } from '@salesforce/core';
 import { AnyJson } from '@salesforce/ts-types';
-import { default as axios } from 'axios';
 import { flags } from '@salesforce/command';
 import { DebugSfdxCommand } from '../../../common/debug.command';
-import { getDebugClientHeaders } from '../../../utils/auth.utils';
-import { logError } from '../../../common/log.handler';
 
 // Initialize Messages with the current plugin directory
 Messages.importMessagesDirectory(__dirname);

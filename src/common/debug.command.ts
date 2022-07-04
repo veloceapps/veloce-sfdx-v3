@@ -2,10 +2,10 @@ import { readFileSync } from 'fs';
 import * as os from 'os';
 import * as path from 'path';
 import { SfdxCommand } from '@salesforce/command';
-import DebugSessionInfo from '../types/DebugSessionInfo';
 import { default as axios } from 'axios';
-import { logError } from './log.handler';
+import DebugSessionInfo from '../types/DebugSessionInfo';
 import { getDebugClientHeaders } from '../utils/auth.utils';
+import { logError } from './log.handler';
 
 export abstract class DebugSfdxCommand extends SfdxCommand {
   protected getDebugSession(): DebugSessionInfo | null {
