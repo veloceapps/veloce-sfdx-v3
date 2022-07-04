@@ -12,7 +12,9 @@ export class MembersMap {
     }
     const membersArray = members.split(',');
     for (const m of membersArray) {
-      const [key, name] = m.split(':');
+      const data = m.split(':');
+      const name = data.slice(1).join(':');
+      const key = data[0];
       const member: Member = this.result_map[key] ?? { key, all: false, names: [] };
       if (name) {
         member.names.push(name);
