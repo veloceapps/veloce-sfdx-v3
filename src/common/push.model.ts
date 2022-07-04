@@ -20,7 +20,7 @@ async function getDocument(conn: Connection, name: string): Promise<string | nul
   }
   if (!pmResult.records[0].VELOCPQ__ContentId__c) {
     console.debug(`Product model '${name}' field VELOCPQ__ContentId__c is null`);
-    return;
+    return null;
   }
   const docResult = await conn.query<Document>(`SELECT Id
                                                   FROM Document
