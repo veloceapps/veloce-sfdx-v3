@@ -25,11 +25,12 @@ export async function pullUI(params: PullUIParams): Promise<string[]> {
   const uiDefProductModels: ProductModel[] = await fetchProductModels(conn, member.all, modelNames);
   console.log(`Dumping Uis result count: ${uiDefProductModels.length}`);
 
-  const uiDefNamesMap = Array.from(member.names).reduce((acc, ui) => {
-    const [modelName, defName] = ui.split(':');
-    acc[modelName] = defName;
-    return acc;
-  }, {} as { [modelName: string]: string });
+  Array.from(member.names).forEach((ui) => {
+    const [modelName, uiDefName] = ui.split(':');
+    if (uiDefName) {
+      console.log(`Pull for separate UI Definition is not supported. Pulling All UI Definitions for ${modelName}`);
+    }
+  });
 
   const contents: { productModel: ProductModel; content: string | undefined }[] = await Promise.all(
     uiDefProductModels.map((productModel) =>
@@ -57,11 +58,6 @@ export async function pullUI(params: PullUIParams): Promise<string[]> {
     const legacyMetadataArray: LegacyUiDefinition[] = [];
 
     uiDefs?.forEach((ui) => {
-      const includeUiName = member.all || !uiDefNamesMap[Name] || uiDefNamesMap[Name] === ui.name;
-      if (!includeUiName) {
-        return;
-      }
-
       const uiDir = `${path}/${ui.name}`;
 
       if (isLegacyDefinition(ui)) {
