@@ -39,19 +39,15 @@ export default class Pack extends SfdxCommand {
   };
 
   // Comment this out if your command does not require an org username
-  protected static requiresUsername = true;
+  // protected static requiresUsername = true;
 
   // Comment this out if your command does not support a hub org username
-  protected static supportsDevhubUsername = true;
+  // protected static supportsDevhubUsername = true;
 
   // Set this to true if your command requires a project workspace; 'requiresProject' is false by default
   protected static requiresProject = false;
 
   public async run(): Promise<AnyJson> {
-    if (!this.org) {
-      return Promise.reject('Org is not defined');
-    }
-
     const memberMap = new MembersMap(this.flags.members ?? '');
     const rootPath = getPath(this.flags.sourcepath) ?? 'source';
 
@@ -65,6 +61,6 @@ export default class Pack extends SfdxCommand {
       return uiBuilder.pack() as [];
     }
 
-    return {};
+    return Promise.resolve({});
   }
 }
