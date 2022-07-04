@@ -28,7 +28,7 @@ export async function pullUI(params: PullUIParams): Promise<string[]> {
   Array.from(member.names).forEach((ui) => {
     const [modelName, uiDefName] = ui.split(':');
     if (uiDefName) {
-      console.log(`Pull for separate UI Definition is not supported. Pulling All UI Definitions for ${modelName}.`);
+      console.log(`Pull for separate UI Definition '${uiDefName}' is not supported. Pulling All UI Definitions for '${modelName}'.`);
     }
   });
 

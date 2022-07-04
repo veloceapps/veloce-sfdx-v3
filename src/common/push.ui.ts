@@ -31,7 +31,7 @@ export async function pushUI(params: PushUIParams): Promise<string[]> {
   Array.from(member.names).forEach((ui) => {
     const [modelName, uiDefName] = ui.split(':');
     if (uiDefName) {
-      console.log(`Push for separate UI Definition is not supported. Pushing All UI Definitions for ${modelName}.`);
+      console.log(`Push for separate UI Definition '${uiDefName}' is not supported. Pushing All UI Definitions for '${modelName}'.`);
     }
   });
   // Check if veloce folder exists:
