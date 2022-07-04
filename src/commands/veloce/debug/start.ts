@@ -1,7 +1,7 @@
 import { existsSync, mkdirSync, writeFileSync } from 'node:fs';
 import { EOL, homedir } from 'node:os';
 import { join } from 'node:path';
-import { flags, SfdxCommand } from '@salesforce/command';
+import { flags } from '@salesforce/command';
 import { Messages, Org as oorg } from '@salesforce/core';
 import { AnyJson } from '@salesforce/ts-types';
 import axios from 'axios';
@@ -9,6 +9,7 @@ import * as open from 'open';
 import { v4 as uuidv4 } from 'uuid';
 import DebugSessionInfo from '../../../types/DebugSessionInfo';
 import { getDebugClientHeaders } from '../../../utils/auth.utils';
+import { DebugSfdxCommand } from '../../../common/debug.command';
 
 // Initialize Messages with the current plugin directory
 Messages.importMessagesDirectory(__dirname);
@@ -17,7 +18,7 @@ Messages.importMessagesDirectory(__dirname);
 // or any library that is using the messages framework can also be loaded this way.
 const messages = Messages.loadMessages('veloce-sfdx-v3', 'debug-start');
 
-export default class Start extends SfdxCommand {
+export default class Start extends DebugSfdxCommand {
   public static description = messages.getMessage('commandDescription');
 
   public static examples = messages.getMessage('examples').split(EOL);
@@ -52,6 +53,12 @@ export default class Start extends SfdxCommand {
     const accessToken = conn.accessToken;
     const instanceUrl = this.org.getField(oorg.Fields.INSTANCE_URL) as string;
     const orgId = this.org.getField(oorg.Fields.ORG_ID) as string;
+
+    // delete existing token from db
+    const debugSessionOld = this.getDebugSession();
+    if (debugSessionOld) {
+      await this.stopDebugSession(debugSessionOld);
+    }
 
     const instanceUrlClean = instanceUrl.replace(/\/$/, '');
     const devToken = (uuidv4 as () => string)();

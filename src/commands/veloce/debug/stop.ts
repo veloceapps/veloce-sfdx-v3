@@ -2,11 +2,8 @@ import { EOL } from 'node:os';
 import { existsSync } from 'node:fs';
 import { Messages } from '@salesforce/core';
 import { AnyJson } from '@salesforce/ts-types';
-import { default as axios } from 'axios';
 import { flags } from '@salesforce/command';
 import { DebugSfdxCommand } from '../../../common/debug.command';
-import { getDebugClientHeaders } from '../../../utils/auth.utils';
-import { logError } from '../../../common/log.handler';
 
 // Initialize Messages with the current plugin directory
 Messages.importMessagesDirectory(__dirname);
@@ -46,21 +43,7 @@ export default class Org extends DebugSfdxCommand {
       this.ux.log('No active debug session found, please start debug session using veloce:debug');
       return {};
     }
-    const headers = getDebugClientHeaders(debugSession);
-    const backendUrl: string | undefined = debugSession.backendUrl;
-
-    try {
-      await axios.post(
-        `${backendUrl}/services/dev-override/stop`,
-        {},
-        {
-          headers,
-        },
-      );
-    } catch (error) {
-      logError(this.ux, 'Failed to stop session', error);
-      return {};
-    }
+    await this.stopDebugSession(debugSession);
     // Return an object to be displayed with --json
     return {};
   }
