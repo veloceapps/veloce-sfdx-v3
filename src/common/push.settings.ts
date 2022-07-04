@@ -7,11 +7,12 @@ import { Member } from '../types/member.types';
 export interface PushSettingsParams {
   rootPath: string;
   conn: Connection;
-  member: Member | undefined;
+  member?: Member;
+  skipdelete?: boolean;
 }
 
 export async function pushSettings(params: PushSettingsParams): Promise<string[]> {
-  const { rootPath, conn, member } = params;
+  const { rootPath, conn, member, skipdelete } = params;
   if (!member) {
     return [];
   }
@@ -43,20 +44,22 @@ export async function pushSettings(params: PushSettingsParams): Promise<string[]
     }
   }
 
-  const settingsToDelete = existingSettings.reduce((acc, {Id}) => {
-    if (!ids.includes(Id)) {
-      acc.push(Id);
-    }
-    return acc;
-  }, [] as string[]);
-  const deleteResult = await conn.sobject('VELOCPQ__ConfigurationSetting__c').delete(settingsToDelete);
-  deleteResult.forEach((result) => {
-    if (result.success) {
-      console.log(`ConfigurationSetting with id ${result.id} is deleted`);
-    } else {
-      throw new SfdxError(`Failed to delete ConfigurationSetting: ${JSON.stringify(result)}`);
-    }
-  });
+  if (!skipdelete) {
+    const settingsToDelete = existingSettings.reduce((acc, {Id}) => {
+      if (!ids.includes(Id)) {
+        acc.push(Id);
+      }
+      return acc;
+    }, [] as string[]);
+    const deleteResult = await conn.sobject('VELOCPQ__ConfigurationSetting__c').delete(settingsToDelete);
+    deleteResult.forEach((result) => {
+      if (result.success) {
+        console.log(`ConfigurationSetting with id ${result.id} is deleted`);
+      } else {
+        throw new SfdxError(`Failed to delete ConfigurationSetting: ${JSON.stringify(result)}`);
+      }
+    });
+  }
 
   return ids;
 }
