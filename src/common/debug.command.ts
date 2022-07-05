@@ -19,7 +19,7 @@ export abstract class DebugSfdxCommand extends SfdxCommand {
     }
   }
 
-  protected async stopDebugSession(debugSession: DebugSessionInfo): Promise<void> {
+  protected async stopDebugSession(debugSession: DebugSessionInfo, silently?: boolean): Promise<void> {
     const headers = getDebugClientHeaders(debugSession);
     const backendUrl: string | undefined = debugSession.backendUrl;
 
@@ -32,7 +32,9 @@ export abstract class DebugSfdxCommand extends SfdxCommand {
         },
       );
     } catch (error) {
-      logError('Failed to stop session', error);
+      if (!silently) {
+        logError('Failed to stop session', error);
+      }
     }
   }
 }

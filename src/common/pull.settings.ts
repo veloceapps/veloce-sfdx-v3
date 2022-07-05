@@ -19,7 +19,7 @@ export async function pullSettings(params: PullSettingsParams): Promise<string[]
   const dir = `${sourcepath}/settings`;
 
   const settings: ConfigurationSetting[] = await fetchConfigurationSettings(conn);
-  console.log(`Dumping ConfigurationSettings result count: ${settings.length}`);
+  console.log(`Pulling ConfigurationSettings result count: ${settings.length}`);
 
   settings.forEach(({ VELOCPQ__Key__c, VELOCPQ__Value__c }) => {
     const parsedValue = parseJsonSafe(VELOCPQ__Value__c);
