@@ -13,8 +13,8 @@ Extension to sfdx which allows veloce specific data pull and push
 
 - [veloce](#veloce)
   <!-- tocstop -->
-        <!-- install -->
-        <!-- usage -->
+          <!-- install -->
+          <!-- usage -->
 
 ```sh-session
 $ npm install -g veloce-sfdx-v3
@@ -41,8 +41,9 @@ USAGE
 - [`sfdx veloce:debug:watch [-p <string>] [-P] [-v <string>] [-u <string>] [--apiversion <string>] [--json] [--loglevel trace|debug|info|warn|error|fatal|TRACE|DEBUG|INFO|WARN|ERROR|FATAL]`](#sfdx-velocedebugwatch--p-string--p--v-string--u-string---apiversion-string---json---loglevel-tracedebuginfowarnerrorfataltracedebuginfowarnerrorfatal)
 - [`sfdx veloce:fixref [-d] [-u <string>] [--apiversion <string>] [--json] [--loglevel trace|debug|info|warn|error|fatal|TRACE|DEBUG|INFO|WARN|ERROR|FATAL]`](#sfdx-velocefixref--d--u-string---apiversion-string---json---loglevel-tracedebuginfowarnerrorfataltracedebuginfowarnerrorfatal)
 - [`sfdx veloce:login -p <string> -a <string> -u <string> -r <string> [-s <string>] [--json] [--loglevel trace|debug|info|warn|error|fatal|TRACE|DEBUG|INFO|WARN|ERROR|FATAL]`](#sfdx-velocelogin--p-string--a-string--u-string--r-string--s-string---json---loglevel-tracedebuginfowarnerrorfataltracedebuginfowarnerrorfatal)
+- [`sfdx veloce:source:pack -m <string> [-p <string>] [--json] [--loglevel trace|debug|info|warn|error|fatal|TRACE|DEBUG|INFO|WARN|ERROR|FATAL]`](#sfdx-velocesourcepack--m-string--p-string---json---loglevel-tracedebuginfowarnerrorfataltracedebuginfowarnerrorfatal)
 - [`sfdx veloce:source:pull [-m <string>] [-p <string>] [-P] [-v <string>] [-u <string>] [--apiversion <string>] [--json] [--loglevel trace|debug|info|warn|error|fatal|TRACE|DEBUG|INFO|WARN|ERROR|FATAL]`](#sfdx-velocesourcepull--m-string--p-string--p--v-string--u-string---apiversion-string---json---loglevel-tracedebuginfowarnerrorfataltracedebuginfowarnerrorfatal)
-- [`sfdx veloce:source:push [-m <string>] [-p <string>] [-P] [-v <string>] [-u <string>] [--apiversion <string>] [--json] [--loglevel trace|debug|info|warn|error|fatal|TRACE|DEBUG|INFO|WARN|ERROR|FATAL]`](#sfdx-velocesourcepush--m-string--p-string--p--v-string--u-string---apiversion-string---json---loglevel-tracedebuginfowarnerrorfataltracedebuginfowarnerrorfatal)
+- [`sfdx veloce:source:push [-m <string>] [-p <string>] [-P] [-d] [-v <string>] [-u <string>] [--apiversion <string>] [--json] [--loglevel trace|debug|info|warn|error|fatal|TRACE|DEBUG|INFO|WARN|ERROR|FATAL]`](#sfdx-velocesourcepush--m-string--p-string--p--d--v-string--u-string---apiversion-string---json---loglevel-tracedebuginfowarnerrorfataltracedebuginfowarnerrorfatal)
 
 ## `sfdx veloce:data:pull [-p <string>] [-P] [-v <string>] [-u <string>] [--apiversion <string>] [--json] [--loglevel trace|debug|info|warn|error|fatal|TRACE|DEBUG|INFO|WARN|ERROR|FATAL]`
 
@@ -385,6 +386,33 @@ EXAMPLE
 
 _See code: [src/commands/veloce/login.ts](https://github.com/veloceapps/veloce-sfdx-v3/blob/v0.0.7/src/commands/veloce/login.ts)_
 
+## `sfdx veloce:source:pack -m <string> [-p <string>] [--json] [--loglevel trace|debug|info|warn|error|fatal|TRACE|DEBUG|INFO|WARN|ERROR|FATAL]`
+
+Uploads Sources to Salesforce org from git folder structure
+
+```
+USAGE
+  $ sfdx veloce:source:pack -m <string> [-p <string>] [--json] [--loglevel
+  trace|debug|info|warn|error|fatal|TRACE|DEBUG|INFO|WARN|ERROR|FATAL]
+
+OPTIONS
+  -m, --members=members                                                             (required) Push only specific type
+                                                                                    of data or even name of object
+
+  -p, --sourcepath=sourcepath                                                       Path where to get sources
+
+  --json                                                                            format output as json
+
+  --loglevel=(trace|debug|info|warn|error|fatal|TRACE|DEBUG|INFO|WARN|ERROR|FATAL)  [default: warn] logging level for
+                                                                                    this command invocation
+
+EXAMPLE
+  sfdx veloce:source:push --targetusername myOrg@example.com --targetdevhubusername devhub@org.com --members model:OCTA
+  --sourcepath ./source/pmls
+```
+
+_See code: [src/commands/veloce/source/pack.ts](https://github.com/veloceapps/veloce-sfdx-v3/blob/v0.0.7/src/commands/veloce/source/pack.ts)_
+
 ## `sfdx veloce:source:pull [-m <string>] [-p <string>] [-P] [-v <string>] [-u <string>] [--apiversion <string>] [--json] [--loglevel trace|debug|info|warn|error|fatal|TRACE|DEBUG|INFO|WARN|ERROR|FATAL]`
 
 Retrieves Sources from Salesforce org and stores it in git folder structure
@@ -424,18 +452,20 @@ EXAMPLE
 
 _See code: [src/commands/veloce/source/pull.ts](https://github.com/veloceapps/veloce-sfdx-v3/blob/v0.0.7/src/commands/veloce/source/pull.ts)_
 
-## `sfdx veloce:source:push [-m <string>] [-p <string>] [-P] [-v <string>] [-u <string>] [--apiversion <string>] [--json] [--loglevel trace|debug|info|warn|error|fatal|TRACE|DEBUG|INFO|WARN|ERROR|FATAL]`
+## `sfdx veloce:source:push [-m <string>] [-p <string>] [-P] [-d] [-v <string>] [-u <string>] [--apiversion <string>] [--json] [--loglevel trace|debug|info|warn|error|fatal|TRACE|DEBUG|INFO|WARN|ERROR|FATAL]`
 
 Uploads Sources to Salesforce org from git folder structure
 
 ```
 USAGE
-  $ sfdx veloce:source:push [-m <string>] [-p <string>] [-P] [-v <string>] [-u <string>] [--apiversion <string>]
+  $ sfdx veloce:source:push [-m <string>] [-p <string>] [-P] [-d] [-v <string>] [-u <string>] [--apiversion <string>]
   [--json] [--loglevel trace|debug|info|warn|error|fatal|TRACE|DEBUG|INFO|WARN|ERROR|FATAL]
 
 OPTIONS
   -P, --noproject                                                                   Bypass check of sfdx-project.json to
                                                                                     exist
+
+  -d, --skipdelete                                                                  Only for upload, skip db clean up
 
   -m, --members=members                                                             Push only specific type of data or
                                                                                     even name of object
