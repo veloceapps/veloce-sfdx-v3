@@ -40,7 +40,6 @@ export async function pullUI(params: PullUIParams): Promise<string[]> {
     ),
   );
 
-  let uiDefNameCount = 0;
   contents.forEach(({ productModel, content }) => {
     const { Name } = productModel;
 
@@ -62,7 +61,6 @@ export async function pullUI(params: PullUIParams): Promise<string[]> {
     }
 
     uiDefs?.forEach((ui) => {
-      uiDefNameCount++;
       const uiDir = `${path}/${ui.name}`;
 
       if (isLegacyDefinition(ui)) {
