@@ -5,7 +5,6 @@ import { SfdxCommand } from '@salesforce/command';
 import { default as axios } from 'axios';
 import DebugSessionInfo from '../types/DebugSessionInfo';
 import { getDebugClientHeaders } from '../utils/auth.utils';
-import { logError } from './log.handler';
 
 export abstract class DebugSfdxCommand extends SfdxCommand {
   protected getDebugSession(): DebugSessionInfo | null {
