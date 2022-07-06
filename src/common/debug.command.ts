@@ -30,6 +30,8 @@ export abstract class DebugSfdxCommand extends SfdxCommand {
           headers,
         },
       );
-    } catch (error) {}
+    } catch (error) {
+      // silent call
+    }
   }
 }
