@@ -3,7 +3,7 @@ import DebugSessionInfo from '../types/DebugSessionInfo';
 export const getDebugClientHeaders = (debugSession: DebugSessionInfo): { [key: string]: string } => {
   const authToken = Buffer.from(
     JSON.stringify({
-      veloceNamespace: '',
+      veloceNamespace: 'VELOCPQ',
       instanceUrl: debugSession.instanceUrl,
       organizationId: debugSession.orgId,
       oAuthHeaderValue: `Bearer ${debugSession.accessToken}`,
