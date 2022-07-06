@@ -8,7 +8,7 @@ import { parseJsonSafe, writeFileSafe } from './common.utils';
 
 const ruleExtractRegex = /(rule\b)([\S\s]*?)(\nend\b)/g;
 const rulePreconditionRegex = /(?<=when\b)([\S\s]*?)(?=then\b)/g;
-const ruleBodyRegex = /(?<=then\b)([\S\s]*?)(?=end\b)/g;
+const ruleBodyRegex = /(?<=then\b)([\S\s]*?)(?=\nend\b)/g;
 const ruleSequenceRegex = /(?<=salience\b)([\S\s]*?)(?=when\b)/g;
 
 export interface Rule {
