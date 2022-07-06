@@ -12,7 +12,7 @@ export interface PullModelParams {
 }
 
 async function pullPM(sourcepath: string, conn: Connection, dumpAll: boolean, pmsToDump: Set<string>): Promise<void> {
-  console.log(`Dumping ${dumpAll ? 'All Product Models' : 'PMs with names: ' + (Array.from(pmsToDump)?.join() ?? '')}`);
+  console.log(`Pulling ${dumpAll ? 'All Product Models' : 'PMs with names: ' + (Array.from(pmsToDump)?.join() ?? '')}`);
   const productModels: ProductModel[] = await fetchProductModels(conn, dumpAll, Array.from(pmsToDump));
   productModels.forEach(
     ({
@@ -48,7 +48,7 @@ export async function pullModel(params: PullModelParams): Promise<string[]> {
     return [];
   }
   console.log(
-    `Dumping ${member.all ? 'All Product Models' : 'Models with names: ' + (Array.from(member.names)?.join() ?? '')}`,
+    `Pulling ${member.all ? 'All Product Models' : 'Models with names: ' + (Array.from(member.names)?.join() ?? '')}`,
   );
   const productModels: ProductModel[] = await fetchProductModels(conn, member.all, Array.from(member.names));
   const pmsToDump = new Set<string>();

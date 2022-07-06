@@ -21,9 +21,8 @@ export async function pullUI(params: PullUIParams): Promise<string[]> {
   }
   const modelNames = member.all ? undefined : Array.from(member.names).map((ui) => ui.split(':')[0]);
 
-  console.log(`Dumping ${member.all ? 'All Uis' : 'Uis with names: ' + (modelNames?.join() ?? '')}`);
+  console.log(`Pulling All Uis for ${member.all ? 'All Product models' : 'Product models with names: ' + (modelNames?.join() ?? '')}`);
   const uiDefProductModels: ProductModel[] = await fetchProductModels(conn, member.all, modelNames);
-  console.log(`Dumping Uis result count: ${uiDefProductModels.length}`);
 
   Array.from(member.names).forEach((ui) => {
     const [modelName, uiDefName] = ui.split(':');
@@ -56,6 +55,10 @@ export async function pullUI(params: PullUIParams): Promise<string[]> {
 
     // legacy ui definitions metadata is stored in global metadata.json as array
     const legacyMetadataArray: LegacyUiDefinition[] = [];
+
+    if (uiDefs.length) {
+      console.log(`Pulling Uis result: ${uiDefs.length} UI Definition(s) for ${Name} model`);
+    }
 
     uiDefs?.forEach((ui) => {
       const uiDir = `${path}/${ui.name}`;
