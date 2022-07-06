@@ -57,7 +57,7 @@ export default class Start extends DebugSfdxCommand {
     // delete existing token from db
     const debugSessionOld = this.getDebugSession();
     if (debugSessionOld) {
-      await this.stopDebugSession(debugSessionOld, true);
+      await this.stopDebugSession(debugSessionOld);
     }
 
     const instanceUrlClean = instanceUrl.replace(/\/$/, '');
