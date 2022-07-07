@@ -49,7 +49,7 @@ export default class Org extends DebugSfdxCommand {
 
   private readonly DEFAULT_SOURCE_PATH = 'source';
   private readonly PATH = {
-    MODEL: 'source/models',
+    MODEL: 'source/model',
   };
 
   public async run(): Promise<AnyJson> {
@@ -69,29 +69,27 @@ export default class Org extends DebugSfdxCommand {
       throw new SfdxError(messages.getMessage('sourcepathFlagInvalid'));
     }
 
-    return new Promise(() => {
-      this.ux.log(`Watching files in "${sourcePath}" directory...`);
+    this.ux.log(`Watching files in "${sourcePath}" directory...`);
+    const workDir = cwd();
+    const watcher = watch(sourcePath);
+    watcher.on('raw', (eventName, path) => {
+      if (!['created', 'modified', 'moved'].includes(eventName)) {
+        return;
+      }
 
-      const workDir = cwd();
-      const watcher = watch(sourcePath);
+      const filePath = path.replace(`${workDir}/`, '');
+      const type = this.getChangeType(filePath);
 
-      watcher.on('raw', (eventName, path) => {
-        if (!['created', 'modified', 'moved'].includes(eventName)) {
-          return;
-        }
-
-        const filePath = path.replace(`${workDir}/`, '');
-        const type = this.getChangeType(filePath);
-
-        switch (type) {
-          case DataType.MODEL:
-            void this.pushPML(filePath);
-            break;
-          default:
-            break;
-        }
-      });
+      switch (type) {
+        case DataType.MODEL:
+          void this.pushPML(filePath, sourcePath);
+          break;
+        default:
+          break;
+      }
     });
+
+    return {};
   }
 
   private getChangeType(filePath: string): DataType | null {
@@ -102,13 +100,13 @@ export default class Org extends DebugSfdxCommand {
     return null;
   }
 
-  private async pushPML(filePath: string): Promise<void> {
+  private async pushPML(filePath: string, sourcePath: string): Promise<void> {
     const [modelName] = filePath.replace(`${this.PATH.MODEL}/`, '').split('/');
     const targetUserName = String(this.flags.targetusername);
 
     this.ux.log(`Pushing Model "${modelName}"`);
 
-    return exec(`sfdx veloce:debug:push -u ${targetUserName} -m ${modelName} -p ./${this.PATH.MODEL}`)
+    return exec(`sfdx veloce:debug:push -u ${targetUserName} -m model:${modelName} -p ./${sourcePath}`)
       .then((result) => {
         this.ux.log(result);
       })
