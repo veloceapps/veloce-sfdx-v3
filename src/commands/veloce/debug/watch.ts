@@ -1,5 +1,5 @@
 import { cwd } from 'process';
-import { existsSync } from 'node:fs';
+import { existsSync, lstatSync } from 'node:fs';
 import { EOL } from 'node:os';
 import { flags } from '@salesforce/command';
 import { Messages, SfdxError } from '@salesforce/core';
@@ -72,12 +72,21 @@ export default class Org extends DebugSfdxCommand {
     this.ux.log(`Watching files in "${sourcePath}" directory...`);
     const workDir = cwd();
     const watcher = watch(sourcePath);
-    watcher.on('raw', (eventName, path) => {
-      if (!['created', 'modified', 'moved'].includes(eventName)) {
+    watcher.on('raw', (eventName, path, description) => {
+      if (!['created', 'change', 'modified', 'moved'].includes(eventName)) {
         return;
       }
 
-      const filePath = path.replace(`${workDir}/`, '');
+      var filePath
+      if (process.platform === 'darwin') {
+        filePath = path.replace(`${workDir}/`, '');
+      } else {
+        filePath = description.watchedPath
+      }
+
+      if (lstatSync(filePath).isDirectory()) {
+        return;
+      }
       const type = this.getChangeType(filePath);
 
       switch (type) {
