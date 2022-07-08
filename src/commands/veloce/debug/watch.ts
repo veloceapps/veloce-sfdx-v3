@@ -72,30 +72,35 @@ export default class Org extends DebugSfdxCommand {
     this.ux.log(`Watching files in "${sourcePath}" directory...`);
     const workDir = cwd();
     const watcher = watch(sourcePath);
-    watcher.on('raw', (eventName, path, description) => {
+    let timeoutID: NodeJS.Timeout;
+    watcher.on('raw', (eventName, path, description: {watchedPath?: string}) => {
       if (!['created', 'change', 'modified', 'moved'].includes(eventName)) {
         return;
       }
 
-      let filePath;
+      let filePath: string;
       if (process.platform === 'darwin') {
         filePath = path.replace(`${workDir}/`, '');
       } else {
-        filePath = description.watchedPath;
+        filePath = description?.watchedPath ?? '';
       }
 
       if (lstatSync(filePath).isDirectory()) {
         return;
       }
-      const type = this.getChangeType(filePath);
 
-      switch (type) {
-        case DataType.MODEL:
-          void this.pushPML(filePath, sourcePath);
-          break;
-        default:
-          break;
-      }
+      clearTimeout(timeoutID);
+      timeoutID = setTimeout(() => {
+        const type = this.getChangeType(filePath);
+        switch (type) {
+          case DataType.MODEL:
+            void this.pushPML(filePath, sourcePath);
+            break;
+          default:
+            break;
+        }
+      }, 1000);
+
     });
 
     return {};
