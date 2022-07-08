@@ -1,22 +1,15 @@
 import { gzipSync } from 'node:zlib';
-import { Connection } from '@salesforce/core';
 import { UiDefinitionsBuilder } from '../utils/ui.utils';
 import { createDocument, fetchDocument, updateDocument } from '../utils/document.utils';
 import { createFolder, fetchFolder } from '../utils/folder.utils';
 import { DocumentBody } from '../types/document.types';
 import { fetchProductModels } from '../utils/productModel.utils';
 import { ProductModel } from '../types/productModel.types';
-import { Member } from '../types/member.types';
-
-export interface PushUIParams {
-  rootPath: string;
-  conn: Connection;
-  member?: Member;
-}
+import { CommandParams } from '../types/command.types';
 
 const FOLDER_NAME = 'velo_product_models';
 
-export async function pushUI(params: PushUIParams): Promise<string[]> {
+export async function pushUI(params: CommandParams): Promise<string[]> {
   const { rootPath, conn, member } = params;
   if (!member) {
     return [];
@@ -31,7 +24,9 @@ export async function pushUI(params: PushUIParams): Promise<string[]> {
   Array.from(member.names).forEach((ui) => {
     const [modelName, uiDefName] = ui.split(':');
     if (uiDefName) {
-      console.log(`Push for separate UI Definition '${uiDefName}' is not supported. Pushing All UI Definitions for '${modelName}'.`);
+      console.log(
+        `Push for separate UI Definition '${uiDefName}' is not supported. Pushing All UI Definitions for '${modelName}'.`,
+      );
     }
   });
   // Check if veloce folder exists:

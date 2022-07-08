@@ -1,22 +1,15 @@
-import { Connection } from '@salesforce/core';
 import { parseJsonSafe, writeFileSafe } from '../utils/common.utils';
 import { fetchConfigurationSettings } from '../utils/configurationSetting.utils';
 import { ConfigurationSetting } from '../types/configurationSetting.types';
-import { Member } from '../types/member.types';
+import { CommandParams } from '../types/command.types';
 
-export interface PullSettingsParams {
-  sourcepath: string;
-  conn: Connection;
-  member: Member | undefined;
-}
-
-export async function pullSettings(params: PullSettingsParams): Promise<string[]> {
-  const {sourcepath, conn, member} = params;
+export async function pullSettings(params: CommandParams): Promise<string[]> {
+  const { rootPath, conn, member } = params;
   if (!member) {
     return [];
   }
 
-  const dir = `${sourcepath}/settings`;
+  const dir = `${rootPath}/settings`;
 
   const settings: ConfigurationSetting[] = await fetchConfigurationSettings(conn);
   console.log(`Pulling ConfigurationSettings result count: ${settings.length}`);
@@ -29,5 +22,5 @@ export async function pullSettings(params: PullSettingsParams): Promise<string[]
     writeFileSafe(dir, `${VELOCPQ__Key__c}.${isObject ? 'json' : 'js'}`, valueToWrite, { flag: 'w+' });
   });
 
-  return settings.map(({Id}) => Id);
+  return settings.map(({ Id }) => Id);
 }

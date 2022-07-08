@@ -14,6 +14,7 @@ import { pullUI } from '../../../common/pull.ui';
 import { MembersMap } from '../../../common/members.map';
 import { pullDRL } from '../../../common/pull.drl';
 import { pullSettings } from '../../../common/pull.settings';
+import { pullRule } from '../../../common/pull.rule';
 
 // Initialize Messages with the current plugin directory
 Messages.importMessagesDirectory(__dirname);
@@ -67,19 +68,21 @@ export default class Pull extends SfdxCommand {
 
     const conn = this.org.getConnection();
     const members = (this.flags.members || '') as string;
-    const sourcepath = ((this.flags.sourcepath || 'source') as string).replace(/\/$/, ''); // trim last slash if present
+    const rootPath = ((this.flags.sourcepath || 'source') as string).replace(/\/$/, ''); // trim last slash if present
 
     const memberMap = new MembersMap(members);
 
-    const modelRecords = await pullModel({ sourcepath, conn, member: memberMap.get('model') });
+    const modelRecords = await pullModel({ rootPath, conn, member: memberMap.get('model') });
 
-    const uiRecords = await pullUI({ sourcepath, conn, member: memberMap.get('config-ui') });
+    const uiRecords = await pullUI({ rootPath, conn, member: memberMap.get('config-ui') });
 
-    const drl = await pullDRL({ sourcepath, conn, member: memberMap.get('drl') });
+    const drl = await pullDRL({ rootPath, conn, member: memberMap.get('drl') });
 
-    const configSettingRecords = await pullSettings({ sourcepath, conn, member: memberMap.get('config-settings') });
+    const rule = await pullRule({ rootPath, conn, member: memberMap.get('rule') });
+
+    const configSettingRecords = await pullSettings({ rootPath, conn, member: memberMap.get('config-settings') });
 
     // Return an object to be displayed with --json
-    return { model: modelRecords, 'config-ui': uiRecords, drl, 'config-settings': configSettingRecords };
+    return { model: modelRecords, 'config-ui': uiRecords, drl, rule, 'config-settings': configSettingRecords };
   }
 }
