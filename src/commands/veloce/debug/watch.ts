@@ -72,6 +72,7 @@ export default class Org extends DebugSfdxCommand {
     this.ux.log(`Watching files in "${sourcePath}" directory...`);
     const workDir = cwd();
     const watcher = watch(sourcePath);
+    let timeoutID;
     watcher.on('raw', (eventName, path, description) => {
       if (!['created', 'change', 'modified', 'moved'].includes(eventName)) {
         return;
@@ -87,15 +88,19 @@ export default class Org extends DebugSfdxCommand {
       if (lstatSync(filePath).isDirectory()) {
         return;
       }
-      const type = this.getChangeType(filePath);
 
-      switch (type) {
-        case DataType.MODEL:
-          void this.pushPML(filePath, sourcePath);
-          break;
-        default:
-          break;
-      }
+      clearTimeout(timeoutID);
+      timeoutID = setTimeout(() => {
+        const type = this.getChangeType(filePath);
+        switch (type) {
+          case DataType.MODEL:
+            void this.pushPML(filePath, sourcePath);
+            break;
+          default:
+            break;
+        }
+      }, 1000);
+
     });
 
     return {};
