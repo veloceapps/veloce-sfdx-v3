@@ -49,45 +49,25 @@ export default class Start extends DebugSfdxCommand {
     }
 
     await this.org.refreshAuth(); // we need a live accessToken for the frontdoor url
-    const conn = this.org.getConnection();
-    const accessToken = conn.accessToken;
-    const instanceUrl = this.org.getField(oorg.Fields.INSTANCE_URL) as string;
-    const orgId = this.org.getField(oorg.Fields.ORG_ID) as string;
+
+    const devToken = (uuidv4 as () => string)();
+    const debugSession: DebugSessionInfo = await this.getDebugSession(devToken, this.org);
 
     // delete existing token from db
-    const debugSessionOld = this.getDebugSession();
+    const debugSessionOld = this.getDebugSessionFromFile();
     if (debugSessionOld) {
-      await this.stopDebugSession(debugSessionOld);
+      await this.stopDebugSession({...debugSessionOld, accessToken: debugSession.accessToken});
     }
 
-    const instanceUrlClean = instanceUrl.replace(/\/$/, '');
-    const devToken = (uuidv4 as () => string)();
-
-    const sfUrl = `${instanceUrlClean}/apex/VELOCPQ__VeloceStudioEmbedded?dev-token=${devToken.toString()}`;
+    const sfUrl = `${debugSession.instanceUrl}/apex/VELOCPQ__VeloceStudioEmbedded?dev-token=${devToken.toString()}`;
     this.ux.log(sfUrl);
     void open(sfUrl, { wait: false });
 
-    let orgInfo: { data: { [key: string]: string } };
-    try {
-      orgInfo = await axios.get(`https://canvas.velocpq.com/org-info/${orgId}`);
-    } catch (e) {
-      this.ux.log('Failed to get org-info');
-      return {};
-    }
+    this.ux.log(`Starting debug of backend: ${debugSession.backendUrl}`);
 
-    const backendUrl = orgInfo.data['BackendURL'];
-    this.ux.log(`Starting debug of backend: ${backendUrl}`);
-
-    const debugSession: DebugSessionInfo = {
-      token: devToken,
-      backendUrl,
-      orgId,
-      instanceUrl: instanceUrlClean,
-      accessToken,
-    };
     const headers = getDebugClientHeaders(debugSession);
     try {
-      await axios.post(`${backendUrl}/services/dev-override/auth`, {}, { headers });
+      await axios.post(`${debugSession.backendUrl}/services/dev-override/auth`, {}, { headers });
     } catch (e: any) {
       this.ux.log(`Failed to start debug session: ${e as string}`);
       return {};
@@ -115,6 +95,6 @@ export default class Start extends DebugSfdxCommand {
     }
 
     // Return an object to be displayed with --json
-    return { orgId };
+    return { orgId: debugSession.orgId };
   }
 }

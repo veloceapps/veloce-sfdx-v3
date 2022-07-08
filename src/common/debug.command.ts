@@ -6,9 +6,11 @@ import { default as axios } from 'axios';
 import DebugSessionInfo from '../types/DebugSessionInfo';
 import { getDebugClientHeaders } from '../utils/auth.utils';
 import { logError } from './log.handler';
+import { Org as oorg, Org, SfdxError } from '@salesforce/core';
+import { OrgInfo } from '../types/common.types';
 
 export abstract class DebugSfdxCommand extends SfdxCommand {
-  protected getDebugSession(): DebugSessionInfo | null {
+  protected getDebugSessionFromFile(): DebugSessionInfo | null {
     const homedir = os.homedir();
     const debugSessionFile = path.join(homedir, '.veloce-sfdx/debug.session');
 
@@ -34,5 +36,33 @@ export abstract class DebugSfdxCommand extends SfdxCommand {
     } catch (error) {
       logError('Failed to stop session', error);
     }
+  }
+
+  protected async getOrgInfo(orgId: string): Promise<OrgInfo> {
+    try {
+      return (await axios.get(`https://canvas.velocpq.com/org-info/${orgId}`)).data;
+    } catch (e) {
+      throw new SfdxError('Failed to get org-info');
+    }
+  }
+
+  protected getInstanceUrl(org: Org): string {
+    const instanceUrl = org.getField(oorg.Fields.INSTANCE_URL) as string;
+    return instanceUrl.replace(/\/$/, '');
+  }
+
+  protected async getDebugSession(devToken: string, org: Org): Promise<DebugSessionInfo> {
+    const orgId = org.getField(oorg.Fields.ORG_ID) as string;
+    const backendUrl = (await this.getOrgInfo(orgId)).BackendURL;
+    const instanceUrl = this.getInstanceUrl(org);
+    const accessToken = org.getConnection().accessToken;
+
+    return {
+      token: devToken,
+      backendUrl,
+      orgId,
+      instanceUrl,
+      accessToken,
+    };
   }
 }
