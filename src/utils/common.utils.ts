@@ -32,7 +32,7 @@ export const parseJsonSafe = (str: string): any | undefined => {
   }
 };
 
-export const writeFileSafe = (dir: string, filename: string, data: string, options?: WriteFileOptions): void => {
+export const writeFileSafe = (dir: string, filename: string, data: string|Buffer, options?: WriteFileOptions): void => {
   if (!existsSync(dir)) {
     mkdirSync(dir, { recursive: true });
   }

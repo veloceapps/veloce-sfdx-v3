@@ -14,6 +14,7 @@ import { pullUI } from '../../../common/pull.ui';
 import { MembersMap } from '../../../common/members.map';
 import { pullDRL } from '../../../common/pull.drl';
 import { pullSettings } from '../../../common/pull.settings';
+import { pullDocTemplates } from '../../../common/pull.docTemplate';
 
 // Initialize Messages with the current plugin directory
 Messages.importMessagesDirectory(__dirname);
@@ -79,7 +80,9 @@ export default class Pull extends SfdxCommand {
 
     const configSettingRecords = await pullSettings({ sourcepath, conn, member: memberMap.get('config-settings') });
 
+    const docTemplates = await pullDocTemplates({ sourcepath, conn, member: memberMap.get('doc-template') });
+
     // Return an object to be displayed with --json
-    return { model: modelRecords, 'config-ui': uiRecords, drl, 'config-settings': configSettingRecords };
+    return { model: modelRecords, 'config-ui': uiRecords, drl, 'config-settings': configSettingRecords, 'doc-template': docTemplates };
   }
 }
