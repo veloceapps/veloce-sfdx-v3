@@ -77,11 +77,11 @@ export default class Org extends DebugSfdxCommand {
         return;
       }
 
-      var filePath
+      let filePath;
       if (process.platform === 'darwin') {
         filePath = path.replace(`${workDir}/`, '');
       } else {
-        filePath = description.watchedPath
+        filePath = description.watchedPath;
       }
 
       if (lstatSync(filePath).isDirectory()) {
