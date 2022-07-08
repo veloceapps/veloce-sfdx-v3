@@ -1,5 +1,5 @@
 import { cwd } from 'process';
-import { existsSync } from 'node:fs';
+import { existsSync, lstatSync } from 'node:fs';
 import { EOL } from 'node:os';
 import { flags } from '@salesforce/command';
 import { Messages, SfdxError } from '@salesforce/core';
@@ -49,7 +49,7 @@ export default class Org extends DebugSfdxCommand {
 
   private readonly DEFAULT_SOURCE_PATH = 'source';
   private readonly PATH = {
-    MODEL: 'source/models',
+    MODEL: 'source/model',
   };
 
   public async run(): Promise<AnyJson> {
@@ -69,29 +69,36 @@ export default class Org extends DebugSfdxCommand {
       throw new SfdxError(messages.getMessage('sourcepathFlagInvalid'));
     }
 
-    return new Promise(() => {
-      this.ux.log(`Watching files in "${sourcePath}" directory...`);
+    this.ux.log(`Watching files in "${sourcePath}" directory...`);
+    const workDir = cwd();
+    const watcher = watch(sourcePath);
+    watcher.on('raw', (eventName, path, description) => {
+      if (!['created', 'change', 'modified', 'moved'].includes(eventName)) {
+        return;
+      }
 
-      const workDir = cwd();
-      const watcher = watch(sourcePath);
+      let filePath;
+      if (process.platform === 'darwin') {
+        filePath = path.replace(`${workDir}/`, '');
+      } else {
+        filePath = description.watchedPath;
+      }
 
-      watcher.on('raw', (eventName, path) => {
-        if (!['created', 'modified', 'moved'].includes(eventName)) {
-          return;
-        }
+      if (lstatSync(filePath).isDirectory()) {
+        return;
+      }
+      const type = this.getChangeType(filePath);
 
-        const filePath = path.replace(`${workDir}/`, '');
-        const type = this.getChangeType(filePath);
-
-        switch (type) {
-          case DataType.MODEL:
-            void this.pushPML(filePath);
-            break;
-          default:
-            break;
-        }
-      });
+      switch (type) {
+        case DataType.MODEL:
+          void this.pushPML(filePath, sourcePath);
+          break;
+        default:
+          break;
+      }
     });
+
+    return {};
   }
 
   private getChangeType(filePath: string): DataType | null {
@@ -102,13 +109,13 @@ export default class Org extends DebugSfdxCommand {
     return null;
   }
 
-  private async pushPML(filePath: string): Promise<void> {
+  private async pushPML(filePath: string, sourcePath: string): Promise<void> {
     const [modelName] = filePath.replace(`${this.PATH.MODEL}/`, '').split('/');
     const targetUserName = String(this.flags.targetusername);
 
     this.ux.log(`Pushing Model "${modelName}"`);
 
-    return exec(`sfdx veloce:debug:push -u ${targetUserName} -m ${modelName} -p ./${this.PATH.MODEL}`)
+    return exec(`sfdx veloce:debug:push -u ${targetUserName} -m model:${modelName} -p ./${sourcePath}`)
       .then((result) => {
         this.ux.log(result);
       })
