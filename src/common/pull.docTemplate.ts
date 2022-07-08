@@ -18,12 +18,12 @@ export async function pullDocTemplates(params: PullDocTemplatesParams): Promise<
 
   const rootPath = `${sourcepath}/doc-template`;
 
-  let query = `Select Id,Name,VELOCPQ__FileId__c,VELOCPQ__Active__c,VELOCPQ__Description__c,VELOCPQ__FileName__c,VELOCPQ__Properties__c,VELOCPQ__Queries__c,VELOCPQ__Script__c from VELOCPQ__Template__c`;
+  let query = 'Select Id,Name,VELOCPQ__FileId__c,VELOCPQ__Active__c,VELOCPQ__Description__c,VELOCPQ__FileName__c,VELOCPQ__Properties__c,VELOCPQ__Queries__c,VELOCPQ__Script__c from VELOCPQ__Template__c';
   if (!member.all) {
     query += ` WHERE Name IN ('${member.names.join("','")}')`;
   }
   console.log(`Pulling ${member.all ? 'All Templates' : 'Templates with names: ' + member.names.join(',')}`);
-  const result: Template[] = (await conn.autoFetchQuery(query, {autoFetch: true, maxFetch: 100000}))?.records ?? [];
+  const result = (await conn.autoFetchQuery<Template>(query, {autoFetch: true, maxFetch: 100000}))?.records ?? [];
   console.log(`Pulling Doc template result count: ${result.length}`);
 
   const ids = [];
@@ -43,8 +43,8 @@ export async function pullDocTemplates(params: PullDocTemplatesParams): Promise<
     const propertiesDir = `${dir}/properties`;
     const queriesDir = `${dir}/queries`;
 
-    const properties = parseJsonSafe(VELOCPQ__Properties__c) ?? [];
-    const queries = parseJsonSafe(VELOCPQ__Queries__c) ?? [];
+    const properties: {name: string}[] = parseJsonSafe(VELOCPQ__Properties__c) ?? [];
+    const queries: {queryName: string}[] = parseJsonSafe(VELOCPQ__Queries__c) ?? [];
     properties.forEach((p) => {
       writeFileSafe(propertiesDir, `${p.name}.json`, JSON.stringify(p, null, 2), {flag: 'w+'});
     });
@@ -55,14 +55,14 @@ export async function pullDocTemplates(params: PullDocTemplatesParams): Promise<
     writeFileSafe(dir, 'script.js', VELOCPQ__Script__c ?? '', {flag: 'w+'});
 
     if (VELOCPQ__FileId__c) {
-      const query = `Select VersionData from ContentVersion WHERE IsLatest = true AND ContentDocumentId='${VELOCPQ__FileId__c}'`;
-      const result = await conn.query(query);
-      if (!result.records.length) {
+      const queryContent = `Select VersionData from ContentVersion WHERE IsLatest = true AND ContentDocumentId='${VELOCPQ__FileId__c}'`;
+      const resultContent = await conn.query<{VersionData: string}>(queryContent);
+      if (!resultContent.records.length) {
         console.log(`Document ${VELOCPQ__FileId__c} not found`);
         continue;
       }
-      const url = result.records[0].VersionData;
-      const res = await conn.request({url, encoding: null}) as Buffer;
+      const url = resultContent.records[0].VersionData;
+      const res = await conn.request<Buffer>({url, encoding: null} as any);
       writeFileSafe(dir, VELOCPQ__FileName__c, res, {flag: 'w+'});
     }
 
