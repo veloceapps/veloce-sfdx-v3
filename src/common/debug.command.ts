@@ -3,11 +3,11 @@ import * as os from 'os';
 import * as path from 'path';
 import { SfdxCommand } from '@salesforce/command';
 import { default as axios } from 'axios';
+import { Org as oorg, Org, SfdxError } from '@salesforce/core';
 import DebugSessionInfo from '../types/DebugSessionInfo';
 import { getDebugClientHeaders } from '../utils/auth.utils';
-import { logError } from './log.handler';
-import { Org as oorg, Org, SfdxError } from '@salesforce/core';
 import { OrgInfo } from '../types/common.types';
+import { logError } from './log.handler';
 
 export abstract class DebugSfdxCommand extends SfdxCommand {
   protected getDebugSessionFromFile(): DebugSessionInfo | null {
@@ -40,7 +40,7 @@ export abstract class DebugSfdxCommand extends SfdxCommand {
 
   protected async getOrgInfo(orgId: string): Promise<OrgInfo> {
     try {
-      return (await axios.get(`https://canvas.velocpq.com/org-info/${orgId}`)).data;
+      return (await axios.get(`https://canvas.velocpq.com/org-info/${orgId}`)).data as OrgInfo;
     } catch (e) {
       throw new SfdxError('Failed to get org-info');
     }
