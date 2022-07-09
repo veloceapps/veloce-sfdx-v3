@@ -14,6 +14,14 @@ export const exec = (cmd: string): Promise<string> => {
   });
 };
 
+export const readFileSafeBuffer = (path: string, options?: {flag?: string}): Buffer => {
+  try {
+    return readFileSync(path, options);
+  } catch (err) {
+    console.log(`Failed to read file: ${path}`);
+  }
+};
+
 export const readFileSafe = (path: string, ux?: UX): string => {
   try {
     const raw = readFileSync(path);

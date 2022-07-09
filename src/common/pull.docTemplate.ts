@@ -1,6 +1,8 @@
 import { Connection } from '@salesforce/core';
 import { parseJsonSafe, writeFileSafe } from '../utils/common.utils';
 import { Member } from '../types/member.types';
+import { fetchTemplates } from '../utils/docTemplate.utils';
+import { fetchContentVersion } from '../utils/contentDocument.utils';
 import { Template } from '../types/template.types';
 
 export interface PullDocTemplatesParams {
@@ -8,7 +10,6 @@ export interface PullDocTemplatesParams {
   conn: Connection;
   member?: Member;
 }
-
 
 export async function pullDocTemplates(params: PullDocTemplatesParams): Promise<string[]> {
   const {sourcepath, conn, member} = params;
@@ -18,14 +19,11 @@ export async function pullDocTemplates(params: PullDocTemplatesParams): Promise<
 
   const rootPath = `${sourcepath}/doc-template`;
 
-  let query = 'Select Id,Name,VELOCPQ__FileId__c,VELOCPQ__Active__c,VELOCPQ__Description__c,VELOCPQ__FileName__c,VELOCPQ__Properties__c,VELOCPQ__Queries__c,VELOCPQ__Script__c from VELOCPQ__Template__c';
-  if (!member.all) {
-    query += ` WHERE Name IN ('${member.names.join("','")}')`;
-  }
   console.log(`Pulling ${member.all ? 'All Templates' : 'Templates with names: ' + member.names.join(',')}`);
-  const result = (await conn.autoFetchQuery<Template>(query, {autoFetch: true, maxFetch: 100000}))?.records ?? [];
+  const result: Template[] = await fetchTemplates(conn, member.all, member.names);
   console.log(`Pulling Doc template result count: ${result.length}`);
 
+  console.log(JSON.stringify(result));
   const ids = [];
   for (const r of result) {
     const {
@@ -43,8 +41,8 @@ export async function pullDocTemplates(params: PullDocTemplatesParams): Promise<
     const propertiesDir = `${dir}/properties`;
     const queriesDir = `${dir}/queries`;
 
-    const properties: {name: string}[] = parseJsonSafe(VELOCPQ__Properties__c) ?? [];
-    const queries: {queryName: string}[] = parseJsonSafe(VELOCPQ__Queries__c) ?? [];
+    const properties: {[key: string]: any}[] = VELOCPQ__Properties__c && parseJsonSafe(VELOCPQ__Properties__c) ?? [];
+    const queries: {[key: string]: any}[] = VELOCPQ__Queries__c && parseJsonSafe(VELOCPQ__Queries__c) ?? [];
     properties.forEach((p) => {
       writeFileSafe(propertiesDir, `${p.name}.json`, JSON.stringify(p, null, 2), {flag: 'w+'});
     });
@@ -55,15 +53,14 @@ export async function pullDocTemplates(params: PullDocTemplatesParams): Promise<
     writeFileSafe(dir, 'script.js', VELOCPQ__Script__c ?? '', {flag: 'w+'});
 
     if (VELOCPQ__FileId__c) {
-      const queryContent = `Select VersionData from ContentVersion WHERE IsLatest = true AND ContentDocumentId='${VELOCPQ__FileId__c}'`;
-      const resultContent = await conn.query<{VersionData: string}>(queryContent);
-      if (!resultContent.records.length) {
+      const resultContent = await fetchContentVersion(conn,undefined, VELOCPQ__FileId__c);
+      const url = resultContent?.VersionData;
+      if (url) {
+        const res = await conn.request<Buffer>({url, encoding: null} as any);
+        writeFileSafe(dir, VELOCPQ__FileName__c, res, {flag: 'w+'});
+      } else {
         console.log(`Document ${VELOCPQ__FileId__c} not found`);
-        continue;
       }
-      const url = resultContent.records[0].VersionData;
-      const res = await conn.request<Buffer>({url, encoding: null} as any);
-      writeFileSafe(dir, VELOCPQ__FileName__c, res, {flag: 'w+'});
     }
 
     const json = JSON.stringify(
