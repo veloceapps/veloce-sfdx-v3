@@ -77,7 +77,7 @@ export async function createOrUpdateContentDocument(conn: Connection, data: Cont
     }
 
     const res = ((await conn.request({ url: contentVersion.VersionData, encoding: null } as any)) as unknown) as Buffer;
-    if ((!res.toString() && !fileData) || res.compare(fileData as Buffer) === 0) {
+    if (fileData && res.compare(fileData) === 0) {
       console.log(`Identical document is already uploaded: ${docId}, skipping patching of ContentVersion!`);
       /* eslint-disable */
       return docId!;
