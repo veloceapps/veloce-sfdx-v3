@@ -33,7 +33,7 @@ export async function pushDocTemplates(params: PushDocTemplatesParams): Promise<
       acc.push(name);
     }
     return acc;
-  }, []);
+  }, [] as string[]);
   const templates: Template[] = await fetchTemplates(conn, false, docNames);
 
   for (const docName of docNames) {
@@ -47,10 +47,10 @@ export async function pushDocTemplates(params: PushDocTemplatesParams): Promise<
     const script = readFileSafe(scriptPath);
 
     const propertiesPath = `${docNamePath}/properties`;
-    const properties: { [key: string]: any }[] = getFileNames(propertiesPath).map((name) => parseJsonSafe(readFileSafe(`${propertiesPath}/${name}`)));
+    const properties = getFileNames(propertiesPath).map((name) => parseJsonSafe(readFileSafe(`${propertiesPath}/${name}`)) as {[key: string]: any});
 
     const queriesPath = `${docNamePath}/queries`;
-    const queries: { [key: string]: any }[] = getFileNames(queriesPath).map((name) => parseJsonSafe(readFileSafe(`${queriesPath}/${name}`)));
+    const queries = getFileNames(queriesPath).map((name) => parseJsonSafe(readFileSafe(`${queriesPath}/${name}`)) as {[key: string]: any});
 
     const docJsonPath = `${docNamePath}/${docName}.json`;
     const docJson: Template = parseJsonSafe(readFileSafe(docJsonPath));
@@ -78,8 +78,8 @@ export async function pushDocTemplates(params: PushDocTemplatesParams): Promise<
     };
 
     if (template) {
-      await updateTemplate(conn, template.Id!, bodyTemplate);
-      ids.push(template.Id!);
+      await updateTemplate(conn, template.Id as string, bodyTemplate);
+      ids.push(template.Id as string);
     } else {
       const res = await createTemplate(conn, bodyTemplate);
       ids.push(res.id);

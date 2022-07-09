@@ -67,33 +67,39 @@ export async function updateContentVersion(conn: Connection, id: string, data: C
   });
 }
 
-export async function createOrUpdateContentDocument(conn: Connection, data: ContentVersion, fileData: Buffer, docId?: string): Promise<string> {
+export async function createOrUpdateContentDocument(conn: Connection, data: ContentVersion, fileData?: Buffer, docId?: string): Promise<string> {
   const isDocExists = docId && await fetchContentDocument(conn, docId);
 
   if (isDocExists) {
     const contentVersion = await fetchContentVersion(conn, docId);
     if (!contentVersion) {
-      throw new SfdxError(`Failed to fetch ContentVersion for ContentDocumentId: ${docId}`);
+      throw new SfdxError(`Failed to fetch ContentVersion with ContentDocumentId: ${docId}`);
     }
 
     const res = ((await conn.request({ url: contentVersion.VersionData, encoding: null } as any)) as unknown) as Buffer;
-    if (res.compare(fileData) == 0) {
+    if ((!res.toString() && !fileData) || res.compare(fileData as Buffer) === 0) {
       console.log(`Identical document is already uploaded: ${docId}, skipping patching of ContentVersion!`);
+      /* eslint-disable */
       return docId!;
     }
 
     await updateContentVersion(conn, contentVersion.Id!, {
       ...data,
       ContentDocumentId: docId,
-      VersionData: fileData.toString('base64'),
+      VersionData: fileData && fileData.toString('base64'),
     });
+    /* eslint-disable */
     return docId!;
   } else {
     const contentVersionId = (await createContentVersion(conn, {
       ...data,
-      VersionData: fileData.toString('base64'),
+      VersionData: fileData && fileData.toString('base64'),
     }))?.id;
-    return (await fetchContentVersion(conn, contentVersionId))?.ContentDocumentId;
+    const contentVersion = await fetchContentVersion(conn, contentVersionId);
+    if (!contentVersion) {
+      throw new SfdxError(`Failed to fetch ContentVersion with Id: ${contentVersionId}`);
+    }
+    return contentVersion.ContentDocumentId!;
   }
 }
 

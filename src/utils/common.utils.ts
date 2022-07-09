@@ -14,7 +14,7 @@ export const exec = (cmd: string): Promise<string> => {
   });
 };
 
-export const readFileSafeBuffer = (path: string, options?: {flag?: string}): Buffer => {
+export const readFileSafeBuffer = (path: string, options?: {flag?: string}): Buffer|undefined => {
   try {
     return readFileSync(path, options);
   } catch (err) {

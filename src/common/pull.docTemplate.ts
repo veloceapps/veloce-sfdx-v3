@@ -41,13 +41,13 @@ export async function pullDocTemplates(params: PullDocTemplatesParams): Promise<
     const propertiesDir = `${dir}/properties`;
     const queriesDir = `${dir}/queries`;
 
-    const properties: {[key: string]: any}[] = VELOCPQ__Properties__c && parseJsonSafe(VELOCPQ__Properties__c) ?? [];
-    const queries: {[key: string]: any}[] = VELOCPQ__Queries__c && parseJsonSafe(VELOCPQ__Queries__c) ?? [];
-    properties.forEach((p) => {
-      writeFileSafe(propertiesDir, `${p.name}.json`, JSON.stringify(p, null, 2), {flag: 'w+'});
+    const properties: {[key: string]: any}[] = VELOCPQ__Properties__c && parseJsonSafe(VELOCPQ__Properties__c);
+    const queries: {[key: string]: any}[] = VELOCPQ__Queries__c && parseJsonSafe(VELOCPQ__Queries__c);
+    properties?.forEach((p) => {
+      writeFileSafe(propertiesDir, `${p['name'] as string}.json`, JSON.stringify(p, null, 2), {flag: 'w+'});
     });
-    queries.forEach((q) => {
-      writeFileSafe(queriesDir, `${q.queryName}.json`, JSON.stringify(q, null, 2), {flag: 'w+'});
+    queries?.forEach((q) => {
+      writeFileSafe(queriesDir, `${q['queryName'] as string}.json`, JSON.stringify(q, null, 2), {flag: 'w+'});
     });
 
     writeFileSafe(dir, 'script.js', VELOCPQ__Script__c ?? '', {flag: 'w+'});
@@ -75,7 +75,7 @@ export async function pullDocTemplates(params: PullDocTemplatesParams): Promise<
     );
     writeFileSafe(dir, `${Name}.json`, json, {flag: 'w+'});
 
-    ids.push(Id);
+    ids.push(Id as string);
   }
 
   return ids;
