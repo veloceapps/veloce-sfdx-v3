@@ -71,7 +71,7 @@ export async function createOrUpdateContentDocument(conn: Connection, data: Cont
   const isDocExists = docId && await fetchContentDocument(conn, docId);
 
   if (isDocExists) {
-    const contentVersion = await fetchContentVersion(conn, docId);
+    const contentVersion = await fetchContentVersion(conn, undefined, docId);
     if (!contentVersion) {
       throw new SfdxError(`Failed to fetch ContentVersion with ContentDocumentId: ${docId}`);
     }
