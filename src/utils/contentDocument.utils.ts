@@ -75,21 +75,22 @@ export async function createOrUpdateContentDocument(conn: Connection, data: Cont
     if (!contentVersion) {
       throw new SfdxError(`Failed to fetch ContentVersion with ContentDocumentId: ${docId}`);
     }
+    if (!contentVersion.Id) {
+      throw new SfdxError(`Fetched ContentVersion is missing Id property: ${docId}`);
+    }
 
     const res = ((await conn.request({ url: contentVersion.VersionData, encoding: null } as any)) as unknown) as Buffer;
     if (fileData && res.compare(fileData) === 0) {
       console.log(`Identical document is already uploaded: ${docId}, skipping patching of ContentVersion!`);
-      /* eslint-disable */
-      return docId!;
+      return docId;
     }
 
-    await updateContentVersion(conn, contentVersion.Id!, {
+    await updateContentVersion(conn, contentVersion.Id, {
       ...data,
       ContentDocumentId: docId,
       VersionData: fileData && fileData.toString('base64'),
     });
-    /* eslint-disable */
-    return docId!;
+    return docId;
   } else {
     const contentVersionId = (await createContentVersion(conn, {
       ...data,
@@ -99,7 +100,10 @@ export async function createOrUpdateContentDocument(conn: Connection, data: Cont
     if (!contentVersion) {
       throw new SfdxError(`Failed to fetch ContentVersion with Id: ${contentVersionId}`);
     }
-    return contentVersion.ContentDocumentId!;
+    if (!contentVersion.ContentDocumentId) {
+      throw new SfdxError(`Fetched ContentVersion is missing ContentDocumentId property: ${contentVersionId}`);
+    }
+    return contentVersion.ContentDocumentId;
   }
 }
 

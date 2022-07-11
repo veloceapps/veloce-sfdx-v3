@@ -23,7 +23,6 @@ module.exports = {
     '@typescript-eslint/no-explicit-any': 'off',
     '@typescript-eslint/array-type': ['error', {
       default: 'array',
-    }],
-    '@typescript-eslint/no-non-null-assertion': 'off'
+    }]
   }
 };
