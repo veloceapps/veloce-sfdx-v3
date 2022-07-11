@@ -130,7 +130,7 @@ function saveLegacySectionFiles(
     const fileName = `${section.label}.css`;
     writeFileSafe(fullDir, fileName, fromBase64(section.styles));
     delete sectionMeta.styles;
-    sectionMeta.scriptUrl = `${path}/${fileName}`;
+    sectionMeta.stylesUrl = `${path}/${fileName}`;
   }
   if (section.template) {
     const fileName = `${section.label}.html`;
