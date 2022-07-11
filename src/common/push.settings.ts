@@ -1,17 +1,10 @@
 import { readdirSync, readFileSync } from 'fs';
-import { Connection, SfdxError } from '@salesforce/core';
+import { SfdxError } from '@salesforce/core';
 import { createConfigurationSetting, fetchConfigurationSettings } from '../utils/configurationSetting.utils';
 import { ConfigurationSetting } from '../types/configurationSetting.types';
-import { Member } from '../types/member.types';
+import { CommandParams } from '../types/command.types';
 
-export interface PushSettingsParams {
-  rootPath: string;
-  conn: Connection;
-  member?: Member;
-  skipdelete?: boolean;
-}
-
-export async function pushSettings(params: PushSettingsParams): Promise<string[]> {
+export async function pushSettings(params: CommandParams): Promise<string[]> {
   const { rootPath, conn, member, skipdelete } = params;
   if (!member) {
     return [];
@@ -25,16 +18,18 @@ export async function pushSettings(params: PushSettingsParams): Promise<string[]
   for (const file of files) {
     const content = readFileSync(`${dir}/${file}`, 'utf8');
     const name = file.split('.')[0].trim();
-    const existingSetting: ConfigurationSetting|undefined = existingSettings.find(({VELOCPQ__Key__c}) => VELOCPQ__Key__c.trim() === name);
+    const existingSetting: ConfigurationSetting | undefined = existingSettings.find(
+      ({ VELOCPQ__Key__c }) => VELOCPQ__Key__c.trim() === name,
+    );
     const body = {
       VELOCPQ__Value__c: content,
-      VELOCPQ__Key__c: name
+      VELOCPQ__Key__c: name,
     };
     if (existingSetting) {
       await conn.request({
         url: `/services/data/v${conn.getApiVersion()}/sobjects/VELOCPQ__ConfigurationSetting__c/${existingSetting.Id}`,
         body: JSON.stringify(body),
-        method: 'PATCH'
+        method: 'PATCH',
       });
       console.log(`ConfigurationSetting ${body.VELOCPQ__Key__c} with id ${existingSetting.Id} is updated`);
       ids.push(existingSetting.Id);

@@ -5,7 +5,7 @@ import { CreateResult } from '../types/common.types';
 import { Document } from '../types/document.types';
 import { Folder } from '../types/folder.types';
 import { ProductModel } from '../types/productModel.types';
-import { Member } from '../types/member.types';
+import { CommandParams } from '../types/command.types';
 
 async function getDocument(conn: Connection, name: string): Promise<string | null> {
   // TODO: optimize in single query?
@@ -120,13 +120,7 @@ async function uploadModel(sourcepath: string, conn: Connection, pmlName: string
   }
 }
 
-export interface PushPmlParams {
-  rootPath: string;
-  conn: Connection;
-  member: Member | undefined;
-}
-
-export async function pushModel(params: PushPmlParams): Promise<string[]> {
+export async function pushModel(params: CommandParams): Promise<string[]> {
   const { rootPath, conn, member } = params;
   if (!member) {
     return [];

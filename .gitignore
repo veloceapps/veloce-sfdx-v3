@@ -9,3 +9,4 @@ node_modules
 /*.tgz
 /source/
 /.history
+/.idea

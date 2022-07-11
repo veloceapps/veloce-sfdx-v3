@@ -14,6 +14,7 @@ import { pushUI } from '../../../common/push.ui';
 import { pushDRL } from '../../../common/push.drl';
 import { MembersMap } from '../../../common/members.map';
 import { pushSettings } from '../../../common/push.settings';
+import { pushRule } from '../../../common/push.rule';
 // Initialize Messages with the current plugin directory
 Messages.importMessagesDirectory(__dirname);
 
@@ -76,6 +77,8 @@ export default class Push extends SfdxCommand {
     const memberMap = new MembersMap(members);
     const drlRecords = await pushDRL({ rootPath, conn, member: memberMap.get('drl') });
 
+    const rule = await pushRule({ rootPath, conn, member: memberMap.get('rule') });
+
     const pmlRecords = await pushModel({ rootPath, conn, member: memberMap.get('model') });
 
     const uiRecords = await pushUI({ rootPath, conn, member: memberMap.get('config-ui') });
@@ -83,6 +86,6 @@ export default class Push extends SfdxCommand {
     const configSettingRecords = await pushSettings({ rootPath, conn, member: memberMap.get('config-settings'), skipdelete: this.flags.skipdelete});
 
     // Return an object to be displayed with --json
-    return { pml: pmlRecords, ui: uiRecords, drl: drlRecords, 'config-settings': configSettingRecords };
+    return { pml: pmlRecords, ui: uiRecords, drl: drlRecords, rule, 'config-settings': configSettingRecords };
   }
 }
