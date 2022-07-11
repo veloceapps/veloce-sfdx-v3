@@ -7,7 +7,6 @@ import {
   getRuleGroups,
 } from '../utils/rule.utils';
 import { CommandParams } from '../types/command.types';
-import { RuleGroup } from '../types/rule.types';
 
 export async function pushRule(params: CommandParams): Promise<string[]> {
   const { rootPath, conn, member } = params;
@@ -16,18 +15,7 @@ export async function pushRule(params: CommandParams): Promise<string[]> {
   }
 
   const names = member.all ? undefined : Array.from(member.names).map((ui) => ui.split(':')[0]);
-
-  let ruleGroups = getRuleGroups(rootPath + '/rule');
-
-  if (names) {
-    ruleGroups = ruleGroups.reduce((resultGroups, ruleGroup) => {
-      const rules = ruleGroup.rules.filter(({ name }) => names.includes(name || ''));
-      if (rules.length) {
-        resultGroups.push({ ...ruleGroup, rules });
-      }
-      return resultGroups;
-    }, [] as RuleGroup[]);
-  }
+  const ruleGroups = getRuleGroups(rootPath + '/rule', names);
 
   const result = [];
 

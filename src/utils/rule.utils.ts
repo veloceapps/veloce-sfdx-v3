@@ -65,7 +65,7 @@ export async function fetchProcedureRules(
         FROM
         VELOCPQ__ProcedureRule__c`;
   if (!dumpAll) {
-    query += ` WHERE Name IN ('${ruleNames?.join("','")}')`;
+    query += ` WHERE VELOCPQ__RuleGroupId__r.Name IN ('${ruleNames?.join("','")}')`;
   }
 
   const result = await conn.query<SFProcedureRule>(query);
@@ -149,10 +149,7 @@ const saveToDSL = (procedureRules: SFProcedureRule[], pathToSave: string): any =
       );
       const actions = actionsToDSL(procedureRule.VELOCPQ__ProcedureRules_RuleMappings__r?.records);
       return `rule "${procedureRule.Name}"
-    sequence ${procedureRule.VELOCPQ__Sequence__c}
-    ${conditions}
-    ${transformations}
-    ${actions}
+    sequence ${procedureRule.VELOCPQ__Sequence__c}${conditions}${transformations}${actions}
 end`;
     })
     .join('\n');
@@ -170,7 +167,7 @@ const conditionsToDSL = (conditions: SFProcedureRuleCondition[]): string => {
   if (!conditions?.length) {
     return '';
   }
-  return `condition
+  return `\n    condition
         ${conditions
           .map(
             (condition) =>
@@ -185,7 +182,7 @@ const transformationsToDSL = (transformations: SFProcedureRuleTransformation[]):
   if (!transformations?.length) {
     return '';
   }
-  return `transformation
+  return `\n    transformation
         ${transformations
           .map(
             (transformation) =>
@@ -202,7 +199,7 @@ const actionsToDSL = (actions: SFProcedureRuleMapping[]): string => {
   if (!actions?.length) {
     return '';
   }
-  return `action
+  return `\n    action
         ${actions
           .map((action) => {
             const argumentsOrder = [
@@ -219,21 +216,28 @@ const actionsToDSL = (actions: SFProcedureRuleMapping[]): string => {
           .join('\n        ')}`;
 };
 
-export function getRuleGroups(directory: string): RuleGroup[] {
+export function getRuleGroups(directory: string, names: string[] | undefined): RuleGroup[] {
   const extension = '.vlrl';
   const result: RuleGroup[] = [];
   fs.readdirSync(directory).forEach((file) => {
     if (path.extname(file).toLowerCase() === extension) {
-      result.push(extractRuleGroup(file, directory));
+      const ruleGroup = extractRuleGroup(file, directory, names);
+      if (ruleGroup) {
+        result.push(ruleGroup);
+      }
     }
   });
 
   return result;
 }
 
-function extractRuleGroup(file: string, directory: string): RuleGroup {
+function extractRuleGroup(file: string, directory: string, names: string[] | undefined): RuleGroup | undefined {
   const metadataString = fs.readFileSync(`${directory}/${file.replace('.vlrl', '.json')}`).toString();
   const ruleGroup: RuleGroup = parseJsonSafe(metadataString);
+
+  if (names && !names.includes(ruleGroup.name)) {
+    return;
+  }
 
   const dslString = fs.readFileSync(`${directory}/${file}`).toString();
   const parser = createRulesParser(dslString);
