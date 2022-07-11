@@ -1,16 +1,16 @@
-import { Connection, SfdxError } from '@salesforce/core';
+import { Connection } from '@salesforce/core';
+import { ContentVersion } from '../types/contentDocument.types';
 import { Member } from '../types/member.types';
+import { Template } from '../types/template.types';
 import {
   getDirectoryNames,
   getFileNames,
   parseJsonSafe,
   readFileSafe,
-  readFileSafeBuffer,
+  readFileSafeBuffer
 } from '../utils/common.utils';
-import { createTemplate, fetchTemplates, updateTemplate } from '../utils/docTemplate.utils';
-import { Template } from '../types/template.types';
 import { createOrUpdateContentDocument } from '../utils/contentDocument.utils';
-import { ContentVersion } from '../types/contentDocument.types';
+import { createTemplate, fetchTemplates, updateTemplate } from '../utils/docTemplate.utils';
 
 export interface PushDocTemplatesParams {
   rootPath: string;
