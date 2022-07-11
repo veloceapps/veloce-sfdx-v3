@@ -1,15 +1,15 @@
-import { Connection } from '@salesforce/core';
+import { Connection, SfdxError } from '@salesforce/core';
 import { Member } from '../types/member.types';
 import {
   getDirectoryNames,
   getFileNames,
   parseJsonSafe,
   readFileSafe,
-  readFileSafeBuffer
+  readFileSafeBuffer,
 } from '../utils/common.utils';
 import { createTemplate, fetchTemplates, updateTemplate } from '../utils/docTemplate.utils';
 import { Template } from '../types/template.types';
-import { createOrUpdateContentDocument, } from '../utils/contentDocument.utils';
+import { createOrUpdateContentDocument } from '../utils/contentDocument.utils';
 import { ContentVersion } from '../types/contentDocument.types';
 
 export interface PushDocTemplatesParams {
@@ -21,7 +21,7 @@ export interface PushDocTemplatesParams {
 const scriptFileName = 'script.js';
 
 export async function pushDocTemplates(params: PushDocTemplatesParams): Promise<string[]> {
-  const {rootPath, conn, member} = params;
+  const { rootPath, conn, member } = params;
   if (!member) {
     return [];
   }
@@ -37,22 +37,28 @@ export async function pushDocTemplates(params: PushDocTemplatesParams): Promise<
   const templates: Template[] = await fetchTemplates(conn, false, docNames);
 
   for (const docName of docNames) {
-    const docNamePath = `${rootPath}/doc-template/${docName}`;
+    const docPath = `${rootPath}/doc-template/${docName}`;
+    const metaFileName = `${docName}.json`;
+    const technicalFiles = [scriptFileName, metaFileName];
 
-    const fileName = getFileNames(docNamePath).filter((name) => name !== scriptFileName)[0];
-    const filePath = `${docNamePath}/${fileName}`;
-    const file = readFileSafeBuffer(filePath, {flag: 'r'});
+    const [fileName] = getFileNames(docPath).filter((name) => !technicalFiles.includes(name));
+    const filePath = `${docPath}/${fileName}`;
+    const file = readFileSafeBuffer(filePath, { flag: 'r' });
 
-    const scriptPath = `${docNamePath}/${scriptFileName}`;
+    const scriptPath = `${docPath}/${scriptFileName}`;
     const script = readFileSafe(scriptPath);
 
-    const propertiesPath = `${docNamePath}/properties`;
-    const properties = getFileNames(propertiesPath).map((name) => parseJsonSafe(readFileSafe(`${propertiesPath}/${name}`)) as {[key: string]: any});
+    const propertiesPath = `${docPath}/properties`;
+    const properties = getFileNames(propertiesPath).map(
+      (name) => parseJsonSafe(readFileSafe(`${propertiesPath}/${name}`)) as { [key: string]: any },
+    );
 
-    const queriesPath = `${docNamePath}/queries`;
-    const queries = getFileNames(queriesPath).map((name) => parseJsonSafe(readFileSafe(`${queriesPath}/${name}`)) as {[key: string]: any});
+    const queriesPath = `${docPath}/queries`;
+    const queries = getFileNames(queriesPath).map(
+      (name) => parseJsonSafe(readFileSafe(`${queriesPath}/${name}`)) as { [key: string]: any },
+    );
 
-    const docJsonPath = `${docNamePath}/${docName}.json`;
+    const docJsonPath = `${docPath}/${metaFileName}`;
     const docJson: Template = parseJsonSafe(readFileSafe(docJsonPath));
 
     const template = templates.find((t) => t.Name === docName);
@@ -61,10 +67,15 @@ export async function pushDocTemplates(params: PushDocTemplatesParams): Promise<
       Title: fileName,
       PathOnClient: fileName,
       SharingOption: 'A',
-      SharingPrivacy: 'N'
-    }
+      SharingPrivacy: 'N',
+    };
 
-    const fileId: string = await createOrUpdateContentDocument(conn, bodyContentVersion, file, template?.VELOCPQ__FileId__c);
+    const fileId: string = await createOrUpdateContentDocument(
+      conn,
+      bodyContentVersion,
+      file,
+      template?.VELOCPQ__FileId__c,
+    );
 
     const bodyTemplate: Template = {
       VELOCPQ__Script__c: script, // todo encoding?
