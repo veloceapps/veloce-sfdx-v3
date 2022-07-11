@@ -23,7 +23,6 @@ export async function pullDocTemplates(params: PullDocTemplatesParams): Promise<
   const result: Template[] = await fetchTemplates(conn, member.all, member.names);
   console.log(`Pulling Doc template result count: ${result.length}`);
 
-  console.log(JSON.stringify(result));
   const ids = [];
   for (const r of result) {
     const {
