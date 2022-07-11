@@ -13,8 +13,8 @@ Extension to sfdx which allows veloce specific data pull and push
 
 - [veloce](#veloce)
   <!-- tocstop -->
-            <!-- install -->
-            <!-- usage -->
+              <!-- install -->
+              <!-- usage -->
 
 ```sh-session
 $ npm install -g veloce-sfdx-v3
@@ -32,7 +32,7 @@ USAGE
 <!-- commands -->
 
 - [`sfdx veloce:data:pull -s <string> -p <string> [-w <string>] [-o <string>] [-R <string>] [-v <string>] [-u <string>] [--apiversion <string>] [--json] [--loglevel trace|debug|info|warn|error|fatal|TRACE|DEBUG|INFO|WARN|ERROR|FATAL]`](#sfdx-velocedatapull--s-string--p-string--w-string--o-string--r-string--v-string--u-string---apiversion-string---json---loglevel-tracedebuginfowarnerrorfataltracedebuginfowarnerrorfatal)
-- [`sfdx veloce:data:push [-p <string>] [-P] [-v <string>] [-u <string>] [--apiversion <string>] [--json] [--loglevel trace|debug|info|warn|error|fatal|TRACE|DEBUG|INFO|WARN|ERROR|FATAL]`](#sfdx-velocedatapush--p-string--p--v-string--u-string---apiversion-string---json---loglevel-tracedebuginfowarnerrorfataltracedebuginfowarnerrorfatal)
+- [`sfdx veloce:data:push -s <string> [-p <string>] [-P] [-e <string>] [-R <string>] [-P] [-U] [-d] [-D] [-o <string>] [-b <string>] [-v <string>] [-u <string>] [--apiversion <string>] [--json] [--loglevel trace|debug|info|warn|error|fatal|TRACE|DEBUG|INFO|WARN|ERROR|FATAL]`](#sfdx-velocedatapush--s-string--p-string--p--e-string--r-string--p--u--d--d--o-string--b-string--v-string--u-string---apiversion-string---json---loglevel-tracedebuginfowarnerrorfataltracedebuginfowarnerrorfatal)
 - [`sfdx veloce:debug:list [-P] [-v <string>] [-u <string>] [--apiversion <string>] [--json] [--loglevel trace|debug|info|warn|error|fatal|TRACE|DEBUG|INFO|WARN|ERROR|FATAL]`](#sfdx-velocedebuglist--p--v-string--u-string---apiversion-string---json---loglevel-tracedebuginfowarnerrorfataltracedebuginfowarnerrorfatal)
 - [`sfdx veloce:debug:logs [-P] [-v <string>] [-u <string>] [--apiversion <string>] [--json] [--loglevel trace|debug|info|warn|error|fatal|TRACE|DEBUG|INFO|WARN|ERROR|FATAL]`](#sfdx-velocedebuglogs--p--v-string--u-string---apiversion-string---json---loglevel-tracedebuginfowarnerrorfataltracedebuginfowarnerrorfatal)
 - [`sfdx veloce:debug:push -m <string> [-p <string>] [-P] [-v <string>] [-u <string>] [--apiversion <string>] [--json] [--loglevel trace|debug|info|warn|error|fatal|TRACE|DEBUG|INFO|WARN|ERROR|FATAL]`](#sfdx-velocedebugpush--m-string--p-string--p--v-string--u-string---apiversion-string---json---loglevel-tracedebuginfowarnerrorfataltracedebuginfowarnerrorfatal)
@@ -94,20 +94,51 @@ EXAMPLE
 
 _See code: [src/commands/veloce/data/pull.ts](https://github.com/veloceapps/veloce-sfdx-v3/blob/v0.0.8/src/commands/veloce/data/pull.ts)_
 
-## `sfdx veloce:data:push [-p <string>] [-P] [-v <string>] [-u <string>] [--apiversion <string>] [--json] [--loglevel trace|debug|info|warn|error|fatal|TRACE|DEBUG|INFO|WARN|ERROR|FATAL]`
+## `sfdx veloce:data:push -s <string> [-p <string>] [-P] [-e <string>] [-R <string>] [-P] [-U] [-d] [-D] [-o <string>] [-b <string>] [-v <string>] [-u <string>] [--apiversion <string>] [--json] [--loglevel trace|debug|info|warn|error|fatal|TRACE|DEBUG|INFO|WARN|ERROR|FATAL]`
 
 Uploads Data from CSVs to Salesforce org
 
 ```
 USAGE
-  $ sfdx veloce:data:push [-p <string>] [-P] [-v <string>] [-u <string>] [--apiversion <string>] [--json] [--loglevel
+  $ sfdx veloce:data:push -s <string> [-p <string>] [-P] [-e <string>] [-R <string>] [-P] [-U] [-d] [-D] [-o <string>]
+  [-b <string>] [-v <string>] [-u <string>] [--apiversion <string>] [--json] [--loglevel
   trace|debug|info|warn|error|fatal|TRACE|DEBUG|INFO|WARN|ERROR|FATAL]
 
 OPTIONS
+  -D, --diff                                                                        Force diff mode ON, it will show
+                                                                                    differences for each record which is
+                                                                                    upserted/inserted. Default: ON if <
+                                                                                    128 records and off otherwise.
+
   -P, --noproject                                                                   Bypass check of sfdx-project.json to
                                                                                     exist
 
+  -P, --printids                                                                    Print External ID before attempting
+                                                                                    to update
+
+  -R, --idreplacefields=idreplacefields                                             Coma separated list of fields in
+                                                                                    which SF IDs are replaces by mapped
+                                                                                    Ids by using text search and replace
+
+  -U, --upsert                                                                      Should use APEX upsert (could insert
+                                                                                    extra records) or update-only APEX
+                                                                                    (one by one), which is default
+
+  -b, --batch=batch                                                                 Size of batch, to avoid getting
+                                                                                    'script is too large'
+
+  -d, --dry                                                                         Dont change data, just run in dry
+                                                                                    mode
+
+  -e, --externalid=externalid                                                       The column name of the external ID.
+
+  -o, --ignorefields=ignorefields                                                   Coma separated list of fields to
+                                                                                    ignore during load
+
   -p, --sourcepath=sourcepath                                                       Path where to get data
+
+  -s, --sobjecttype=sobjecttype                                                     (required) The sObject type of the
+                                                                                    records you want to upsert.
 
   -u, --targetusername=targetusername                                               username or alias for the target
                                                                                     org; overrides default target org
