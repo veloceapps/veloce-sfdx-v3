@@ -57,7 +57,7 @@ export default class Org extends DebugSfdxCommand {
       return Promise.reject('You must have sfdx-project.json while runnign this plugin.');
     }
 
-    const debugSession = this.getDebugSession();
+    const debugSession = this.getDebugSessionFromFile();
     if (!debugSession) {
       this.ux.log('No active debug session found, please start debug session using veloce:debug');
       return {};

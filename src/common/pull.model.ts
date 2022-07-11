@@ -3,15 +3,9 @@ import { ProductModel } from '../types/productModel.types';
 import { writeFileSafe } from '../utils/common.utils';
 import { fetchProductModels } from '../utils/productModel.utils';
 import { fetchDocumentContent } from '../utils/document.utils';
-import { Member } from '../types/member.types';
+import { CommandParams } from '../types/command.types';
 
-export interface PullModelParams {
-  sourcepath: string;
-  conn: Connection;
-  member: Member | undefined;
-}
-
-async function pullPM(sourcepath: string, conn: Connection, dumpAll: boolean, pmsToDump: Set<string>): Promise<void> {
+async function pullPM(rootPath: string, conn: Connection, dumpAll: boolean, pmsToDump: Set<string>): Promise<void> {
   console.log(`Pulling ${dumpAll ? 'All Product Models' : 'PMs with names: ' + (Array.from(pmsToDump)?.join() ?? '')}`);
   const productModels: ProductModel[] = await fetchProductModels(conn, dumpAll, Array.from(pmsToDump));
   productModels.forEach(
@@ -37,13 +31,13 @@ async function pullPM(sourcepath: string, conn: Connection, dumpAll: boolean, pm
         null,
         '  ',
       );
-      writeFileSafe(`${sourcepath}/model/${Name}`, `${Name}.json`, productModelJson, { flag: 'w+' });
+      writeFileSafe(`${rootPath}/model/${Name}`, `${Name}.json`, productModelJson, { flag: 'w+' });
     },
   );
 }
 
-export async function pullModel(params: PullModelParams): Promise<string[]> {
-  const { sourcepath, conn, member } = params;
+export async function pullModel(params: CommandParams): Promise<string[]> {
+  const { rootPath, conn, member } = params;
   if (!member) {
     return [];
   }
@@ -62,13 +56,13 @@ export async function pullModel(params: PullModelParams): Promise<string[]> {
   contents.forEach(({ productModel, content }) => {
     const { Name } = productModel;
 
-    writeFileSafe(`${sourcepath}/model/${Name}`, `${Name}.pml`, content ?? '', { flag: 'w+' });
+    writeFileSafe(`${rootPath}/model/${Name}`, `${Name}.pml`, content ?? '', { flag: 'w+' });
 
     // mark full PM dump as a dependancy (metadata)
     pmsToDump.add(Name);
   });
 
-  void pullPM(sourcepath, conn, member.all, pmsToDump);
+  void pullPM(rootPath, conn, member.all, pmsToDump);
 
   return productModels.map(({ Id }) => Id);
 }

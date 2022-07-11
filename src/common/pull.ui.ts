@@ -1,21 +1,14 @@
 import { existsSync, mkdirSync } from 'fs';
-import { Connection } from '@salesforce/core';
 import { writeFileSafe } from '../utils/common.utils';
 import { LegacySection, LegacyUiDefinition, UiDef, UiDefinition, UiElement, UiMetadata } from '../types/ui.types';
 import { extractElementMetadata, fromBase64, isLegacyDefinition } from '../utils/ui.utils';
 import { ProductModel } from '../types/productModel.types';
 import { fetchProductModels } from '../utils/productModel.utils';
 import { fetchDocumentContent } from '../utils/document.utils';
-import { Member } from '../types/member.types';
+import { CommandParams } from '../types/command.types';
 
-export interface PullUIParams {
-  sourcepath: string;
-  conn: Connection;
-  member?: Member;
-}
-
-export async function pullUI(params: PullUIParams): Promise<string[]> {
-  const { sourcepath, conn, member } = params;
+export async function pullUI(params: CommandParams): Promise<string[]> {
+  const { rootPath, conn, member } = params;
   if (!member) {
     return [];
   }
@@ -27,7 +20,9 @@ export async function pullUI(params: PullUIParams): Promise<string[]> {
   Array.from(member.names).forEach((ui) => {
     const [modelName, uiDefName] = ui.split(':');
     if (uiDefName) {
-      console.log(`Pull for separate UI Definition '${uiDefName}' is not supported. Pulling All UI Definitions for '${modelName}'.`);
+      console.log(
+        `Pull for separate UI Definition '${uiDefName}' is not supported. Pulling All UI Definitions for '${modelName}'.`,
+      );
     }
   });
 
@@ -51,7 +46,7 @@ export async function pullUI(params: PullUIParams): Promise<string[]> {
       return;
     }
 
-    const path = `${sourcepath}/config-ui/${Name}`;
+    const path = `${rootPath}/config-ui/${Name}`;
 
     // legacy ui definitions metadata is stored in global metadata.json as array
     const legacyMetadataArray: LegacyUiDefinition[] = [];
@@ -135,7 +130,7 @@ function saveLegacySectionFiles(
     const fileName = `${section.label}.css`;
     writeFileSafe(fullDir, fileName, fromBase64(section.styles));
     delete sectionMeta.styles;
-    sectionMeta.scriptUrl = `${path}/${fileName}`;
+    sectionMeta.stylesUrl = `${path}/${fileName}`;
   }
   if (section.template) {
     const fileName = `${section.label}.html`;

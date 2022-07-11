@@ -1,13 +1,7 @@
 import { Connection, SfdxError } from '@salesforce/core';
 import { ExecuteService } from '@salesforce/apex-node';
-import { Member } from '../types/member.types';
 import { extractGroupsFromFolder, Group, Rule } from '../utils/drools.utils';
-
-export interface PushDRLParams {
-  rootPath: string;
-  conn: Connection;
-  member: Member | undefined;
-}
+import { CommandParams } from '../types/command.types';
 
 async function saveRule(group: Group, rule: Rule, conn: Connection): Promise<void> {
   const action = JSON.stringify(rule.action).replaceAll("'", "\\'");
@@ -110,7 +104,7 @@ async function saveGroup(group: Group, conn: Connection): Promise<void> {
   }
 }
 
-export async function pushDRL(params: PushDRLParams): Promise<string[]> {
+export async function pushDRL(params: CommandParams): Promise<string[]> {
   const { rootPath, conn, member } = params;
   if (!member) {
     return [];

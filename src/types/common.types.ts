@@ -5,3 +5,7 @@ export interface CreateResult {
   name: string;
   message: string;
 }
+
+export interface OrgInfo {
+  BackendURL: string;
+}

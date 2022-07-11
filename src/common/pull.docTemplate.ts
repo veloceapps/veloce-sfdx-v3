@@ -6,13 +6,13 @@ import { fetchContentVersion } from '../utils/contentDocument.utils';
 import { Template } from '../types/template.types';
 
 export interface PullDocTemplatesParams {
-  sourcepath: string;
+  rootPath: string;
   conn: Connection;
   member?: Member;
 }
 
 export async function pullDocTemplates(params: PullDocTemplatesParams): Promise<string[]> {
-  const {sourcepath, conn, member} = params;
+  const {rootPath: sourcepath, conn, member} = params;
   if (!member) {
     return [];
   }
