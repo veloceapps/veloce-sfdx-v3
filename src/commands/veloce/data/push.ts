@@ -165,6 +165,7 @@ export default class Push extends SfdxCommand {
 
     const match = this.flags.ignorefields?.match(/(?<appendMode>[+-])?\s*(?<fieldsToIgnore>.*)/);
     const { appendMode, fieldsToIgnore } = match?.groups ?? {};
+    let ignoreFields: string[];
     if (fieldsToIgnore) {
       const fieldsArray = fieldsToIgnore?.toLocaleString().split(',');
       switch (appendMode) {
