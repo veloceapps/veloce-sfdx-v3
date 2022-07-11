@@ -73,14 +73,14 @@ export async function fetchProcedureRules(
   // get script file for transformations
   const rules = result?.records ?? [];
   const transformationIds = rules.reduce((acc, rule) => {
-    return [...acc, ...(rule.VELOCPQ__ProcedureRules_TransformationRules__r.records || []).map(({ Id }) => Id)];
+    return [...acc, ...(rule?.VELOCPQ__ProcedureRules_TransformationRules__r?.records || []).map(({ Id }) => Id)];
   }, [] as string[]);
 
   const contentLinksQuery = `Select Id, ContentDocumentId, LinkedEntityId From ContentDocumentLink Where LinkedEntityId IN ('${transformationIds.join(
     "','",
   )}')`;
   const contentLinks = await conn.query<SFContent>(contentLinksQuery);
-  const contentLinksRecords = contentLinks.records || [];
+  const contentLinksRecords = contentLinks?.records || [];
   const javaScripts: { id: string; javaScript: string }[] = [];
   for (const record of contentLinksRecords) {
     const javaScript = await conn.request<string>({ url: `/connect/files/${record.ContentDocumentId}/content` });
@@ -91,7 +91,7 @@ export async function fetchProcedureRules(
       ...rule,
       VELOCPQ__ProcedureRules_TransformationRules__r: {
         ...rule.VELOCPQ__ProcedureRules_TransformationRules__r,
-        records: rule.VELOCPQ__ProcedureRules_TransformationRules__r.records.map((transformation) => {
+        records: (rule?.VELOCPQ__ProcedureRules_TransformationRules__r?.records || []).map((transformation) => {
           const javaScript = javaScripts.find((o) => o.id === transformation.Id);
           if (javaScript) {
             return { ...transformation, VELOCPQ__JavaScript__c: javaScript.javaScript };
