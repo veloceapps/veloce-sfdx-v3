@@ -7,9 +7,9 @@ import { PriceRule } from '../types/priceRule.types';
 import { parseJsonSafe, writeFileSafe } from './common.utils';
 
 const ruleExtractRegex = /(rule\b)([\S\s]*?)(\nend\b)/g;
-const rulePreconditionRegex = /(?<=when\b)([\S\s]*?)(?=then\b)/g;
-const ruleBodyRegex = /(?<=then\b)([\S\s]*?)(?=\nend\b)/g;
-const ruleSequenceRegex = /(?<=salience\b)([\S\s]*?)(?=when\b)/g;
+const rulePreconditionRegex = /(?<=\nwhen\b)([\S\s]*?)(?=\nthen\b)/g;
+const ruleBodyRegex = /(?<=\nthen\b)([\S\s]*?)(?=\nend\b)/g;
+const ruleSequenceRegex = /(?<=salience\b)([\S\s]*?)(?=\nwhen\b)/g;
 
 export interface Rule {
   name: string;
@@ -32,8 +32,9 @@ export interface Group {
   referenceId: string;
 }
 
-export function extractRulesFromGroup(groupFilePath: string, rulesMeta: Rule[]): Rule[] {
+export function extractRulesFromGroup(directory: string, file: string, rulesMeta: Rule[]): Rule[] {
   const result: Rule[] = [];
+  const groupFilePath = directory + '/' + file;
   const rulesContent = fs.readFileSync(groupFilePath, { encoding: 'utf8' }).toString();
   const rulesRegexResults = [...(rulesContent.match(ruleExtractRegex) ?? [])];
 
@@ -51,10 +52,10 @@ export function extractRulesFromGroup(groupFilePath: string, rulesMeta: Rule[]):
     const name = getRuleName(rulesRegexResult);
     const ruleMeta = nameToRuleMap[name];
     if (!ruleMeta) {
-      throw new SfdxError(`Rule in MetaFile with 'name' ${name} is missing.`);
+      throw new SfdxError(`Rule '${name}' not found in MetaFile for ${file} by name.`);
     }
     if (!ruleMeta.referenceId) {
-      throw new SfdxError(`Property 'referenceId' for rule ${ruleMeta.name} is missing.`);
+      throw new SfdxError(`Property referenceId for rule '${ruleMeta.name}' in ${file} is missing.`);
     }
     const ruleRecord = {
       name,
@@ -109,12 +110,11 @@ function extractGroupFromFile(groupFile: string, rulesDirectory: string): Group 
   const groupMetaData: Group = parseJsonSafe(metadataStr);
   if (groupMetaData) {
     validateGroupMeta(groupMetaData, groupFile);
-    const groupFilePath = rulesDirectory + '/' + groupFile;
     return {
       ...groupMetaData,
       active: groupMetaData.active ?? true,
       description: groupMetaData.description || groupMetaData.name,
-      priceRules: extractRulesFromGroup(groupFilePath, groupMetaData.priceRules),
+      priceRules: extractRulesFromGroup(rulesDirectory, groupFile, groupMetaData.priceRules),
     };
   } else {
     throw new SfdxError(`MetaFile is missing for group ${groupFile}`);
