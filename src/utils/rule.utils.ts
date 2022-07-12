@@ -35,6 +35,7 @@ export async function fetchProcedureRules(
         VELOCPQ__Description__c,
         VELOCPQ__Sequence__c,
         VELOCPQ__Active__c,
+        VELOCPQ__Default__c,
         VELOCPQ__RuleGroupId__c,
         (SELECT  Id,
         VELOCPQ__VariableName__c,
@@ -112,7 +113,7 @@ export function saveProcedureRules(procedureRules: SFProcedureRule[], pathToSave
   });
 }
 
-const saveToJSON = (procedureRules: SFProcedureRule[], pathToSave: string): any => {
+const saveToJSON = (procedureRules: SFProcedureRule[], pathToSave: string): void => {
   const { VELOCPQ__RuleGroupId__c, VELOCPQ__RuleGroupId__r } = procedureRules[0];
   const generatedJSON = {
     id: VELOCPQ__RuleGroupId__c,
@@ -121,11 +122,12 @@ const saveToJSON = (procedureRules: SFProcedureRule[], pathToSave: string): any 
     sequence: VELOCPQ__RuleGroupId__r.VELOCPQ__Sequence__c,
     description: VELOCPQ__RuleGroupId__r.VELOCPQ__Description__c,
     active: VELOCPQ__RuleGroupId__r.VELOCPQ__Active__c,
-    rules: procedureRules.map(({ Id, Name, VELOCPQ__Description__c, VELOCPQ__Active__c }) => ({
+    rules: procedureRules.map(({ Id, Name, VELOCPQ__Description__c, VELOCPQ__Active__c, VELOCPQ__Default__c }) => ({
       id: Id,
       name: Name,
       description: VELOCPQ__Description__c,
       active: VELOCPQ__Active__c,
+      isDefault: VELOCPQ__Default__c,
     })),
   };
 

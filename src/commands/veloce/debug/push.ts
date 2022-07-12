@@ -12,6 +12,8 @@ import { getPath } from '../../../utils/path.utils';
 import { Member } from '../../../types/member.types';
 import { MembersMap } from '../../../common/members.map';
 import { logError } from '../../../common/log.handler';
+import { getRuleGroups } from '../../../utils/rule.utils';
+import { Rule } from '../../../types/rule.types';
 
 // Initialize Messages with the current plugin directory
 Messages.importMessagesDirectory(__dirname);
@@ -61,6 +63,7 @@ export default class Push extends DebugSfdxCommand {
 
     await this.sendModel(debugSession, rootPath, memberMap.get('model'));
     await this.sendDrools(debugSession, rootPath, memberMap.get('drl'));
+    await this.sendRules(debugSession, rootPath, memberMap.get('rule'));
     // Return an object to be displayed with --json
     return {};
   }
@@ -123,6 +126,44 @@ export default class Push extends DebugSfdxCommand {
           logError('Failed to deploy', error);
         }
       }
+    }
+  }
+
+  private async sendRules(debugSession: DebugSessionInfo, rootPath: string, member: Member | undefined): Promise<void> {
+    if (!member) {
+      return;
+    }
+    const headers = getDebugClientHeaders(debugSession);
+    const names = member.all ? undefined : Array.from(member.names).map((ui) => ui.split(':')[0]);
+    const groups = getRuleGroups(rootPath + '/rule', names);
+    if (groups.length) {
+      await axios.post(
+        `${debugSession.backendUrl}/services/dev-override/rule-groups/batch`,
+        { groups },
+        {
+          headers,
+        },
+      );
+
+      await axios.post(
+        `${debugSession.backendUrl}/services/dev-override/rules/batch`,
+        {
+          rules: groups.reduce((result, group) => {
+            return [
+              ...result,
+              ...group.rules.map((rule) => ({
+                ...rule,
+                ruleGroupId: group.id,
+                ruleGroupName: group.name,
+                ruleGroupType: group.type,
+              })),
+            ];
+          }, [] as Rule[]),
+        },
+        {
+          headers,
+        },
+      );
     }
   }
 }
