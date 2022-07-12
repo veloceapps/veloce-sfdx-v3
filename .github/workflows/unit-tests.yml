@@ -15,7 +15,7 @@ jobs:
           npm -g i install sfdx-cli@7.144.2
           sfdx plugins:link .
           echo "$SF_PASS" > ./sf-pass
-          sfdx veloce:login -r ${SF_URL} -u ${SF_USER} -p ./sf-pass -a studio-dev
+          sfdx veloce:login -r ${SF_URL} -u ${SF_USER} -p ./sf-pass -a ui-autotests
           yarn test
         env:
           SF_URL: ${{ secrets.SF_URL }}
