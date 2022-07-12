@@ -6,7 +6,6 @@ import { fetchDocumentContent } from '../utils/document.utils';
 import { CommandParams } from '../types/command.types';
 
 async function pullPM(rootPath: string, conn: Connection, dumpAll: boolean, pmsToDump: Set<string>): Promise<void> {
-  console.log(`Pulling ${dumpAll ? 'All Product Models' : 'PMs with names: ' + (Array.from(pmsToDump)?.join() ?? '')}`);
   const productModels: ProductModel[] = await fetchProductModels(conn, dumpAll, Array.from(pmsToDump));
   productModels.forEach(
     ({
