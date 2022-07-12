@@ -5,6 +5,7 @@ export interface SFProcedureRule {
   VELOCPQ__Description__c: string;
   VELOCPQ__Sequence__c: number;
   VELOCPQ__Active__c: boolean;
+  VELOCPQ__Default__c: boolean;
   VELOCPQ__RuleGroupId__c: string;
   VELOCPQ__ProcedureRules_RuleConditions__r: SOQLResult<SFProcedureRuleCondition[]>;
   VELOCPQ__ProcedureRules_TransformationRules__r: SOQLResult<SFProcedureRuleTransformation[]>;
@@ -79,11 +80,15 @@ export interface RuleGroup {
 }
 
 export interface Rule {
+  id?: string;
   name?: string;
   sequence?: number;
   description?: string;
   ruleGroupId?: string;
+  ruleGroupName?: string;
+  ruleGroupType?: string;
   active?: boolean;
+  isDefault?: boolean;
   conditions: RuleCondition[];
   transformations: RuleTransformation[];
   mappers: RuleAction[];

@@ -56,7 +56,7 @@ export default class Start extends DebugSfdxCommand {
     // delete existing token from db
     const debugSessionOld = this.getDebugSessionFromFile();
     if (debugSessionOld) {
-      await this.stopDebugSession({...debugSessionOld, accessToken: debugSession.accessToken});
+      await this.stopDebugSession({ ...debugSessionOld, accessToken: debugSession.accessToken });
     }
 
     const sfUrl = `${debugSession.instanceUrl}/apex/VELOCPQ__VeloceStudioEmbedded?dev-token=${devToken.toString()}`;
