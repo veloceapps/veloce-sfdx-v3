@@ -1,0 +1,39 @@
+
+rule "Calculate Surcharge end Price" salience 650
+when
+$context: PriceContext(getBooleanValue("#OPTIONS_STEP") == false, getPropertyValue("#CONFIGURATION_STEP") == "UPDATE" || getPropertyValue("#CONFIGURATION_STEP") == "START")
+$bundle : PriceItem(instanceOf("Bundle"), $endDate : endDate)
+$surcharge : PriceItem(parent == $bundle, instanceOf("Surcharge"))
+then
+BigDecimal surchargeMLP = $surcharge.getDecimalValue("SurchargeMLP");
+BigDecimal totalAddonPrice = $surcharge.getDecimalValue("TotalAddonPrice");
+System.out.println("## Surcharge:650 Surcharge Data: " + $surcharge.getDateValue("StartDate") + ", " + surchargeMLP + ", " + totalAddonPrice);
+if (surchargeMLP.compareTo(totalAddonPrice) > 0) {
+    BigDecimal price = surchargeMLP.subtract(totalAddonPrice);
+    $surcharge.setEndDate($endDate);
+    $surcharge.setProperty("EndDate", $surcharge.getEndDate());
+    $surcharge.setProperty("Quantity", BigDecimal.ONE);
+    $surcharge.setProperty("ToDelete", null);
+    for (ChargeItem chargeItem : $surcharge.getChargeItems()) {
+        final BigDecimal sellingTerm = PricerUtils.calculateMonths($surcharge.getStartDate(), $surcharge.getEndDate());
+        BigDecimal listPrice = price.multiply(sellingTerm);
+
+        chargeItem.setStartDate($surcharge.getStartDate());
+        chargeItem.setEndDate($surcharge.getEndDate());
+        chargeItem.setSellingTerm(sellingTerm);
+        chargeItem.setQuantity(BigDecimal.ONE);
+        chargeItem.getPriceWaterfalls().clear();
+        chargeItem.getPriceWaterfalls().add(new PriceWaterfall(AdjustmentType.OVERRIDE_AMOUNT, listPrice, "Surcharge Calculation"));
+
+        chargeItem.setNetPrice(listPrice);
+        chargeItem.setListPrice(listPrice);
+        chargeItem.setRecurringListPrice(price);
+    }
+} else {
+    $surcharge.setActionCode(ActionCode.DELETE);
+    $surcharge.setProperty("ToDelete", "true");
+    $surcharge.getChargeItems().forEach(c -> {
+        c.setNetPrice(BigDecimal.ZERO);
+    });
+}
+end
