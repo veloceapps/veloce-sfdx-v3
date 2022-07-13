@@ -48,6 +48,8 @@
     "eslint-plugin-jsdoc": "^35",
     "eslint-plugin-prettier": "^3",
     "eslint-plugin-typescript": "^0",
+    "@types/folder-hash": "^4.0.2",
+    "folder-hash": "^4.0.2",
     "globby": "^11",
     "husky": "^4",
     "mocha": "^8",

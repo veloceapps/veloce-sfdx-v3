@@ -1,0 +1,9 @@
+rule "test"
+    sequence 1
+    condition
+        chargeItem: ChargeItem((chargeItem.chargeMethod=="RECURRING"))
+    transformation
+        result: chargeItem.recurringNetPrice*12
+    action
+        chargeItem.setMetric(VDM_ARR,result,VDM_Total_ARR)
+end
