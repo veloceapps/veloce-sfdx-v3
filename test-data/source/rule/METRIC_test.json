@@ -1,0 +1,15 @@
+{
+  "name": "test",
+  "type": "METRIC",
+  "sequence": null,
+  "description": null,
+  "active": true,
+  "rules": [
+    {
+      "name": "test",
+      "description": "test",
+      "active": false,
+      "isDefault": false
+    }
+  ]
+}

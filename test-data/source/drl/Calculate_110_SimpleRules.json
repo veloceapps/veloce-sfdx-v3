@@ -1,0 +1,17 @@
+{
+  "active": true,
+  "description": "SimpleRules",
+  "name": "SimpleRules",
+  "priceListReferenceId": "a0V8D000000Ecg8UAC",
+  "referenceId": "simple0000jfgzkQgC",
+  "sequence": 110,
+  "type": "Calculate",
+  "priceRules": [
+    {
+      "active": true,
+      "description": "Calculate Simple Price",
+      "name": "Calculate Simple Price",
+      "referenceId": "simple0000jYazpQAC"
+    }
+  ]
+}
