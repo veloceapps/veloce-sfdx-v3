@@ -12,6 +12,7 @@ import { Connection, Messages } from '@salesforce/core';
 import { AnyJson } from '@salesforce/ts-types';
 import { EntityDefinition } from '../../../types/entityDefinition';
 import { SalesforceEntity } from '../../../types/salesforceEntity';
+import { loadIdMap } from '../../../common/idmap';
 //
 type CsvWriterPipeFunction = (stream: WriteStream) => void;
 type CsvWriterEndFunction = () => void;
@@ -95,6 +96,7 @@ export default class Pull extends SfdxCommand {
   // Set this to true if your command requires a project workspace; 'requiresProject' is false by default
   protected static requiresProject = false;
 
+  /* eslint complexity: ["error", 25]*/
   public async run(): Promise<AnyJson> {
     if (!this.org) {
       return Promise.reject('Org is not defined');
@@ -130,19 +132,10 @@ export default class Pull extends SfdxCommand {
     }
 
     const reverseIdmap: { [key: string]: string } = {};
-    // TODO: load from salesforce
-    // if (this.flags.idmap) {
-    //   let idmap: { [key: string]: string; }
-    //   try {
-    //     idmap = JSON.parse(readFileSync(this.flags.idmap).toString())
-    //   } catch (err) {
-    //     this.ux.log(`No ID-Map file: ${this.flags.idmap} will not perform reverse-id map!`)
-    //     idmap = {}
-    //   }
-    //   for (const [key, value] of Object.entries(idmap)) {
-    //     reverseIdmap[value] = key
-    //   }
-    // }
+    const idmap = await loadIdMap(conn);
+    for (const [key, value] of Object.entries(idmap)) {
+      reverseIdmap[value] = key;
+    }
 
     const writer = csvWriter({
       separator: ',',
