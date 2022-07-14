@@ -10,61 +10,21 @@ import * as parse from 'csv-parse/lib/sync';
 import { flags, SfdxCommand } from '@salesforce/command';
 import { Connection, Messages, SfdxError } from '@salesforce/core';
 import { AnyJson } from '@salesforce/ts-types';
-import { SalesforceEntity } from '../../../types/salesforceEntity';
-import { IdMap } from '../../../types/idmap';
 import { ExecuteService } from '@salesforce/apex-node';
 import { QueryResult } from 'jsforce';
 import { Tooling } from '@salesforce/core/lib/connection';
 import { ExecuteAnonymousResponse } from '@salesforce/apex-node/lib/src/execute/types';
+import { IdMap } from '../../../types/idmap';
+import { SalesforceEntity } from '../../../types/salesforceEntity';
+import { keysToLowerCase, validSFID } from '../../../utils/common.utils';
 
 // Initialize Messages with the current plugin directory
 Messages.importMessagesDirectory(__dirname);
 
-// or any library that is using the messages framework can also be loaded this way.
-const salesforceIdRegex = new RegExp('^[a-zA-Z0-9]{18}$');
-
-const keysToLowerCase = (rWithCase: SalesforceEntity): SalesforceEntity => {
-  // convert keys to lowercase
-  const keys = Object.keys(rWithCase);
-  let n = keys.length;
-
-  const r: any = {};
-  while (n--) {
-    const key = keys[n];
-    if (key) {
-      r[key.toLowerCase()] = rWithCase[key];
-    }
-  }
-  return r;
-};
-
-const validSFID = (input: string): boolean => {
-  // https://stackoverflow.com/a/29299786/1333724
-  if (!salesforceIdRegex.test(input)) {
-    return false;
-  }
-  const parts = [input.substr(0, 5), input.substr(5, 5), input.substr(10, 5)];
-  const chars: number[] = [0, 0, 0];
-  for (let j = 0; j < parts.length; j++) {
-    const word = parts[j];
-    for (let i = 0; i < word.length; i++) {
-      const char = word.charCodeAt(i);
-      if (char >= 65 && char <= 90) {
-        chars[j] += 1 << i;
-      }
-    }
-  }
-  for (let i = 0; i < chars.length; i++) {
-    const c = chars[i];
-    if (c <= 25) {
-      chars[i] = c + 65;
-    } else {
-      chars[i] = c - 25 + 48;
-    }
-  }
-
-  return String.fromCharCode(chars[0], chars[1], chars[2]) === input.substr(15, 3);
-};
+interface ExecuteScriptResult {
+  output: string;
+  ok: boolean;
+}
 
 // Load the specific messages for this file. Messages from @salesforce/command, @salesforce/core,
 // or any library that is using the messages framework can also be loaded this way.
@@ -77,9 +37,19 @@ export default class Push extends SfdxCommand {
 
   public static args = [];
 
-  // -u quick-guide
-  // -m model:Octa
-  // -p ./source/templates
+  public static defaultIgnoreFields = [
+    'CreatedDate'.toLowerCase(),
+    'CreatedById'.toLowerCase(),
+    'LastModifiedDate'.toLowerCase(),
+    'LastModifiedById'.toLowerCase(),
+    'SystemModstamp'.toLowerCase(),
+    'IsDeleted'.toLowerCase(),
+    'IsArchived'.toLowerCase(),
+    'LastViewedDate'.toLowerCase(),
+    'LastReferencedDate'.toLowerCase(),
+    'UserRecordAccessId'.toLowerCase(),
+    'OwnerId'.toLowerCase(),
+  ];
 
   protected static flagsConfig = {
     sourcepath: flags.string({
@@ -127,23 +97,8 @@ export default class Push extends SfdxCommand {
   // Set this to true if your command requires a project workspace; 'requiresProject' is false by default
   protected static requiresProject = false;
 
-  public static defaultIgnoreFields = [
-    'CreatedDate'.toLowerCase(),
-    'CreatedById'.toLowerCase(),
-    'LastModifiedDate'.toLowerCase(),
-    'LastModifiedById'.toLowerCase(),
-    'SystemModstamp'.toLowerCase(),
-    'IsDeleted'.toLowerCase(),
-    'IsArchived'.toLowerCase(),
-    'LastViewedDate'.toLowerCase(),
-    'LastReferencedDate'.toLowerCase(),
-    'UserRecordAccessId'.toLowerCase(),
-    'OwnerId'.toLowerCase(),
-  ];
-
+  /* eslint complexity: ["error", 65]*/
   public async run(): Promise<AnyJson> {
-    let currentBatch = 0;
-
     if (!this.org) {
       return Promise.reject('Org is not defined');
     }
@@ -156,14 +111,17 @@ export default class Push extends SfdxCommand {
     let ok = true;
     let output = '';
     const batchSize = parseInt(this.flags.batch || '5', 10);
-    const sType = this.flags.sobjecttype.toLowerCase();
-    const extId = this.flags.externalid ? this.flags.externalid.toLowerCase() : 'VELOCPQ__ReferenceId__c'.toLowerCase();
-    const idReplaceFields = this.flags.idreplacefields ? this.flags.idreplacefields.toLowerCase().split(',') : [];
+    const sType = (this.flags.sobjecttype as string).toLowerCase();
+    const extIdParam = this.flags.externalid as string;
+    const extId = extIdParam ? extIdParam.toLowerCase() : 'VELOCPQ__ReferenceId__c'.toLowerCase();
+    const idReplaceFieldsParam = this.flags.idreplacefields as string;
+    const idReplaceFields = idReplaceFieldsParam ? idReplaceFieldsParam.toLowerCase().split(',') : [];
+    const ignoreFieldsParam = this.flags.ignorefields as string;
     const upsert = this.flags.upsert || false;
     const dry = this.flags.dry || false;
     let diff = this.flags.diff || true;
 
-    const match = this.flags.ignorefields?.match(/(?<appendMode>[+-])?\s*(?<fieldsToIgnore>.*)/);
+    const match = ignoreFieldsParam?.match(/(?<appendMode>[+-])?\s*(?<fieldsToIgnore>.*)/);
     const { appendMode, fieldsToIgnore } = match?.groups ?? {};
     let ignoreFields: string[];
     if (fieldsToIgnore) {
@@ -209,7 +167,7 @@ export default class Push extends SfdxCommand {
       `
       SELECT EntityDefinition.QualifiedApiName, QualifiedApiName, DataType
       FROM FieldDefinition
-      WHERE EntityDefinition.QualifiedApiName IN ('${this.flags.sobjecttype}')
+      WHERE EntityDefinition.QualifiedApiName IN ('${this.flags.sobjecttype as string}')
       ORDER BY QualifiedApiName
     `,
       { autoFetch: true, maxFetch: 50000 },
@@ -260,12 +218,10 @@ export default class Push extends SfdxCommand {
       throw new SfdxError(`Failed because at least one ${extId} (duplicate or empty)`);
     }
 
-    while (true) {
-      const batch = records.slice(batchSize * currentBatch, batchSize * (currentBatch + 1));
+    let currentBatch = 0;
+    let batch = records.slice(batchSize * currentBatch, batchSize * (currentBatch + 1));
+    while (batch.length > 0) {
       this.ux.log(`batch#${currentBatch} size: ${batch.length}`);
-      if (batch.length === 0) {
-        break;
-      }
       const ids: string[] = [];
       let extId2OldOrgValues: { [key: string]: SalesforceEntity } = {};
 
@@ -296,7 +252,7 @@ export default class Push extends SfdxCommand {
           if (idReplaceFields.includes(k)) {
             for (const [key, v] of Object.entries(idmap)) {
               const olds = s;
-              s = olds.replaceAll(key, v as string);
+              s = olds.replaceAll(key, v);
               if (olds !== s) {
                 this.ux.log(`CONTENT: ${key} => ${v}`);
               }
@@ -370,55 +326,20 @@ ${objects}
       }
 
       if (!dry) {
-        const exec = new ExecuteService(conn);
-        const execAnonOptions = Object.assign({}, { apexCode: script });
-        const result = await exec.executeAnonymous(execAnonOptions);
-
-        if (!result.success) {
+        const { ok: execOk, output: execOutput } = await this.executeScript(conn, script);
+        if (!execOk) {
           ok = false;
-          const out = this.formatDefault(result);
-          this.ux.log(out);
-          output += `${out}\n`;
-          this.ux.log('Executed Script START');
-          this.ux.log(script);
-          this.ux.log('Executed Script END');
-          output += `${out}\n`;
         }
+        output += execOutput;
       } else {
         this.ux.log('No Data Updated, because running in DRY mode');
       }
 
-      // Query back Ids
-      const newIds = await this.getIds(conn, sType, extId, ids);
-      batch.forEach((rWithCase) => {
-        const r = keysToLowerCase(rWithCase);
-        let changeType: string;
-        let oldOrgValue: SalesforceEntity = {};
-        if (diff) {
-          oldOrgValue = extId2OldOrgValues[r[extId]];
-          changeType = this.hasChanges(idmap, ignoreFields, extId, oldOrgValue, r);
-        } else {
-          changeType = '';
-        }
-
-        if (r['id'] && newIds[r[extId]]) {
-          this.ux.log(`${r['id']} => ${newIds[r[extId]]} <${changeType}>`);
-          if (r['id'] !== newIds[r[extId]]) {
-            idmap[r['id']] = newIds[r[extId]];
-          }
-        } else {
-          this.ux.log(
-            `${r['id'] ? r['id'] : 'MISSING'} => ${
-              newIds[r[extId]] ? newIds[r[extId]] : '??????????????????'
-            } <${changeType}>`,
-          );
-        }
-        if (diff) {
-          this.printChanges(idmap, ignoreFields, extId, oldOrgValue, r);
-        }
-      });
+      idmap = await this.updateIds(conn, batch, diff, sType, extId, ids, ignoreFields, extId2OldOrgValues, idmap);
 
       currentBatch++;
+      // next batch
+      batch = records.slice(batchSize * currentBatch, batchSize * (currentBatch + 1));
     }
 
     // TODO: upload idmap to salesforce!
@@ -473,7 +394,7 @@ ${objects}
     extId: string,
     oldObj: SalesforceEntity,
     obj: SalesforceEntity,
-  ) {
+  ): void {
     for (const k of Object.keys(obj)) {
       if (k === 'id') {
         continue;
@@ -565,7 +486,7 @@ ${objects}
     return result;
   }
 
-  private formatDefault(response: ExecuteAnonymousResponse) {
+  private formatDefault(response: ExecuteAnonymousResponse): string {
     let outputText = '';
     if (response.success) {
       outputText += 'SUCCESS\n';
@@ -585,5 +506,67 @@ ${objects}
       }
     }
     return outputText;
+  }
+
+  private async executeScript(conn: Connection, script: string): Promise<ExecuteScriptResult> {
+    const exec = new ExecuteService(conn);
+    const execAnonOptions = Object.assign({}, { apexCode: script });
+    const result = await exec.executeAnonymous(execAnonOptions);
+    let ok = true;
+    let output = '';
+    if (!result.success) {
+      ok = false;
+      const out = this.formatDefault(result);
+      this.ux.log(out);
+      output += `${out}\n`;
+      this.ux.log('Executed Script START');
+      this.ux.log(script);
+      this.ux.log('Executed Script END');
+      output += `${out}\n`;
+    }
+    return { ok, output };
+  }
+
+  private async updateIds(
+    conn: Connection,
+    batch: SalesforceEntity[],
+    diff: boolean,
+    sType: string,
+    extId: string,
+    ids: string[],
+    ignoreFields: string[],
+    extId2OldOrgValues: { [key: string]: SalesforceEntity },
+    idmap: IdMap,
+  ): Promise<IdMap> {
+    // Query back Ids
+    const newIds = await this.getIds(conn, sType, extId, ids);
+    batch.forEach((rWithCase) => {
+      const r = keysToLowerCase(rWithCase);
+      let changeType: string;
+      let oldOrgValue: SalesforceEntity = {};
+      if (diff) {
+        oldOrgValue = extId2OldOrgValues[r[extId]];
+        changeType = this.hasChanges(idmap, ignoreFields, extId, oldOrgValue, r);
+      } else {
+        changeType = '';
+      }
+
+      if (r['id'] && newIds[r[extId]]) {
+        this.ux.log(`${r['id']} => ${newIds[r[extId]]} <${changeType}>`);
+        if (r['id'] !== newIds[r[extId]]) {
+          idmap[r['id']] = newIds[r[extId]];
+        }
+      } else {
+        this.ux.log(
+          `${r['id'] ? r['id'] : 'MISSING'} => ${
+            newIds[r[extId]] ? newIds[r[extId]] : '??????????????????'
+          } <${changeType}>`,
+        );
+      }
+      if (diff) {
+        this.printChanges(idmap, ignoreFields, extId, oldOrgValue, r);
+      }
+    });
+    return idmap;
   }
 }

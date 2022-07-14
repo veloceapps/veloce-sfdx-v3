@@ -6,13 +6,24 @@
  */
 import { existsSync, createWriteStream } from 'node:fs';
 import * as os from 'os';
+import { WriteStream } from 'fs';
 import { flags, SfdxCommand } from '@salesforce/command';
 import { Connection, Messages } from '@salesforce/core';
 import { AnyJson } from '@salesforce/ts-types';
 import { EntityDefinition } from '../../../types/entityDefinition';
 import { SalesforceEntity } from '../../../types/salesforceEntity';
+//
+type CsvWriterPipeFunction = (stream: WriteStream) => void;
+type CsvWriterEndFunction = () => void;
+type CsvWriterWriteFunction = (o: Record<string, unknown>) => void;
+interface CsvWriter {
+  pipe: CsvWriterPipeFunction;
+  end: CsvWriterEndFunction;
+  write: CsvWriterWriteFunction;
+}
 
-const csvWriter = require('csv-write-stream');
+type CsvWriterFunction = (opts: Record<string, unknown>) => CsvWriter;
+const csvWriter: CsvWriterFunction = require('csv-write-stream'); // eslint-disable-line
 
 // Initialize Messages with the current plugin directory
 Messages.importMessagesDirectory(__dirname);
@@ -84,36 +95,6 @@ export default class Pull extends SfdxCommand {
   // Set this to true if your command requires a project workspace; 'requiresProject' is false by default
   protected static requiresProject = false;
 
-  private async getFields(conn: Connection, ignoreFields: string[]): Promise<FieldsResult> {
-    const fields = [];
-    const lookupFields = [];
-
-    const fieldsResult = await conn.autoFetchQuery<EntityDefinition>(
-      `
-SELECT EntityDefinition.QualifiedApiName, QualifiedApiName, DataType
-FROM FieldDefinition
-WHERE EntityDefinition.QualifiedApiName IN ('${this.flags.sobjecttype}') ORDER BY QualifiedApiName
-    `,
-      { autoFetch: true, maxFetch: 50000 },
-    );
-
-    for (const f of fieldsResult.records) {
-      const apiName = f.QualifiedApiName;
-      const datatype = f.DataType;
-      if (datatype.includes('Formula') || ignoreFields.includes(apiName)) {
-        continue;
-      }
-      if (datatype.includes('Lookup')) {
-        lookupFields.push(apiName);
-      }
-      fields.push(apiName);
-    }
-    return {
-      fields,
-      lookupFields,
-    };
-  }
-
   public async run(): Promise<AnyJson> {
     if (!this.org) {
       return Promise.reject('Org is not defined');
@@ -123,11 +104,14 @@ WHERE EntityDefinition.QualifiedApiName IN ('${this.flags.sobjecttype}') ORDER B
     }
     const conn = this.org.getConnection();
 
-    const idReplaceFields = this.flags.idreplacefields ? this.flags.idreplacefields.split(',') : [];
-    const { ignorefields } = this.flags;
-    let ignoreFields;
-    const match = ignorefields?.match(/(?<appendMode>[+-])?\s*(?<fieldsToIgnore>.*)/);
+    const idReplaceFieldsFlag = this.flags.idreplacefields as string;
+    const ignoreFieldsFlag = this.flags.ignorefields as string;
+
+    const idReplaceFields = idReplaceFieldsFlag ? idReplaceFieldsFlag?.split(',') : [];
+
+    const match = ignoreFieldsFlag?.match(/(?<appendMode>[+-])?\s*(?<fieldsToIgnore>.*)/);
     const { appendMode, fieldsToIgnore } = match?.groups ?? {};
+    let ignoreFields = [];
     if (fieldsToIgnore) {
       const fieldsArray = fieldsToIgnore?.split(',');
       switch (appendMode) {
@@ -172,9 +156,11 @@ WHERE EntityDefinition.QualifiedApiName IN ('${this.flags.sobjecttype}') ORDER B
     const { fields, lookupFields } = await this.getFields(conn, ignoreFields);
     let query;
     if (this.flags.where) {
-      query = `SELECT ${fields.join(',')} FROM ${this.flags.sobjecttype} WHERE ${this.flags.where} ORDER BY Name,Id`;
+      query = `SELECT ${fields.join(',')} FROM ${this.flags.sobjecttype as string} WHERE ${
+        this.flags.where as string
+      } ORDER BY Name,Id`;
     } else {
-      query = `SELECT ${fields.join(',')} FROM ${this.flags.sobjecttype} ORDER BY Name,Id`;
+      query = `SELECT ${fields.join(',')} FROM ${this.flags.sobjecttype as string} ORDER BY Name,Id`;
     }
 
     const result = await conn.autoFetchQuery<SalesforceEntity>(query, { autoFetch: true, maxFetch: 100000 });
@@ -196,7 +182,7 @@ WHERE EntityDefinition.QualifiedApiName IN ('${this.flags.sobjecttype}') ORDER B
             let s = value ? value.toString() : '';
             for (const [k, v] of Object.entries(reverseIdmap)) {
               const olds = s;
-              s = olds.replaceAll(k, v as string);
+              s = olds.replaceAll(k, v);
               if (olds !== s) {
                 this.ux.log(`CONTENT: ${k} => ${v}`);
               }
@@ -211,5 +197,35 @@ WHERE EntityDefinition.QualifiedApiName IN ('${this.flags.sobjecttype}') ORDER B
     writer.end();
     // Return an object to be displayed with --json
     return {};
+  }
+
+  private async getFields(conn: Connection, ignoreFields: string[]): Promise<FieldsResult> {
+    const fields = [];
+    const lookupFields = [];
+
+    const fieldsResult = await conn.autoFetchQuery<EntityDefinition>(
+      `
+SELECT EntityDefinition.QualifiedApiName, QualifiedApiName, DataType
+FROM FieldDefinition
+WHERE EntityDefinition.QualifiedApiName IN ('${this.flags.sobjecttype as string}') ORDER BY QualifiedApiName
+    `,
+      { autoFetch: true, maxFetch: 50000 },
+    );
+
+    for (const f of fieldsResult.records) {
+      const apiName = f.QualifiedApiName;
+      const datatype = f.DataType;
+      if (datatype.includes('Formula') || ignoreFields.includes(apiName)) {
+        continue;
+      }
+      if (datatype.includes('Lookup')) {
+        lookupFields.push(apiName);
+      }
+      fields.push(apiName);
+    }
+    return {
+      fields,
+      lookupFields,
+    };
   }
 }
