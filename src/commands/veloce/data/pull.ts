@@ -57,6 +57,7 @@ export default class Pull extends SfdxCommand {
     'LastReferencedDate',
     'UserRecordAccessId',
     'OwnerId',
+    'VELOCPQ__LatestVersion__c',
   ];
 
   protected static flagsConfig = {
@@ -136,7 +137,6 @@ export default class Pull extends SfdxCommand {
     for (const [key, value] of Object.entries(idmap)) {
       reverseIdmap[value] = key;
     }
-
     const writer = csvWriter({
       separator: ',',
       newline: '\n',
@@ -144,7 +144,7 @@ export default class Pull extends SfdxCommand {
       sendHeaders: true,
       bom: true,
     });
-    writer.pipe(createWriteStream(this.flags.file, { flags: 'w+' }));
+    writer.pipe(createWriteStream(this.flags.sourcepath as string, { flags: 'w+' }));
 
     const { fields, lookupFields } = await this.getFields(conn, ignoreFields);
     let query;

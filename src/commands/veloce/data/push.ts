@@ -17,6 +17,7 @@ import { ExecuteAnonymousResponse } from '@salesforce/apex-node/lib/src/execute/
 import { IdMap } from '../../../types/idmap';
 import { SalesforceEntity } from '../../../types/salesforceEntity';
 import { keysToLowerCase, validSFID } from '../../../utils/common.utils';
+import { loadIdMap, saveIdMap } from '../../../common/idmap';
 
 // Initialize Messages with the current plugin directory
 Messages.importMessagesDirectory(__dirname);
@@ -153,14 +154,7 @@ export default class Push extends SfdxCommand {
     const numericfields = [];
 
     const fileContent = readFileSync(this.flags.sourcepath);
-    let idmap: IdMap = {};
-    // TODO: add idmap read support
-    // try {
-    //   idmap = JSON.parse(readFileSync(this.flags.idmap).toString())
-    // } catch (err) {
-    //   this.ux.log(`Failed to load ID-Map file: ${this.flags.idmap} will create new file at the end`)
-    //   idmap = {}
-    // }
+    let idmap = await loadIdMap(conn);
 
     // retrieve types of args
     const fieldsResult = await conn.autoFetchQuery<SalesforceEntity>(
@@ -342,12 +336,11 @@ ${objects}
       batch = records.slice(batchSize * currentBatch, batchSize * (currentBatch + 1));
     }
 
-    // TODO: upload idmap to salesforce!
-    // if (!dry) {
-    //   writeFileSync(this.flags.idmap, JSON.stringify(idmap, null, 2), {flag: 'w+'})
-    // } else {
-    //   this.ux.log(`Skipping write to idmap file because in dry mode: ${this.flags.idmap}`)
-    // }
+    if (!dry) {
+      await saveIdMap(conn, idmap);
+    } else {
+      this.ux.log(`Skipping saving ID-MAP because in dry mode`);
+    }
 
     if (!ok) {
       throw new SfdxError(output, 'ApexError');
