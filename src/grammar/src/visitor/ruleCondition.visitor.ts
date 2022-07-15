@@ -14,10 +14,10 @@ export class RuleConditionVisitor extends ParseTreeVisitor {
         break;
       }
       case RulesParser.RULE_filterExpression: {
-        if (ctx.children?.[0].text) {
-          this.condition.objectType = RuleObjectTypes[ctx.children?.[0].text];
+        if (ctx.children?.[0]?.text) {
+          this.condition.objectType = RuleObjectTypes[ctx.children?.[0]?.text];
         }
-        const expression = ctx.children?.[2].text;
+        const expression = ctx.children?.[2]?.text;
         if (expression !== ')') {
           this.condition.expression = expression;
         }

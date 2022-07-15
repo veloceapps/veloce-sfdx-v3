@@ -12,46 +12,46 @@ export class RuleActionVisitor extends ParseTreeVisitor {
     switch (ctx.ruleIndex) {
       case RulesParser.RULE_setPropertyAction:
       case RulesParser.RULE_setFieldAction: {
-        this.setProperty('variableName', ctx.children?.[0].text);
-        this.action.action = this.getActionName(ctx.children?.[2].text);
-        this.setProperty('targetFieldName', ctx.children?.[4].text);
-        this.setValue(ctx.children?.[6].text);
+        this.setProperty('variableName', ctx.children?.[0]?.text);
+        this.action.action = this.getActionName(ctx.children?.[2]?.text);
+        this.setProperty('targetFieldName', ctx.children?.[4]?.text);
+        this.setValue(ctx.children?.[6]?.text);
 
         super.visit(ctx);
         break;
       }
       case RulesParser.RULE_addMessageAction: {
-        this.setProperty('variableName', ctx.children?.[0].text);
-        this.action.action = this.getActionName(ctx.children?.[2].text);
-        this.setValue(ctx.children?.[4].text);
+        this.setProperty('variableName', ctx.children?.[0]?.text);
+        this.action.action = this.getActionName(ctx.children?.[2]?.text);
+        this.setValue(ctx.children?.[4]?.text);
         super.visit(ctx);
         break;
       }
       case RulesParser.RULE_setStartDateAction:
       case RulesParser.RULE_setEndDateAction:
       case RulesParser.RULE_setEffectiveDateAction: {
-        this.setProperty('variableName', ctx.children?.[0].text);
-        this.action.action = this.getActionName(ctx.children?.[2].text);
-        this.setValue(ctx.children?.[4].text);
+        this.setProperty('variableName', ctx.children?.[0]?.text);
+        this.action.action = this.getActionName(ctx.children?.[2]?.text);
+        this.setValue(ctx.children?.[4]?.text);
         super.visit(ctx);
         break;
       }
       case RulesParser.RULE_adjustCostAction:
       case RulesParser.RULE_adjustPriceAction:
       case RulesParser.RULE_adjustListPriceAction: {
-        this.setProperty('variableName', ctx.children?.[0].text);
-        this.action.action = this.getActionName(ctx.children?.[2].text);
-        this.setProperty('type', ctx.children?.[4].text);
-        this.setValue(ctx.children?.[6].text);
-        this.setProperty('explanation', ctx.children?.[8].text);
+        this.setProperty('variableName', ctx.children?.[0]?.text);
+        this.action.action = this.getActionName(ctx.children?.[2]?.text);
+        this.setProperty('type', ctx.children?.[4]?.text);
+        this.setValue(ctx.children?.[6]?.text);
+        this.setProperty('explanation', ctx.children?.[8]?.text);
         super.visit(ctx);
         break;
       }
       case RulesParser.RULE_setMetricAction: {
-        this.action.action = this.getActionName(ctx.children?.[2].text);
-        this.setProperty('targetFieldName', ctx.children?.[4].text);
-        this.setValue(ctx.children?.[6].text);
-        this.setProperty('totalMetricName', ctx.children?.[8].text);
+        this.action.action = this.getActionName(ctx.children?.[2]?.text);
+        this.setProperty('targetFieldName', ctx.children?.[4]?.text);
+        this.setValue(ctx.children?.[6]?.text);
+        this.setProperty('totalMetricName', ctx.children?.[8]?.text);
         this.action.isCalculateTotalMetric = !!this.action.totalMetricName;
         super.visit(ctx);
         break;

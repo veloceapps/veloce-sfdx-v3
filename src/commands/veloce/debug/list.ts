@@ -51,7 +51,7 @@ export default class Org extends DebugSfdxCommand {
     const backendUrl: string | undefined = debugSession.backendUrl;
 
     try {
-      const result = await axios.post(
+      const result = await axios.post<string[]>(
         `${backendUrl}/services/dev-override/list`,
         {},
         {
