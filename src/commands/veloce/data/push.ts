@@ -339,7 +339,7 @@ ${objects}
     if (!dry) {
       await saveIdMap(conn, idmap);
     } else {
-      this.ux.log(`Skipping saving ID-MAP because in dry mode`);
+      this.ux.log('Skipping saving ID-MAP because in dry mode');
     }
 
     if (!ok) {
