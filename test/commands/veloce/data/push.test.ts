@@ -1,9 +1,9 @@
-//import { promisify } from 'node:util';
-//import { exec as plainExec } from 'node:child_process';
+// import { promisify } from 'node:util';
+// import { exec as plainExec } from 'node:child_process';
 
 // import { writeFileSync } from 'node:fs'
 
-//const exec = promisify(plainExec);
+// const exec = promisify(plainExec);
 
 describe('veloce:data:push', () => {
   it('should push veloce data to org', async () => {
