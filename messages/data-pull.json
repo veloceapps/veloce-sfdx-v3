@@ -1,8 +1,12 @@
 {
   "commandDescription": "Retrieves data from Salesforce org and stores it in provided folder as CSVs",
-  "sourcepathFlagDescription": "Path where to store data",
+  "sourcepathFlagDescription": "Path to file where to store data",
   "noprojectFlagDescription": "Bypass check of sfdx-project.json to exist",
   "examples": [
     "sfdx veloce:data:pull --targetusername myOrg@example.com --targetdevhubusername devhub@org.com --sourcepath ./source/templates"
-  ]
+  ],
+  "whereFlagDescription": "where condition to filter sObjects by",
+  "sobjecttypeFlagDescription": "The sObject type of the records you want to dump.",
+  "ignoreFieldsFlagDescription": "Coma separated list of fields to ignore during dump. To append to the default list of ignored fields add + in the front.",
+  "idreplacefieldsFlagDescription": "Coma separated list of fields in which SF IDs are replaces by mapped Ids by using text search and replace"
 }

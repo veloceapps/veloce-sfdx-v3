@@ -13,15 +13,15 @@ Extension to sfdx which allows veloce specific data pull and push
 
 - [veloce](#veloce)
   <!-- tocstop -->
-          <!-- install -->
-          <!-- usage -->
+                  <!-- install -->
+                  <!-- usage -->
 
 ```sh-session
 $ npm install -g veloce-sfdx-v3
 $ sfdx COMMAND
 running command...
 $ sfdx (-v|--version|version)
-veloce-sfdx-v3/0.0.7 darwin-x64 node-v16.15.1
+veloce-sfdx-v3/0.0.8 darwin-x64 node-v16.15.1
 $ sfdx --help [COMMAND]
 USAGE
   $ sfdx COMMAND
@@ -31,13 +31,13 @@ USAGE
 <!-- usagestop -->
 <!-- commands -->
 
-- [`sfdx veloce:data:pull [-p <string>] [-P] [-v <string>] [-u <string>] [--apiversion <string>] [--json] [--loglevel trace|debug|info|warn|error|fatal|TRACE|DEBUG|INFO|WARN|ERROR|FATAL]`](#sfdx-velocedatapull--p-string--p--v-string--u-string---apiversion-string---json---loglevel-tracedebuginfowarnerrorfataltracedebuginfowarnerrorfatal)
-- [`sfdx veloce:data:push [-p <string>] [-P] [-v <string>] [-u <string>] [--apiversion <string>] [--json] [--loglevel trace|debug|info|warn|error|fatal|TRACE|DEBUG|INFO|WARN|ERROR|FATAL]`](#sfdx-velocedatapush--p-string--p--v-string--u-string---apiversion-string---json---loglevel-tracedebuginfowarnerrorfataltracedebuginfowarnerrorfatal)
+- [`sfdx veloce:data:pull -s <string> -p <string> [-w <string>] [-o <string>] [-R <string>] [-v <string>] [-u <string>] [--apiversion <string>] [--json] [--loglevel trace|debug|info|warn|error|fatal|TRACE|DEBUG|INFO|WARN|ERROR|FATAL]`](#sfdx-velocedatapull--s-string--p-string--w-string--o-string--r-string--v-string--u-string---apiversion-string---json---loglevel-tracedebuginfowarnerrorfataltracedebuginfowarnerrorfatal)
+- [`sfdx veloce:data:push -s <string> [-p <string>] [-P] [-e <string>] [-R <string>] [-P] [-U] [-d] [-D] [-o <string>] [-b <string>] [-v <string>] [-u <string>] [--apiversion <string>] [--json] [--loglevel trace|debug|info|warn|error|fatal|TRACE|DEBUG|INFO|WARN|ERROR|FATAL]`](#sfdx-velocedatapush--s-string--p-string--p--e-string--r-string--p--u--d--d--o-string--b-string--v-string--u-string---apiversion-string---json---loglevel-tracedebuginfowarnerrorfataltracedebuginfowarnerrorfatal)
 - [`sfdx veloce:debug:list [-P] [-v <string>] [-u <string>] [--apiversion <string>] [--json] [--loglevel trace|debug|info|warn|error|fatal|TRACE|DEBUG|INFO|WARN|ERROR|FATAL]`](#sfdx-velocedebuglist--p--v-string--u-string---apiversion-string---json---loglevel-tracedebuginfowarnerrorfataltracedebuginfowarnerrorfatal)
 - [`sfdx veloce:debug:logs [-P] [-v <string>] [-u <string>] [--apiversion <string>] [--json] [--loglevel trace|debug|info|warn|error|fatal|TRACE|DEBUG|INFO|WARN|ERROR|FATAL]`](#sfdx-velocedebuglogs--p--v-string--u-string---apiversion-string---json---loglevel-tracedebuginfowarnerrorfataltracedebuginfowarnerrorfatal)
 - [`sfdx veloce:debug:push -m <string> [-p <string>] [-P] [-v <string>] [-u <string>] [--apiversion <string>] [--json] [--loglevel trace|debug|info|warn|error|fatal|TRACE|DEBUG|INFO|WARN|ERROR|FATAL]`](#sfdx-velocedebugpush--m-string--p-string--p--v-string--u-string---apiversion-string---json---loglevel-tracedebuginfowarnerrorfataltracedebuginfowarnerrorfatal)
 - [`sfdx veloce:debug:start [-P] [-u <string>] [--apiversion <string>] [--json] [--loglevel trace|debug|info|warn|error|fatal|TRACE|DEBUG|INFO|WARN|ERROR|FATAL]`](#sfdx-velocedebugstart--p--u-string---apiversion-string---json---loglevel-tracedebuginfowarnerrorfataltracedebuginfowarnerrorfatal)
-- [`sfdx veloce:debug:stop [-P] [-v <string>] [-u <string>] [--apiversion <string>] [--json] [--loglevel trace|debug|info|warn|error|fatal|TRACE|DEBUG|INFO|WARN|ERROR|FATAL]`](#sfdx-velocedebugstop--p--v-string--u-string---apiversion-string---json---loglevel-tracedebuginfowarnerrorfataltracedebuginfowarnerrorfatal)
+- [`sfdx veloce:debug:stop [-P] [--dev-token <string>] [-v <string>] [-u <string>] [--apiversion <string>] [--json] [--loglevel trace|debug|info|warn|error|fatal|TRACE|DEBUG|INFO|WARN|ERROR|FATAL]`](#sfdx-velocedebugstop--p---dev-token-string--v-string--u-string---apiversion-string---json---loglevel-tracedebuginfowarnerrorfataltracedebuginfowarnerrorfatal)
 - [`sfdx veloce:debug:watch [-p <string>] [-P] [-v <string>] [-u <string>] [--apiversion <string>] [--json] [--loglevel trace|debug|info|warn|error|fatal|TRACE|DEBUG|INFO|WARN|ERROR|FATAL]`](#sfdx-velocedebugwatch--p-string--p--v-string--u-string---apiversion-string---json---loglevel-tracedebuginfowarnerrorfataltracedebuginfowarnerrorfatal)
 - [`sfdx veloce:fixref [-d] [-u <string>] [--apiversion <string>] [--json] [--loglevel trace|debug|info|warn|error|fatal|TRACE|DEBUG|INFO|WARN|ERROR|FATAL]`](#sfdx-velocefixref--d--u-string---apiversion-string---json---loglevel-tracedebuginfowarnerrorfataltracedebuginfowarnerrorfatal)
 - [`sfdx veloce:login -p <string> -a <string> -u <string> -r <string> [-s <string>] [--json] [--loglevel trace|debug|info|warn|error|fatal|TRACE|DEBUG|INFO|WARN|ERROR|FATAL]`](#sfdx-velocelogin--p-string--a-string--u-string--r-string--s-string---json---loglevel-tracedebuginfowarnerrorfataltracedebuginfowarnerrorfatal)
@@ -45,26 +45,39 @@ USAGE
 - [`sfdx veloce:source:pull [-m <string>] [-p <string>] [-P] [-v <string>] [-u <string>] [--apiversion <string>] [--json] [--loglevel trace|debug|info|warn|error|fatal|TRACE|DEBUG|INFO|WARN|ERROR|FATAL]`](#sfdx-velocesourcepull--m-string--p-string--p--v-string--u-string---apiversion-string---json---loglevel-tracedebuginfowarnerrorfataltracedebuginfowarnerrorfatal)
 - [`sfdx veloce:source:push [-m <string>] [-p <string>] [-P] [-d] [-v <string>] [-u <string>] [--apiversion <string>] [--json] [--loglevel trace|debug|info|warn|error|fatal|TRACE|DEBUG|INFO|WARN|ERROR|FATAL]`](#sfdx-velocesourcepush--m-string--p-string--p--d--v-string--u-string---apiversion-string---json---loglevel-tracedebuginfowarnerrorfataltracedebuginfowarnerrorfatal)
 
-## `sfdx veloce:data:pull [-p <string>] [-P] [-v <string>] [-u <string>] [--apiversion <string>] [--json] [--loglevel trace|debug|info|warn|error|fatal|TRACE|DEBUG|INFO|WARN|ERROR|FATAL]`
+## `sfdx veloce:data:pull -s <string> -p <string> [-w <string>] [-o <string>] [-R <string>] [-v <string>] [-u <string>] [--apiversion <string>] [--json] [--loglevel trace|debug|info|warn|error|fatal|TRACE|DEBUG|INFO|WARN|ERROR|FATAL]`
 
 Retrieves data from Salesforce org and stores it in provided folder as CSVs
 
 ```
 USAGE
-  $ sfdx veloce:data:pull [-p <string>] [-P] [-v <string>] [-u <string>] [--apiversion <string>] [--json] [--loglevel
-  trace|debug|info|warn|error|fatal|TRACE|DEBUG|INFO|WARN|ERROR|FATAL]
+  $ sfdx veloce:data:pull -s <string> -p <string> [-w <string>] [-o <string>] [-R <string>] [-v <string>] [-u <string>]
+  [--apiversion <string>] [--json] [--loglevel trace|debug|info|warn|error|fatal|TRACE|DEBUG|INFO|WARN|ERROR|FATAL]
 
 OPTIONS
-  -P, --noproject                                                                   Bypass check of sfdx-project.json to
-                                                                                    exist
+  -R, --idreplacefields=idreplacefields                                             Coma separated list of fields in
+                                                                                    which SF IDs are replaces by mapped
+                                                                                    Ids by using text search and replace
 
-  -p, --sourcepath=sourcepath                                                       Path where to store data
+  -o, --ignorefields=ignorefields                                                   Coma separated list of fields to
+                                                                                    ignore during dump. To append to the
+                                                                                    default list of ignored fields add +
+                                                                                    in the front.
+
+  -p, --sourcepath=sourcepath                                                       (required) Path to file where to
+                                                                                    store data
+
+  -s, --sobjecttype=sobjecttype                                                     (required) The sObject type of the
+                                                                                    records you want to dump.
 
   -u, --targetusername=targetusername                                               username or alias for the target
                                                                                     org; overrides default target org
 
   -v, --targetdevhubusername=targetdevhubusername                                   username or alias for the dev hub
                                                                                     org; overrides default dev hub org
+
+  -w, --where=where                                                                 where condition to filter sObjects
+                                                                                    by
 
   --apiversion=apiversion                                                           override the api version used for
                                                                                     api requests made by this command
@@ -79,22 +92,53 @@ EXAMPLE
   ./source/templates
 ```
 
-_See code: [src/commands/veloce/data/pull.ts](https://github.com/veloceapps/veloce-sfdx-v3/blob/v0.0.7/src/commands/veloce/data/pull.ts)_
+_See code: [src/commands/veloce/data/pull.ts](https://github.com/veloceapps/veloce-sfdx-v3/blob/v0.0.8/src/commands/veloce/data/pull.ts)_
 
-## `sfdx veloce:data:push [-p <string>] [-P] [-v <string>] [-u <string>] [--apiversion <string>] [--json] [--loglevel trace|debug|info|warn|error|fatal|TRACE|DEBUG|INFO|WARN|ERROR|FATAL]`
+## `sfdx veloce:data:push -s <string> [-p <string>] [-P] [-e <string>] [-R <string>] [-P] [-U] [-d] [-D] [-o <string>] [-b <string>] [-v <string>] [-u <string>] [--apiversion <string>] [--json] [--loglevel trace|debug|info|warn|error|fatal|TRACE|DEBUG|INFO|WARN|ERROR|FATAL]`
 
 Uploads Data from CSVs to Salesforce org
 
 ```
 USAGE
-  $ sfdx veloce:data:push [-p <string>] [-P] [-v <string>] [-u <string>] [--apiversion <string>] [--json] [--loglevel
+  $ sfdx veloce:data:push -s <string> [-p <string>] [-P] [-e <string>] [-R <string>] [-P] [-U] [-d] [-D] [-o <string>]
+  [-b <string>] [-v <string>] [-u <string>] [--apiversion <string>] [--json] [--loglevel
   trace|debug|info|warn|error|fatal|TRACE|DEBUG|INFO|WARN|ERROR|FATAL]
 
 OPTIONS
+  -D, --diff                                                                        Force diff mode ON, it will show
+                                                                                    differences for each record which is
+                                                                                    upserted/inserted. Default: ON if <
+                                                                                    128 records and off otherwise.
+
   -P, --noproject                                                                   Bypass check of sfdx-project.json to
                                                                                     exist
 
+  -P, --printids                                                                    Print External ID before attempting
+                                                                                    to update
+
+  -R, --idreplacefields=idreplacefields                                             Coma separated list of fields in
+                                                                                    which SF IDs are replaces by mapped
+                                                                                    Ids by using text search and replace
+
+  -U, --upsert                                                                      Should use APEX upsert (could insert
+                                                                                    extra records) or update-only APEX
+                                                                                    (one by one), which is default
+
+  -b, --batch=batch                                                                 Size of batch, to avoid getting
+                                                                                    'script is too large'
+
+  -d, --dry                                                                         Dont change data, just run in dry
+                                                                                    mode
+
+  -e, --externalid=externalid                                                       The column name of the external ID.
+
+  -o, --ignorefields=ignorefields                                                   Coma separated list of fields to
+                                                                                    ignore during load
+
   -p, --sourcepath=sourcepath                                                       Path where to get data
+
+  -s, --sobjecttype=sobjecttype                                                     (required) The sObject type of the
+                                                                                    records you want to upsert.
 
   -u, --targetusername=targetusername                                               username or alias for the target
                                                                                     org; overrides default target org
@@ -115,7 +159,7 @@ EXAMPLE
   --sourcepath ./source/templates
 ```
 
-_See code: [src/commands/veloce/data/push.ts](https://github.com/veloceapps/veloce-sfdx-v3/blob/v0.0.7/src/commands/veloce/data/push.ts)_
+_See code: [src/commands/veloce/data/push.ts](https://github.com/veloceapps/veloce-sfdx-v3/blob/v0.0.8/src/commands/veloce/data/push.ts)_
 
 ## `sfdx veloce:debug:list [-P] [-v <string>] [-u <string>] [--apiversion <string>] [--json] [--loglevel trace|debug|info|warn|error|fatal|TRACE|DEBUG|INFO|WARN|ERROR|FATAL]`
 
@@ -148,7 +192,7 @@ EXAMPLE
   sfdx veloce:debug:list --targetusername myOrg@example.com --targetdevhubusername devhub@org.com
 ```
 
-_See code: [src/commands/veloce/debug/list.ts](https://github.com/veloceapps/veloce-sfdx-v3/blob/v0.0.7/src/commands/veloce/debug/list.ts)_
+_See code: [src/commands/veloce/debug/list.ts](https://github.com/veloceapps/veloce-sfdx-v3/blob/v0.0.8/src/commands/veloce/debug/list.ts)_
 
 ## `sfdx veloce:debug:logs [-P] [-v <string>] [-u <string>] [--apiversion <string>] [--json] [--loglevel trace|debug|info|warn|error|fatal|TRACE|DEBUG|INFO|WARN|ERROR|FATAL]`
 
@@ -181,7 +225,7 @@ EXAMPLE
   sfdx veloce:debug:logs --targetusername myOrg@example.com --targetdevhubusername devhub@org.com
 ```
 
-_See code: [src/commands/veloce/debug/logs.ts](https://github.com/veloceapps/veloce-sfdx-v3/blob/v0.0.7/src/commands/veloce/debug/logs.ts)_
+_See code: [src/commands/veloce/debug/logs.ts](https://github.com/veloceapps/veloce-sfdx-v3/blob/v0.0.8/src/commands/veloce/debug/logs.ts)_
 
 ## `sfdx veloce:debug:push -m <string> [-p <string>] [-P] [-v <string>] [-u <string>] [--apiversion <string>] [--json] [--loglevel trace|debug|info|warn|error|fatal|TRACE|DEBUG|INFO|WARN|ERROR|FATAL]`
 
@@ -221,7 +265,7 @@ EXAMPLES
   model:name_of_my_model -p ./source/my-alternative-model-folder
 ```
 
-_See code: [src/commands/veloce/debug/push.ts](https://github.com/veloceapps/veloce-sfdx-v3/blob/v0.0.7/src/commands/veloce/debug/push.ts)_
+_See code: [src/commands/veloce/debug/push.ts](https://github.com/veloceapps/veloce-sfdx-v3/blob/v0.0.8/src/commands/veloce/debug/push.ts)_
 
 ## `sfdx veloce:debug:start [-P] [-u <string>] [--apiversion <string>] [--json] [--loglevel trace|debug|info|warn|error|fatal|TRACE|DEBUG|INFO|WARN|ERROR|FATAL]`
 
@@ -251,16 +295,16 @@ EXAMPLE
   sfdx veloce:debug:start --targetusername myOrg@example.com --targetdevhubusername devhub@org.com
 ```
 
-_See code: [src/commands/veloce/debug/start.ts](https://github.com/veloceapps/veloce-sfdx-v3/blob/v0.0.7/src/commands/veloce/debug/start.ts)_
+_See code: [src/commands/veloce/debug/start.ts](https://github.com/veloceapps/veloce-sfdx-v3/blob/v0.0.8/src/commands/veloce/debug/start.ts)_
 
-## `sfdx veloce:debug:stop [-P] [-v <string>] [-u <string>] [--apiversion <string>] [--json] [--loglevel trace|debug|info|warn|error|fatal|TRACE|DEBUG|INFO|WARN|ERROR|FATAL]`
+## `sfdx veloce:debug:stop [-P] [--dev-token <string>] [-v <string>] [-u <string>] [--apiversion <string>] [--json] [--loglevel trace|debug|info|warn|error|fatal|TRACE|DEBUG|INFO|WARN|ERROR|FATAL]`
 
 Stops debug session
 
 ```
 USAGE
-  $ sfdx veloce:debug:stop [-P] [-v <string>] [-u <string>] [--apiversion <string>] [--json] [--loglevel
-  trace|debug|info|warn|error|fatal|TRACE|DEBUG|INFO|WARN|ERROR|FATAL]
+  $ sfdx veloce:debug:stop [-P] [--dev-token <string>] [-v <string>] [-u <string>] [--apiversion <string>] [--json]
+  [--loglevel trace|debug|info|warn|error|fatal|TRACE|DEBUG|INFO|WARN|ERROR|FATAL]
 
 OPTIONS
   -P, --noproject                                                                   Bypass check of sfdx-project.json to
@@ -275,6 +319,8 @@ OPTIONS
   --apiversion=apiversion                                                           override the api version used for
                                                                                     api requests made by this command
 
+  --dev-token=dev-token                                                             Dev Session token
+
   --json                                                                            format output as json
 
   --loglevel=(trace|debug|info|warn|error|fatal|TRACE|DEBUG|INFO|WARN|ERROR|FATAL)  [default: warn] logging level for
@@ -284,7 +330,7 @@ EXAMPLE
   sfdx veloce:debug:stop --targetusername myOrg@example.com --targetdevhubusername devhub@org.com
 ```
 
-_See code: [src/commands/veloce/debug/stop.ts](https://github.com/veloceapps/veloce-sfdx-v3/blob/v0.0.7/src/commands/veloce/debug/stop.ts)_
+_See code: [src/commands/veloce/debug/stop.ts](https://github.com/veloceapps/veloce-sfdx-v3/blob/v0.0.8/src/commands/veloce/debug/stop.ts)_
 
 ## `sfdx veloce:debug:watch [-p <string>] [-P] [-v <string>] [-u <string>] [--apiversion <string>] [--json] [--loglevel trace|debug|info|warn|error|fatal|TRACE|DEBUG|INFO|WARN|ERROR|FATAL]`
 
@@ -320,7 +366,7 @@ EXAMPLE
   source/models
 ```
 
-_See code: [src/commands/veloce/debug/watch.ts](https://github.com/veloceapps/veloce-sfdx-v3/blob/v0.0.7/src/commands/veloce/debug/watch.ts)_
+_See code: [src/commands/veloce/debug/watch.ts](https://github.com/veloceapps/veloce-sfdx-v3/blob/v0.0.8/src/commands/veloce/debug/watch.ts)_
 
 ## `sfdx veloce:fixref [-d] [-u <string>] [--apiversion <string>] [--json] [--loglevel trace|debug|info|warn|error|fatal|TRACE|DEBUG|INFO|WARN|ERROR|FATAL]`
 
@@ -351,7 +397,7 @@ EXAMPLES
   sfdx veloce:fixref --targetusername myOrg@example.com --targetdevhubusername devhub@org.com
 ```
 
-_See code: [src/commands/veloce/fixref.ts](https://github.com/veloceapps/veloce-sfdx-v3/blob/v0.0.7/src/commands/veloce/fixref.ts)_
+_See code: [src/commands/veloce/fixref.ts](https://github.com/veloceapps/veloce-sfdx-v3/blob/v0.0.8/src/commands/veloce/fixref.ts)_
 
 ## `sfdx veloce:login -p <string> -a <string> -u <string> -r <string> [-s <string>] [--json] [--loglevel trace|debug|info|warn|error|fatal|TRACE|DEBUG|INFO|WARN|ERROR|FATAL]`
 
@@ -384,7 +430,7 @@ EXAMPLE
   $ sfdx veloce:login -u username -p ./PASSWORDFILE -a alias01
 ```
 
-_See code: [src/commands/veloce/login.ts](https://github.com/veloceapps/veloce-sfdx-v3/blob/v0.0.7/src/commands/veloce/login.ts)_
+_See code: [src/commands/veloce/login.ts](https://github.com/veloceapps/veloce-sfdx-v3/blob/v0.0.8/src/commands/veloce/login.ts)_
 
 ## `sfdx veloce:source:pack -m <string> [-p <string>] [--json] [--loglevel trace|debug|info|warn|error|fatal|TRACE|DEBUG|INFO|WARN|ERROR|FATAL]`
 
@@ -411,7 +457,7 @@ EXAMPLE
   --sourcepath ./source/pmls
 ```
 
-_See code: [src/commands/veloce/source/pack.ts](https://github.com/veloceapps/veloce-sfdx-v3/blob/v0.0.7/src/commands/veloce/source/pack.ts)_
+_See code: [src/commands/veloce/source/pack.ts](https://github.com/veloceapps/veloce-sfdx-v3/blob/v0.0.8/src/commands/veloce/source/pack.ts)_
 
 ## `sfdx veloce:source:pull [-m <string>] [-p <string>] [-P] [-v <string>] [-u <string>] [--apiversion <string>] [--json] [--loglevel trace|debug|info|warn|error|fatal|TRACE|DEBUG|INFO|WARN|ERROR|FATAL]`
 
@@ -450,7 +496,7 @@ EXAMPLE
   --sourcepath ./source/pmls
 ```
 
-_See code: [src/commands/veloce/source/pull.ts](https://github.com/veloceapps/veloce-sfdx-v3/blob/v0.0.7/src/commands/veloce/source/pull.ts)_
+_See code: [src/commands/veloce/source/pull.ts](https://github.com/veloceapps/veloce-sfdx-v3/blob/v0.0.8/src/commands/veloce/source/pull.ts)_
 
 ## `sfdx veloce:source:push [-m <string>] [-p <string>] [-P] [-d] [-v <string>] [-u <string>] [--apiversion <string>] [--json] [--loglevel trace|debug|info|warn|error|fatal|TRACE|DEBUG|INFO|WARN|ERROR|FATAL]`
 
@@ -491,6 +537,6 @@ EXAMPLE
   --sourcepath ./source/pmls
 ```
 
-_See code: [src/commands/veloce/source/push.ts](https://github.com/veloceapps/veloce-sfdx-v3/blob/v0.0.7/src/commands/veloce/source/push.ts)_
+_See code: [src/commands/veloce/source/push.ts](https://github.com/veloceapps/veloce-sfdx-v3/blob/v0.0.8/src/commands/veloce/source/push.ts)_
 
 <!-- commandsstop -->

@@ -24,15 +24,11 @@ describe('veloce:source:pull', () => {
     console.log(cmdResult.stdout);
   });
   it('should pull UI+PML sources from org', async () => {
-    const cmdResult = await exec(
-      'sfdx veloce:source:pull -u studio-dev -m model:OCTA,config-ui:OCTA -p /tmp/',
-    );
+    const cmdResult = await exec('sfdx veloce:source:pull -u studio-dev -m model:OCTA,config-ui:OCTA -p /tmp/');
     console.log(cmdResult.stdout);
   });
   it('should pull Configuration Settings sources from org', async () => {
-    const cmdResult = await exec(
-      'sfdx veloce:source:pull -u studio-dev -m config-settings -p /tmp/',
-    );
+    const cmdResult = await exec('sfdx veloce:source:pull -u studio-dev -m config-settings -p /tmp/');
     console.log(cmdResult.stdout);
   });
 });

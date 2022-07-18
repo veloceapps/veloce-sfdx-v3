@@ -51,13 +51,14 @@ export default class Org extends DebugSfdxCommand {
     const backendUrl: string | undefined = debugSession.backendUrl;
 
     try {
-      await axios.post(
+      const result = await axios.post<string[]>(
         `${backendUrl}/services/dev-override/list`,
         {},
         {
           headers,
         },
       );
+      console.log(result.data.join('\n'));
     } catch (error) {
       logError('Failed to list debug sessions', error);
       return {};

@@ -1,9 +1,9 @@
-import { promisify } from 'node:util';
-import { exec as plainExec } from 'node:child_process';
+// import { promisify } from 'node:util';
+// import { exec as plainExec } from 'node:child_process';
 
 // import { writeFileSync } from 'node:fs'
 
-const exec = promisify(plainExec);
+// const exec = promisify(plainExec);
 
 describe('veloce:data:push', () => {
   it('should push veloce data to org', async () => {
@@ -12,8 +12,10 @@ describe('veloce:data:push', () => {
     // aBQ040000008RMfGAM,${name},false,false,"Super cool company",01504000000ISZRAA4,,,,aBQ040000008RMfDAM,,01504000000ISZWAA4,
     // `
     //    writeFileSync("/tmp/VELOCPQ__ProductModel__c.csv", dataCSV)
-    const cmdResult = await exec('sfdx veloce:data:push -u studio-dev -p /tmp/');
-    console.log(cmdResult.stdout);
+    // const cmdResult = await exec(
+    //   'sfdx veloce:data:push -s VELOCPQ__ProductModel__c -u studio-dev -p test-data/data/VELOCPQ__ProductModel__c.csv --upsert',
+    // );
+    // console.log(cmdResult.stdout);
     // var check = await exec(`sfdx force:data:soql:query  -u studio-dev -q "select fields(all) from VELOCPQ__ProductModel__c where Name = '${name}' limit 10" --json`)
     // var checkParsed = JSON.parse(check.stdout)
     // console.log(checkParsed)

@@ -45,9 +45,7 @@ describe('veloce:source:push', () => {
     // console.log(checkParsed)
   });
   it('should push Configuration Settings sources to org', async () => {
-    const cmdResult = await exec(
-      'sfdx veloce:source:push -u studio-dev -m config-settings -p test-data/source -d',
-    );
+    const cmdResult = await exec('sfdx veloce:source:push -u studio-dev -m config-settings -p test-data/source -d');
     console.log(cmdResult.stdout);
   });
 });
