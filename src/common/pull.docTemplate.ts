@@ -23,7 +23,7 @@ export async function pullDocTemplates(params: PullDocTemplatesParams): Promise<
   const result: Template[] = await fetchTemplates(conn, member.all, member.names);
   console.log(`Pulling Doc template result count: ${result.length}`);
 
-  const ids = [];
+  const ids: string[] = [];
   for (const r of result) {
     const {
       Id,
@@ -34,7 +34,8 @@ export async function pullDocTemplates(params: PullDocTemplatesParams): Promise<
       VELOCPQ__FileName__c,
       VELOCPQ__Properties__c,
       VELOCPQ__Queries__c,
-      VELOCPQ__Script__c
+      VELOCPQ__Script__c,
+      VELOCPQ__ReferenceId__c
     } = r;
     const dir = `${rootPath}/${Name}`;
     const propertiesDir = `${dir}/properties`;
@@ -67,14 +68,15 @@ export async function pullDocTemplates(params: PullDocTemplatesParams): Promise<
         Id,
         Name,
         VELOCPQ__Active__c,
-        VELOCPQ__Description__c
+        VELOCPQ__Description__c,
+        VELOCPQ__ReferenceId__c
       },
       null,
       '  ',
     );
     writeFileSafe(dir, `${Name}.json`, json, {flag: 'w+'});
 
-    ids.push(Id as string);
+    ids.push(Id ?? 'N/A');
   }
 
   return ids;

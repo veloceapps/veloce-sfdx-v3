@@ -8,5 +8,6 @@ export interface Template {
   VELOCPQ__Properties__c?: string;
   VELOCPQ__Queries__c?: string;
   VELOCPQ__Script__c: string;
+  VELOCPQ__ReferenceId__c?: string;
   Id?: string;
 }

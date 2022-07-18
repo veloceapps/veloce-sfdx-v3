@@ -4,7 +4,7 @@ import { CreateResult } from '../types/common.types';
 
 export async function fetchTemplates(conn: Connection, fetchAll: boolean, names: string[]): Promise<Template[]> {
 
-  let query = 'Select Id,Name,VELOCPQ__FileId__c,VELOCPQ__Active__c,VELOCPQ__Description__c,VELOCPQ__FileName__c,VELOCPQ__Properties__c,VELOCPQ__Queries__c,VELOCPQ__Script__c from VELOCPQ__Template__c';
+  let query = 'Select Id,Name,VELOCPQ__FileId__c,VELOCPQ__Active__c,VELOCPQ__Description__c,VELOCPQ__FileName__c,VELOCPQ__Properties__c,VELOCPQ__Queries__c,VELOCPQ__Script__c,VELOCPQ__ReferenceId__c from VELOCPQ__Template__c';
   if (!fetchAll) {
     query += ` WHERE Name IN ('${names.join("','")}')`;
   }
