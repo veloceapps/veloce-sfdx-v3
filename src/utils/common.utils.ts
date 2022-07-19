@@ -15,6 +15,14 @@ export const exec = (cmd: string): Promise<string> => {
   });
 };
 
+export const readFileSafeBuffer = (path: string, options?: {flag?: string}): Buffer|undefined => {
+  try {
+    return readFileSync(path, options);
+  } catch (err) {
+    console.log(`Failed to read file: ${path}`);
+  }
+};
+
 export const readFileSafe = (path: string, ux?: UX): string => {
   try {
     const raw = readFileSync(path);
@@ -33,7 +41,7 @@ export const parseJsonSafe = (str: string): any | undefined => {
   }
 };
 
-export const writeFileSafe = (dir: string, filename: string, data: string, options?: WriteFileOptions): void => {
+export const writeFileSafe = (dir: string, filename: string, data: string|Buffer, options?: WriteFileOptions): void => {
   if (!existsSync(dir)) {
     mkdirSync(dir, { recursive: true });
   }
