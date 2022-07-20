@@ -1,15 +1,15 @@
 import { Connection, SfdxError } from '@salesforce/core';
-import { RecordResult } from 'jsforce/record-result';
 import { IdMap } from '../types/idmap';
+import { RecordResult } from 'jsforce';
 
-interface ExternalIdMapMdt {
-  Name: string;
+interface ExternalIdMap {
+  VELOCPQ__Key__c: string;
   VELOCPQ__Value__c: string;
 }
 
 export async function loadIdMap(conn: Connection): Promise<IdMap> {
-  const result = await conn.autoFetchQuery<ExternalIdMapMdt>(
-    'SELECT Name,VELOCPQ__Value__c FROM VELOCPQ__External_Id_Map__mdt',
+  const result = await conn.autoFetchQuery<ExternalIdMap>(
+    'SELECT VELOCPQ__Key__c,VELOCPQ__Value__c FROM VELOCPQ__External_Id_Map__c',
     {
       autoFetch: true,
       maxFetch: 50000,
@@ -22,7 +22,7 @@ export async function loadIdMap(conn: Connection): Promise<IdMap> {
   }
   const idmap: IdMap = {};
   for (const r of result.records) {
-    idmap[r.Name] = r.VELOCPQ__Value__c;
+    idmap[r.VELOCPQ__Key__c] = r.VELOCPQ__Value__c;
   }
   console.log(`Loaded ID-MAP from environment with ${Object.entries(idmap).length} entries`);
   return idmap;
@@ -39,11 +39,11 @@ export async function saveIdMap(conn: Connection, idmap: IdMap): Promise<void> {
   console.log(`Saving ID-MAP to environment with ${Object.entries(idmap).length} entries`);
   const chunks = chunkItems(Object.entries(idmap));
   for (const chunk of chunks) {
-    const records = chunk.map(([k, v]) => ({ Name: k, VELOCPQ__Value__c: v }));
-    const results = (await conn.upsert<ExternalIdMapMdt>(
-      'VELOCPQ__External_Id_Map__mdt',
+    const records = chunk.map(([k, v]) => ({ VELOCPQ__Key__c: k, VELOCPQ__Value__c: v }));
+    const results = (await conn.upsert<ExternalIdMap>(
+      'VELOCPQ__External_Id_Map__c',
       records,
-      'Name',
+      'VELOCPQ__Key__c',
     )) as RecordResult[];
     for (const r of results) {
       if (!r.success) {
