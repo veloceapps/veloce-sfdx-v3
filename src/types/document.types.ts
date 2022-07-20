@@ -8,4 +8,6 @@ export interface DocumentBody {
   body: string;
   name: string;
   folderId: string;
+  contentType: string;
+  type: string;
 }

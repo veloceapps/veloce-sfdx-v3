@@ -10,7 +10,7 @@ export async function fetchDocumentContent(conn: Connection, documentId: string)
     return;
   }
 
-  const res = await conn.request({url});
+  const res = await conn.request({ url });
 
   const gzipped = Buffer.from(res.toString(), 'base64');
   return gunzipSync(gzipped).toString();
@@ -52,7 +52,7 @@ export async function createDocument(conn: Connection, data: DocumentBody): Prom
   });
 
   if (result.success) {
-    console.log(`New Document ${result.name} created with id ${result.id}`);
+    console.log(`New Document ${data.name} created with id ${result.id}`);
   } else {
     throw new SfdxError(`Failed to create document: ${JSON.stringify(result)}`);
   }
