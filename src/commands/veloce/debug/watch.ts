@@ -7,7 +7,7 @@ import { AnyJson } from '@salesforce/ts-types';
 import { watch } from 'chokidar';
 import { DebugSfdxCommand } from '../../../common/debug.command';
 import { exec } from '../../../utils/common.utils';
-import { getPath } from '../../../utils/path.utils';
+import { getPath, getPathParts } from '../../../utils/path.utils';
 
 // Initialize Messages with the current plugin directory
 Messages.importMessagesDirectory(__dirname);
@@ -48,8 +48,8 @@ export default class Org extends DebugSfdxCommand {
   protected static requiresProject = false;
 
   private readonly DEFAULT_SOURCE_PATH = 'source';
-  private readonly PATH = {
-    MODEL: 'source/model',
+  private readonly PATH: Record<DataType, string> = {
+    MODEL: 'model',
   };
 
   public async run(): Promise<AnyJson> {
@@ -73,7 +73,7 @@ export default class Org extends DebugSfdxCommand {
     const workDir = cwd();
     const watcher = watch(sourcePath);
     let timeoutID: NodeJS.Timeout;
-    watcher.on('raw', (eventName, path, description: {watchedPath?: string}) => {
+    watcher.on('raw', (eventName, path, description: { watchedPath?: string }) => {
       if (!['created', 'change', 'modified', 'moved'].includes(eventName)) {
         return;
       }
@@ -94,33 +94,43 @@ export default class Org extends DebugSfdxCommand {
         const type = this.getChangeType(filePath);
         switch (type) {
           case DataType.MODEL:
-            void this.pushPML(filePath, sourcePath);
+            void this.pushPML(filePath);
             break;
           default:
             break;
         }
       }, 1000);
-
     });
 
     return {};
   }
 
   private getChangeType(filePath: string): DataType | null {
-    if (filePath.startsWith(this.PATH.MODEL)) {
+    const parts = getPathParts(filePath);
+
+    // source/model/POC_Section/POC_Section.pml
+    if (parts[parts.length - 3] === 'model') {
       return DataType.MODEL;
     }
 
     return null;
   }
 
-  private async pushPML(filePath: string, sourcePath: string): Promise<void> {
-    const [modelName] = filePath.replace(`${this.PATH.MODEL}/`, '').split('/');
+  private getRootPath(filePath: string, dataType: DataType): string {
+    const parts = getPathParts(filePath);
+    const dataTypeIndex = parts.indexOf(this.PATH[dataType]);
+    return parts.slice(0, dataTypeIndex).join('/');
+  }
+
+  private async pushPML(filePath: string): Promise<void> {
+    const parts = getPathParts(filePath);
+    const modelName = parts[parts.length - 2];
+    const rootPath = this.getRootPath(filePath, DataType.MODEL);
     const targetUserName = String(this.flags.targetusername);
 
     this.ux.log(`Pushing Model "${modelName}"`);
 
-    return exec(`sfdx veloce:debug:push -u ${targetUserName} -m model:${modelName} -p ./${sourcePath}`)
+    return exec(`sfdx veloce:debug:push -u ${targetUserName} -m model:${modelName} -p ./${rootPath}`)
       .then((result) => {
         this.ux.log(result);
       })
