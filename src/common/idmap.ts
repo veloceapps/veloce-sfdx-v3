@@ -1,6 +1,6 @@
 import { Connection, SfdxError } from '@salesforce/core';
-import { IdMap } from '../types/idmap';
 import { RecordResult } from 'jsforce';
+import { IdMap } from '../types/idmap';
 
 interface ExternalIdMap {
   VELOCPQ__Key__c: string;
@@ -9,7 +9,7 @@ interface ExternalIdMap {
 
 export async function loadIdMap(conn: Connection): Promise<IdMap> {
   const result = await conn.autoFetchQuery<ExternalIdMap>(
-    'SELECT VELOCPQ__Key__c,VELOCPQ__Value__c FROM VELOCPQ__External_Id_Map__c',
+    'SELECT VELOCPQ__Key__c,VELOCPQ__Value__c FROM VELOCPQ__ExternalId_Map__c',
     {
       autoFetch: true,
       maxFetch: 50000,
@@ -41,7 +41,7 @@ export async function saveIdMap(conn: Connection, idmap: IdMap): Promise<void> {
   for (const chunk of chunks) {
     const records = chunk.map(([k, v]) => ({ VELOCPQ__Key__c: k, VELOCPQ__Value__c: v }));
     const results = (await conn.upsert<ExternalIdMap>(
-      'VELOCPQ__External_Id_Map__c',
+      'VELOCPQ__ExternalId_Map__c',
       records,
       'VELOCPQ__Key__c',
     )) as RecordResult[];
