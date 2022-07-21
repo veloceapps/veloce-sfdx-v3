@@ -11,7 +11,7 @@ export class RuleActionVisitor extends ParseTreeVisitor {
   public visit(ctx: ParserRuleContext): void {
     switch (ctx.ruleIndex) {
       case RulesParser.RULE_setPropertyAction:
-      case RulesParser.RULE_setFieldAction: {
+      case RulesParser.RULE_setFieldValueAction: {
         this.setProperty('variableName', ctx.children?.[0]?.text);
         this.action.action = this.getActionName(ctx.children?.[2]?.text);
         this.setProperty('targetFieldName', ctx.children?.[4]?.text);
@@ -20,7 +20,8 @@ export class RuleActionVisitor extends ParseTreeVisitor {
         super.visit(ctx);
         break;
       }
-      case RulesParser.RULE_addMessageAction: {
+      case RulesParser.RULE_addMessageAction:
+      case RulesParser.RULE_setScore: {
         this.setProperty('variableName', ctx.children?.[0]?.text);
         this.action.action = this.getActionName(ctx.children?.[2]?.text);
         this.setValue(ctx.children?.[4]?.text);

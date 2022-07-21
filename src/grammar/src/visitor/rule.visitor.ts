@@ -11,10 +11,16 @@ export class RuleVisitor extends ParseTreeVisitor {
 
   public visit(ctx: ParserRuleContext): void {
     switch (ctx.ruleIndex) {
-      case RulesParser.RULE_ruleDeclaration:
-        this.rules.push(this.generateEmptyRule());
+      case RulesParser.RULE_ruleDeclaration: {
+        const name = /^"(.*)"$/.exec(ctx.children?.[1]?.text || '')?.[1];
+        if (ctx.exception) {
+          console.log(`Can't parse rule ${name}. Please check it.`);
+          return;
+        }
+        this.rules.push(this.generateEmptyRule(name));
         super.visit(ctx);
         break;
+      }
       case RulesParser.RULE_sequence: {
         const rule = this.rules[this.rules.length - 1];
         rule.sequence = +ctx.text;
@@ -23,14 +29,26 @@ export class RuleVisitor extends ParseTreeVisitor {
       }
       case RulesParser.RULE_filterDeclaration: {
         const rule = this.rules[this.rules.length - 1];
+        if (ctx.exception) {
+          console.log(`Can't parse rule condition ${rule.name}. Please check it.`);
+          return;
+        }
         const ruleConditionVisitor = new RuleConditionVisitor();
         ruleConditionVisitor.visit(ctx);
+        if (!ruleConditionVisitor.condition.objectType) {
+          console.log(`Can't parse rule condition ${rule.name}. Please check it.`);
+          return;
+        }
         rule.conditions?.push(ruleConditionVisitor.condition);
         super.visit(ctx);
         break;
       }
       case RulesParser.RULE_transformationDeclaration: {
         const rule = this.rules[this.rules.length - 1];
+        if (ctx.exception) {
+          console.log(`Can't parse rule transformation ${rule.name}. Please check it.`);
+          return;
+        }
         const ruleTransformationVisitor = new RuleTransformationVisitor();
         ruleTransformationVisitor.visit(ctx);
         rule.transformations?.push(ruleTransformationVisitor.transformation);
@@ -38,10 +56,11 @@ export class RuleVisitor extends ParseTreeVisitor {
         break;
       }
       case RulesParser.RULE_actionDeclaration: {
-        if (!ctx.text) {
+        const rule = this.rules[this.rules.length - 1];
+        if (!ctx.text || ctx.exception) {
+          console.log(`Can't parse rule action ${rule.name}. Please check it.`);
           return;
         }
-        const rule = this.rules[this.rules.length - 1];
         const ruleActionVisitor = new RuleActionVisitor();
         const variables: (string | undefined)[] = [
           ...(rule.conditions || []).map((condition) => condition.variableName),
@@ -58,7 +77,7 @@ export class RuleVisitor extends ParseTreeVisitor {
     }
   }
 
-  private generateEmptyRule(): Partial<Rule> {
-    return { conditions: [], transformations: [], mappers: [] };
+  private generateEmptyRule(name: string | undefined): Partial<Rule> {
+    return { name, conditions: [], transformations: [], mappers: [] };
   }
 }
