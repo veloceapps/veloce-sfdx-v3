@@ -1,11 +1,12 @@
 import { gzipSync } from 'node:zlib';
-import { UiDefinitionsBuilder } from '../utils/ui.utils';
+import { Connection, SfdxError } from '@salesforce/core';
+import { CommandParams } from '../types/command.types';
+import { DocumentBody } from '../types/document.types';
+import { ProductModel } from '../types/productModel.types';
 import { createDocument, fetchDocument, updateDocument } from '../utils/document.utils';
 import { createFolder, fetchFolder } from '../utils/folder.utils';
-import { DocumentBody } from '../types/document.types';
 import { fetchProductModels } from '../utils/productModel.utils';
-import { ProductModel } from '../types/productModel.types';
-import { CommandParams } from '../types/command.types';
+import { UiDefinitionsBuilder } from '../utils/ui.utils';
 
 const FOLDER_NAME = 'velo_product_models';
 
@@ -33,7 +34,7 @@ export async function pushUI(params: CommandParams): Promise<string[]> {
   const folderId: string = (await fetchFolder(conn, FOLDER_NAME))?.Id ?? (await createFolder(conn, FOLDER_NAME)).id;
 
   const result: string[] = await Promise.all(
-    productModels.map(({ VELOCPQ__UiDefinitionsId__c, Name }) => {
+    productModels.map(({ Id, VELOCPQ__UiDefinitionsId__c, Name }) => {
       // pack all Ui Definitions
       const uiBuilder = new UiDefinitionsBuilder(sourcepath, Name);
       const uiDefinitions = uiBuilder.pack();
@@ -42,16 +43,34 @@ export async function pushUI(params: CommandParams): Promise<string[]> {
       // Encode to base64 TWICE!, first time is requirement of POST/PATCH, and it will be decoded on reads automatically by SF.
       const b64Data = Buffer.from(gzipped.toString('base64')).toString('base64');
 
-      const documentBody: DocumentBody = { folderId, body: b64Data, name: Name };
+      const uiDocName = `${Name}_uiDefinition`;
+      const documentBody: DocumentBody = { folderId, body: b64Data, name: uiDocName, contentType: 'application/zip', type: 'zip' };
 
       return fetchDocument(conn, VELOCPQ__UiDefinitionsId__c).then((document) =>
         document?.Id
           ? updateDocument(conn, document.Id, documentBody).then(() => document.Id)
-          : createDocument(conn, documentBody).then((res) => res.id),
+          : createAndLinkDocument(conn, documentBody, Id),
       );
     }),
   );
 
   // Return an object to be displayed with --json
   return result;
+}
+
+async function createAndLinkDocument(conn: Connection, body: DocumentBody, modelId: string): Promise<string> {
+  const documentId = await createDocument(conn, body).then((res) => res.id);
+
+  // link new document to product model
+  const result = await conn
+    .sobject('VELOCPQ__ProductModel__c')
+    .update({ Id: modelId, VELOCPQ__UiDefinitionsId__c: documentId });
+
+  if (result.success) {
+    console.log(`New UI Definition document attached to model with Id='${modelId}'`);
+  } else {
+    throw new SfdxError(`Failed to create document: ${JSON.stringify(result)}`);
+  }
+
+  return documentId;
 }
