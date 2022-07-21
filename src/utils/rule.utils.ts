@@ -145,11 +145,17 @@ const saveToDSL = (procedureRules: SFProcedureRule[], pathToSave: string): any =
   const { VELOCPQ__RuleGroupId__r } = procedureRules[0];
   const result = procedureRules
     .map((procedureRule) => {
-      const conditions = conditionsToDSL(procedureRule.VELOCPQ__ProcedureRules_RuleConditions__r?.records);
+      const conditions = conditionsToDSL(
+        procedureRule.VELOCPQ__ProcedureRules_RuleConditions__r?.records,
+        VELOCPQ__RuleGroupId__r.VELOCPQ__Type__c,
+      );
       const transformations = transformationsToDSL(
         procedureRule.VELOCPQ__ProcedureRules_TransformationRules__r?.records,
       );
-      const actions = actionsToDSL(procedureRule.VELOCPQ__ProcedureRules_RuleMappings__r?.records);
+      const actions = actionsToDSL(
+        procedureRule.VELOCPQ__ProcedureRules_RuleMappings__r?.records,
+        VELOCPQ__RuleGroupId__r.VELOCPQ__Type__c,
+      );
       return `rule "${procedureRule.Name}"
     sequence ${procedureRule.VELOCPQ__Sequence__c}${conditions}${transformations}${actions}
 end`;
@@ -165,7 +171,7 @@ end`;
   );
 };
 
-const conditionsToDSL = (conditions: SFProcedureRuleCondition[]): string => {
+const conditionsToDSL = (conditions: SFProcedureRuleCondition[], type: string): string => {
   if (!conditions?.length) {
     return '';
   }
@@ -173,9 +179,9 @@ const conditionsToDSL = (conditions: SFProcedureRuleCondition[]): string => {
         ${conditions
           .map(
             (condition) =>
-              `${condition.VELOCPQ__VariableName__c}: ${RuleObjectTypes[condition.VELOCPQ__ObjectType__c]}(${
-                condition.VELOCPQ__ExpressionsJsonString__c ?? ''
-              })`,
+              `${type === 'METRIC' ? 'chargeItem' : condition.VELOCPQ__VariableName__c}: ${
+                type === 'METRIC' ? 'ChargeItem' : RuleObjectTypes[condition.VELOCPQ__ObjectType__c]
+              }(${condition.VELOCPQ__ExpressionsJsonString__c ?? ''})`,
           )
           .join('\n        ')}`;
 };
@@ -197,7 +203,7 @@ const transformationsToDSL = (transformations: SFProcedureRuleTransformation[]):
           .join('\n        ')}`;
 };
 
-const actionsToDSL = (actions: SFProcedureRuleMapping[]): string => {
+const actionsToDSL = (actions: SFProcedureRuleMapping[], type: string): string => {
   if (!actions?.length) {
     return '';
   }
@@ -211,9 +217,9 @@ const actionsToDSL = (actions: SFProcedureRuleMapping[]): string => {
               action.VELOCPQ__Explanation__c,
               action.VELOCPQ__TotalMetricName__c,
             ];
-            return `${action.VELOCPQ__VariableName__c}.${camelCase(action.VELOCPQ__Action__c)}(${argumentsOrder
-              .filter((arg) => !!arg)
-              .join(',')})`;
+            return `${type === 'METRIC' ? 'chargeItem' : action.VELOCPQ__VariableName__c}.${camelCase(
+              action.VELOCPQ__Action__c,
+            )}(${argumentsOrder.filter((arg) => !!arg).join(',')})`;
           })
           .join('\n        ')}`;
 };
@@ -249,7 +255,14 @@ function extractRuleGroup(file: string, directory: string, names: string[] | und
 
   return {
     ...ruleGroup,
-    rules: ruleGroup.rules.map((rule, index) => ({ ...rule, ...visitor.rules[index] })),
+    rules: ruleGroup.rules.map((rule) => {
+      const ruleDetails = visitor.rules.find(({ name }) => name === rule.name);
+      const combinedRule = { ...rule, ...ruleDetails };
+      if (ruleGroup.type === 'METRIC') {
+        return normalizeMetricRule(combinedRule);
+      }
+      return rule;
+    }),
   };
 }
 
@@ -435,6 +448,7 @@ export async function createRuleAction(conn: Connection, action: RuleAction, rul
     VELOCPQ__TargetFieldName__c: action.targetFieldName,
     VELOCPQ__TotalMetricName__c: action.totalMetricName,
     VELOCPQ__VariableName__c: action.variableName,
+    VELOCPQ__IsCalculateTotalMetric__c: action.isCalculateTotalMetric,
     VELOCPQ__RuleId__c: ruleId,
     VELOCPQ__Action__c: action.action,
   };
@@ -475,3 +489,11 @@ export async function createJavaScript(conn: Connection, javaScript: string, tra
 
   return contentVersionResult;
 }
+
+const normalizeMetricRule = (rule: Rule): Rule => {
+  return {
+    ...rule,
+    conditions: rule.conditions.map((condition) => ({ ...condition, objectType: undefined, variableName: undefined })),
+    mappers: rule.mappers.map((action) => ({ ...action, variableName: undefined })),
+  };
+};

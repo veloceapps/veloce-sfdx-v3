@@ -1,4 +1,4 @@
-// Generated from libs/grammar/rule/Rules.g4 by ANTLR 4.9.0-SNAPSHOT
+// Generated from libs/grammar/rules/Rules.g4 by ANTLR 4.9.0-SNAPSHOT
 
 /*
   Veloce configuration and pricing engine
@@ -26,7 +26,8 @@ import { ScriptContext } from './RulesParser';
 import { ScriptDeclarationContext } from './RulesParser';
 import { ActionDeclarationContext } from './RulesParser';
 import { SetPropertyActionContext } from './RulesParser';
-import { SetFieldActionContext } from './RulesParser';
+import { SetFieldValueActionContext } from './RulesParser';
+import { SetScoreContext } from './RulesParser';
 import { AddMessageActionContext } from './RulesParser';
 import { SetStartDateActionContext } from './RulesParser';
 import { SetEndDateActionContext } from './RulesParser';
@@ -224,17 +225,30 @@ export interface RulesListener extends ParseTreeListener {
   exitSetPropertyAction?: (ctx: SetPropertyActionContext) => void;
 
   /**
-   * Enter a parse tree produced by `RulesParser.setFieldAction`.
+   * Enter a parse tree produced by `RulesParser.setFieldValueAction`.
    *
    * @param ctx the parse tree
    */
-  enterSetFieldAction?: (ctx: SetFieldActionContext) => void;
+  enterSetFieldValueAction?: (ctx: SetFieldValueActionContext) => void;
   /**
-   * Exit a parse tree produced by `RulesParser.setFieldAction`.
+   * Exit a parse tree produced by `RulesParser.setFieldValueAction`.
    *
    * @param ctx the parse tree
    */
-  exitSetFieldAction?: (ctx: SetFieldActionContext) => void;
+  exitSetFieldValueAction?: (ctx: SetFieldValueActionContext) => void;
+
+  /**
+   * Enter a parse tree produced by `RulesParser.setScore`.
+   *
+   * @param ctx the parse tree
+   */
+  enterSetScore?: (ctx: SetScoreContext) => void;
+  /**
+   * Exit a parse tree produced by `RulesParser.setScore`.
+   *
+   * @param ctx the parse tree
+   */
+  exitSetScore?: (ctx: SetScoreContext) => void;
 
   /**
    * Enter a parse tree produced by `RulesParser.addMessageAction`.
