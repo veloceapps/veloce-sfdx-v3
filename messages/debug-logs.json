@@ -2,5 +2,8 @@
   "commandDescription": "Streams logs out of debug session to console",
   "targetFlagDescription": "Alias of existing org",
   "noprojectFlagDescription": "Bypass check of sfdx-project.json to exist",
-  "examples": ["sfdx veloce:debug:logs --targetusername myOrg@example.com --targetdevhubusername devhub@org.com"]
+  "debugsessionloglevelFlagDescription": "Logging level for debug session",
+  "examples": [
+    "sfdx veloce:debug:logs --targetusername myOrg@example.com --targetdevhubusername devhub@org.com --debugsessionloglevel warn"
+  ]
 }
