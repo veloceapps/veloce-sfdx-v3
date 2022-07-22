@@ -68,9 +68,9 @@ export async function updateContentVersion(conn: Connection, id: string, data: C
 }
 
 export async function createOrUpdateContentDocument(conn: Connection, data: ContentVersion, fileData?: Buffer, docId?: string): Promise<string> {
-  const isDocExists = docId && await fetchContentDocument(conn, docId);
+  const isDocExists = Boolean(docId && await fetchContentDocument(conn, docId));
 
-  if (isDocExists) {
+  if (docId && isDocExists) {
     const contentVersion = await fetchContentVersion(conn, undefined, docId);
     if (!contentVersion) {
       throw new SfdxError(`Failed to fetch ContentVersion with ContentDocumentId: ${docId}`);
