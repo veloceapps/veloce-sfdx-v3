@@ -41,7 +41,7 @@ export async function saveIdMap(conn: Connection, idmap: IdMap): Promise<void> {
   console.log(`Saving ID-MAP to environment with ${Object.keys(idmap).length} entries`);
   const chunks = chunkItems(Object.keys(idmap));
   for (const chunk of chunks) {
-    let records = [];
+    const records = [];
     for (const k of chunk) {
       if (k == null) {
         continue;
