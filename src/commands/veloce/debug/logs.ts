@@ -67,7 +67,10 @@ export default class Org extends DebugSfdxCommand {
   private async callToGetLogs(backendUrl: string | undefined, headers: { [key: string]: string }): Promise<void> {
     try {
       const loglevel = this.flags.debugsessionloglevel as string;
-      const response = await axios.get(`${backendUrl}/services/dev-override/logs/${loglevel}`, { headers });
+      const response = await axios.get(`${backendUrl}/services/dev-override/logs/${loglevel}`, {
+        headers,
+        timeout: 2000,
+      });
       if (response.data !== '') {
         this.ux.log(response.data);
       }
