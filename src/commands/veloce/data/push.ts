@@ -154,9 +154,10 @@ export default class Push extends SfdxCommand {
     const numericfields = [];
 
     const fileContent = readFileSync(this.flags.sourcepath);
+    console.log('B1');
     let idmap = await loadIdMap(conn);
-
     // retrieve types of args
+    console.log('B2');
     const fieldsResult = await conn.autoFetchQuery<SalesforceEntity>(
       `
       SELECT EntityDefinition.QualifiedApiName, QualifiedApiName, DataType

@@ -22,9 +22,11 @@ export async function loadIdMap(conn: Connection): Promise<IdMap> {
   }
   const idmap: IdMap = {};
   for (const r of result.records) {
-    idmap[r.VELOCPQ__Key__c] = r.VELOCPQ__Value__c;
+    if (r.VELOCPQ__Key__c != null && r.VELOCPQ__Value__c != null) {
+      idmap[r.VELOCPQ__Key__c] = r.VELOCPQ__Value__c;
+    }
   }
-  console.log(`Loaded ID-MAP from environment with ${Object.entries(idmap).length} entries`);
+  console.log(`Loaded ID-MAP from environment with ${Object.keys(idmap).length} entries`);
   return idmap;
 }
 
@@ -36,10 +38,16 @@ const chunkItems = <T>(items: T[]): T[][] =>
   }, []);
 
 export async function saveIdMap(conn: Connection, idmap: IdMap): Promise<void> {
-  console.log(`Saving ID-MAP to environment with ${Object.entries(idmap).length} entries`);
-  const chunks = chunkItems(Object.entries(idmap));
+  console.log(`Saving ID-MAP to environment with ${Object.keys(idmap).length} entries`);
+  const chunks = chunkItems(Object.keys(idmap));
   for (const chunk of chunks) {
-    const records = chunk.map(([k, v]) => ({ VELOCPQ__Key__c: k, VELOCPQ__Value__c: v }));
+    let records = [];
+    for (const k of chunk) {
+      if (k == null) {
+        continue;
+      }
+      records.push({ VELOCPQ__Key__c: k, VELOCPQ__Value__c: idmap[k] });
+    }
     const results = (await conn.upsert<ExternalIdMap>(
       'VELOCPQ__ExternalId_Map__c',
       records,
