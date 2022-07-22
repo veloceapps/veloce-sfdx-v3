@@ -145,25 +145,35 @@ export default class Push extends DebugSfdxCommand {
         },
       );
 
+      groups.forEach((group) => {
+        console.log(`Rule group ${group.name} pushed to dev session`);
+      });
+
+      const rules = groups.reduce((result, group) => {
+        return [
+          ...result,
+          ...group.rules.map((rule) => ({
+            ...rule,
+            ruleGroupId: group.id,
+            ruleGroupName: group.name,
+            ruleGroupType: group.type,
+          })),
+        ];
+      }, [] as Rule[]);
+
       await axios.post(
         `${debugSession.backendUrl}/services/dev-override/rules/batch`,
         {
-          rules: groups.reduce((result, group) => {
-            return [
-              ...result,
-              ...group.rules.map((rule) => ({
-                ...rule,
-                ruleGroupId: group.id,
-                ruleGroupName: group.name,
-                ruleGroupType: group.type,
-              })),
-            ];
-          }, [] as Rule[]),
+          rules,
         },
         {
           headers,
         },
       );
+
+      rules.forEach((rule) => {
+        console.log(`Procedure Rule ${rule.name} pushed to dev session`);
+      });
     }
   }
 }
