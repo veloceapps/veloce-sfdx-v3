@@ -1,6 +1,6 @@
 {
   "Name": "OCTA",
-  "VELOCPQ__ReferenceId__c": null,
+  "VELOCPQ__ReferenceId__c": "OCTA",
   "VELOCPQ__Version__c": null,
   "VELOCPQ__Active__c": false,
   "VELOCPQ__BundleProduct__c": false,

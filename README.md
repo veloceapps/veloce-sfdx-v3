@@ -13,8 +13,8 @@ Extension to sfdx which allows veloce specific data pull and push
 
 - [veloce](#veloce)
   <!-- tocstop -->
-                      <!-- install -->
-                      <!-- usage -->
+                        <!-- install -->
+                        <!-- usage -->
 
 ```sh-session
 $ npm install -g veloce-sfdx-v3
@@ -34,7 +34,7 @@ USAGE
 - [`sfdx veloce:data:pull -s <string> -p <string> [-w <string>] [-o <string>] [-R <string>] [-v <string>] [-u <string>] [--apiversion <string>] [--json] [--loglevel trace|debug|info|warn|error|fatal|TRACE|DEBUG|INFO|WARN|ERROR|FATAL]`](#sfdx-velocedatapull--s-string--p-string--w-string--o-string--r-string--v-string--u-string---apiversion-string---json---loglevel-tracedebuginfowarnerrorfataltracedebuginfowarnerrorfatal)
 - [`sfdx veloce:data:push -s <string> [-p <string>] [-P] [-e <string>] [-R <string>] [-P] [-U] [-d] [-D] [-o <string>] [-b <string>] [-v <string>] [-u <string>] [--apiversion <string>] [--json] [--loglevel trace|debug|info|warn|error|fatal|TRACE|DEBUG|INFO|WARN|ERROR|FATAL]`](#sfdx-velocedatapush--s-string--p-string--p--e-string--r-string--p--u--d--d--o-string--b-string--v-string--u-string---apiversion-string---json---loglevel-tracedebuginfowarnerrorfataltracedebuginfowarnerrorfatal)
 - [`sfdx veloce:debug:list [-P] [-v <string>] [-u <string>] [--apiversion <string>] [--json] [--loglevel trace|debug|info|warn|error|fatal|TRACE|DEBUG|INFO|WARN|ERROR|FATAL]`](#sfdx-velocedebuglist--p--v-string--u-string---apiversion-string---json---loglevel-tracedebuginfowarnerrorfataltracedebuginfowarnerrorfatal)
-- [`sfdx veloce:debug:logs [-P] [-v <string>] [-u <string>] [--apiversion <string>] [--json] [--loglevel trace|debug|info|warn|error|fatal|TRACE|DEBUG|INFO|WARN|ERROR|FATAL]`](#sfdx-velocedebuglogs--p--v-string--u-string---apiversion-string---json---loglevel-tracedebuginfowarnerrorfataltracedebuginfowarnerrorfatal)
+- [`sfdx veloce:debug:logs [-P] [-l debug|info|warn|error|DEBUG|INFO|WARN|ERROR] [-v <string>] [-u <string>] [--apiversion <string>] [--json] [--loglevel trace|debug|info|warn|error|fatal|TRACE|DEBUG|INFO|WARN|ERROR|FATAL]`](#sfdx-velocedebuglogs--p--l-debuginfowarnerrordebuginfowarnerror--v-string--u-string---apiversion-string---json---loglevel-tracedebuginfowarnerrorfataltracedebuginfowarnerrorfatal)
 - [`sfdx veloce:debug:push -m <string> [-p <string>] [-P] [-v <string>] [-u <string>] [--apiversion <string>] [--json] [--loglevel trace|debug|info|warn|error|fatal|TRACE|DEBUG|INFO|WARN|ERROR|FATAL]`](#sfdx-velocedebugpush--m-string--p-string--p--v-string--u-string---apiversion-string---json---loglevel-tracedebuginfowarnerrorfataltracedebuginfowarnerrorfatal)
 - [`sfdx veloce:debug:start [-P] [-u <string>] [--apiversion <string>] [--json] [--loglevel trace|debug|info|warn|error|fatal|TRACE|DEBUG|INFO|WARN|ERROR|FATAL]`](#sfdx-velocedebugstart--p--u-string---apiversion-string---json---loglevel-tracedebuginfowarnerrorfataltracedebuginfowarnerrorfatal)
 - [`sfdx veloce:debug:stop [-P] [--dev-token <string>] [-v <string>] [-u <string>] [--apiversion <string>] [--json] [--loglevel trace|debug|info|warn|error|fatal|TRACE|DEBUG|INFO|WARN|ERROR|FATAL]`](#sfdx-velocedebugstop--p---dev-token-string--v-string--u-string---apiversion-string---json---loglevel-tracedebuginfowarnerrorfataltracedebuginfowarnerrorfatal)
@@ -194,18 +194,21 @@ EXAMPLE
 
 _See code: [src/commands/veloce/debug/list.ts](https://github.com/veloceapps/veloce-sfdx-v3/blob/v0.0.8/src/commands/veloce/debug/list.ts)_
 
-## `sfdx veloce:debug:logs [-P] [-v <string>] [-u <string>] [--apiversion <string>] [--json] [--loglevel trace|debug|info|warn|error|fatal|TRACE|DEBUG|INFO|WARN|ERROR|FATAL]`
+## `sfdx veloce:debug:logs [-P] [-l debug|info|warn|error|DEBUG|INFO|WARN|ERROR] [-v <string>] [-u <string>] [--apiversion <string>] [--json] [--loglevel trace|debug|info|warn|error|fatal|TRACE|DEBUG|INFO|WARN|ERROR|FATAL]`
 
 Streams logs out of debug session to console
 
 ```
 USAGE
-  $ sfdx veloce:debug:logs [-P] [-v <string>] [-u <string>] [--apiversion <string>] [--json] [--loglevel
-  trace|debug|info|warn|error|fatal|TRACE|DEBUG|INFO|WARN|ERROR|FATAL]
+  $ sfdx veloce:debug:logs [-P] [-l debug|info|warn|error|DEBUG|INFO|WARN|ERROR] [-v <string>] [-u <string>]
+  [--apiversion <string>] [--json] [--loglevel trace|debug|info|warn|error|fatal|TRACE|DEBUG|INFO|WARN|ERROR|FATAL]
 
 OPTIONS
   -P, --noproject                                                                   Bypass check of sfdx-project.json to
                                                                                     exist
+
+  -l, --debugsessionloglevel=(debug|info|warn|error|DEBUG|INFO|WARN|ERROR)          [default: debug] Logging level for
+                                                                                    debug session
 
   -u, --targetusername=targetusername                                               username or alias for the target
                                                                                     org; overrides default target org
@@ -222,7 +225,8 @@ OPTIONS
                                                                                     this command invocation
 
 EXAMPLE
-  sfdx veloce:debug:logs --targetusername myOrg@example.com --targetdevhubusername devhub@org.com
+  sfdx veloce:debug:logs --targetusername myOrg@example.com --targetdevhubusername devhub@org.com --debugsessionloglevel
+   warn
 ```
 
 _See code: [src/commands/veloce/debug/logs.ts](https://github.com/veloceapps/veloce-sfdx-v3/blob/v0.0.8/src/commands/veloce/debug/logs.ts)_

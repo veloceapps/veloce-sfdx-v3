@@ -12,7 +12,7 @@ async function getPMLDocument(conn: Connection, modelName: string): Promise<stri
   // TODO: optimize in single query?
   const pmResult = await conn.query<ProductModel>(`SELECT Id, Name, VELOCPQ__ContentId__c
                                                     FROM VELOCPQ__ProductModel__c
-                                                    WHERE Name = '${modelName}'`);
+                                                    WHERE VELOCPQ__ReferenceId__c = '${modelName}'`);
   if (pmResult.records.length > 1) {
     throw new SfdxError(`More then signle model found with name: ${modelName}`);
   }
@@ -73,13 +73,13 @@ async function uploadModel(sourcepath: string, conn: Connection, modelName: stri
 
   const folderId = await getOrCreateModelFolderId(conn);
   const pmlDocName = `${modelName}_pml`;
-  
+
   const body: DocumentBody = {
     body: b64Data,
     name: pmlDocName,
     folderId,
     contentType: 'application/zip',
-    type: 'zip'
+    type: 'zip',
   };
 
   // attempt to update existing document first
@@ -134,7 +134,7 @@ async function getPm(conn: Connection, pm: string): Promise<string | null> {
   // Check if veloce folder exists:
   const docResult = await conn.query<ProductModel>(`Select Id, Name
                                                     from VELOCPQ__ProductModel__c
-                                                    WHERE Name = '${pm}'`);
+                                                    WHERE VELOCPQ__ReferenceId__c = '${pm}'`);
   if (docResult.totalSize > 0) {
     return docResult.records[0].Id;
   }
