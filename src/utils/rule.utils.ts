@@ -156,10 +156,21 @@ const saveToDSL = (procedureRules: SFProcedureRule[], pathToSave: string): any =
         procedureRule.VELOCPQ__ProcedureRules_RuleMappings__r?.records,
         VELOCPQ__RuleGroupId__r.VELOCPQ__Type__c,
       );
+      if (VELOCPQ__RuleGroupId__r.VELOCPQ__Type__c === 'METRIC') {
+        if (!actions.length || !transformations.length) {
+          return '';
+        }
+      } else {
+        if (!actions.length || !conditions.length) {
+          return '';
+        }
+      }
+
       return `rule "${procedureRule.Name}"
     sequence ${procedureRule.VELOCPQ__Sequence__c}${conditions}${transformations}${actions}
 end`;
     })
+    .filter((dslRule) => !!dslRule)
     .join('\n');
   writeFileSafe(
     pathToSave,
@@ -196,7 +207,7 @@ const transformationsToDSL = (transformations: SFProcedureRuleTransformation[]):
             (transformation) =>
               `${transformation.VELOCPQ__ResultPath__c}: ${
                 transformation.VELOCPQ__JavaScript__c
-                  ? '{{' + transformation.VELOCPQ__JavaScript__c + '}}'
+                  ? '```' + transformation.VELOCPQ__JavaScript__c + '```'
                   : transformation.VELOCPQ__Expression__c
               }`,
           )
@@ -211,10 +222,12 @@ const actionsToDSL = (actions: SFProcedureRuleMapping[], type: string): string =
         ${actions
           .map((action) => {
             const argumentsOrder = [
-              action.VELOCPQ__TargetFieldName__c,
+              ['ADJUST_PRICE', 'ADJUST_LIST_PRICE', 'ADJUST_COST'].includes(action.VELOCPQ__Action__c)
+                ? ''
+                : action.VELOCPQ__TargetFieldName__c,
               action.VELOCPQ__Type__c,
-              action.VELOCPQ__Value__c,
-              action.VELOCPQ__Explanation__c,
+              action.VELOCPQ__ValueType__c === 'VALUE' ? `"${action.VELOCPQ__Value__c}"` : action.VELOCPQ__Value__c,
+              action.VELOCPQ__Explanation__c ? `"${action.VELOCPQ__Explanation__c}"` : '',
               action.VELOCPQ__TotalMetricName__c,
             ];
             return `${type === 'METRIC' ? 'chargeItem' : action.VELOCPQ__VariableName__c}.${camelCase(
@@ -255,13 +268,13 @@ function extractRuleGroup(file: string, directory: string, names: string[] | und
 
   return {
     ...ruleGroup,
-    rules: ruleGroup.rules.map((rule) => {
+    rules: ruleGroup.rules?.map((rule) => {
       const ruleDetails = visitor.rules.find(({ name }) => name === rule.name);
       const combinedRule = { ...rule, ...ruleDetails };
       if (ruleGroup.type === 'METRIC') {
         return normalizeMetricRule(combinedRule);
       }
-      return rule;
+      return combinedRule;
     }),
   };
 }
@@ -304,7 +317,10 @@ export async function createUpdateRuleGroup(conn: Connection, ruleGroup: RuleGro
 }
 
 export async function searchRules(conn: Connection, rule: Rule, ruleGroup: RuleGroup): Promise<SFProcedureRule[]> {
-  const query = `SELECT Id FROM VELOCPQ__ProcedureRule__c WHERE Name='${rule.name}' AND VELOCPQ__RuleGroupId__r.Name ='${ruleGroup.name}'`;
+  const query = `SELECT Id FROM VELOCPQ__ProcedureRule__c WHERE Name='${rule.name?.replace(
+    "'",
+    "\\'",
+  )}' AND VELOCPQ__RuleGroupId__r.Name ='${ruleGroup.name}'`;
 
   const result = await conn.autoFetchQuery<SFProcedureRule>(query, { autoFetch: true, maxFetch: 100000 });
   return result?.records ?? [];
@@ -493,7 +509,11 @@ export async function createJavaScript(conn: Connection, javaScript: string, tra
 const normalizeMetricRule = (rule: Rule): Rule => {
   return {
     ...rule,
-    conditions: rule.conditions.map((condition) => ({ ...condition, objectType: undefined, variableName: undefined })),
-    mappers: rule.mappers.map((action) => ({ ...action, variableName: undefined })),
+    conditions: rule.conditions?.map((condition) => ({ ...condition, objectType: undefined, variableName: undefined })),
+    mappers: rule.mappers?.map((action) => ({ ...action, variableName: undefined })),
   };
+};
+
+export const getStringContent = (value: string): string => {
+  return /^"(.*)"$/.exec(value)?.[1] || '';
 };
