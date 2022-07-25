@@ -1,6 +1,7 @@
 import { ParserRuleContext } from 'antlr4ts';
 import { RulesParser } from '../../rules/RulesParser';
 import { Rule } from '../../../types/rule.types';
+import { getStringContent } from '../../../utils/rule.utils';
 import { ParseTreeVisitor } from './ParseTreeVisitor';
 import { RuleConditionVisitor } from './ruleCondition.visitor';
 import { RuleTransformationVisitor } from './ruleTransformation.visitor';
@@ -12,7 +13,7 @@ export class RuleVisitor extends ParseTreeVisitor {
   public visit(ctx: ParserRuleContext): void {
     switch (ctx.ruleIndex) {
       case RulesParser.RULE_ruleDeclaration: {
-        const name = /^"(.*)"$/.exec(ctx.children?.[1]?.text || '')?.[1];
+        const name = getStringContent(ctx.children?.[1]?.text || '');
         if (ctx.exception) {
           console.log(`Can't parse rule ${name}. Please check it.`);
           return;

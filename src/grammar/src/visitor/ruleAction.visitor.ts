@@ -2,7 +2,14 @@ import { ParserRuleContext } from 'antlr4ts';
 import { snakeCase } from 'lodash';
 import { RulesParser } from '../../rules/RulesParser';
 import { RuleAction } from '../../../types/rule.types';
+import { getStringContent } from '../../../utils/rule.utils';
 import { ParseTreeVisitor } from './ParseTreeVisitor';
+
+const ADJUST_TARGET_FIELDS: Record<string, string> = {
+  ADJUST_PRICE: 'NET_PRICE',
+  ADJUST_LIST_PRICE: 'LIST_PRICE',
+  ADJUST_COST: 'NET_COST',
+};
 
 export class RuleActionVisitor extends ParseTreeVisitor {
   public action: RuleAction = {};
@@ -41,10 +48,15 @@ export class RuleActionVisitor extends ParseTreeVisitor {
       case RulesParser.RULE_adjustPriceAction:
       case RulesParser.RULE_adjustListPriceAction: {
         this.setProperty('variableName', ctx.children?.[0]?.text);
-        this.action.action = this.getActionName(ctx.children?.[2]?.text);
+        const action: string = this.getActionName(ctx.children?.[2]?.text);
+        this.action.action = action;
         this.setProperty('type', ctx.children?.[4]?.text);
+        this.setProperty(
+          'targetFieldName',
+          ctx.children?.[4]?.text === 'MARGIN' ? 'MARGIN_PERCENT' : ADJUST_TARGET_FIELDS[action],
+        );
         this.setValue(ctx.children?.[6]?.text);
-        this.setProperty('explanation', ctx.children?.[8]?.text);
+        this.setProperty('explanation', getStringContent(ctx.children?.[8]?.text || ''));
         super.visit(ctx);
         break;
       }
@@ -81,7 +93,11 @@ export class RuleActionVisitor extends ParseTreeVisitor {
     if (!value) {
       return;
     }
-    this.action.value = value;
+    let parsedValue = value;
     this.action.valueType = this.variables.includes(value) ? 'VARIABLE' : 'VALUE';
+    if (this.action.valueType === 'VALUE') {
+      parsedValue = getStringContent(value);
+    }
+    this.action.value = parsedValue;
   }
 }

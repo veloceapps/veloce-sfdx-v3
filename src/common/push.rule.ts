@@ -23,6 +23,9 @@ export async function pushRule(params: CommandParams): Promise<string[]> {
     const ruleGroupResult = await createUpdateRuleGroup(conn, ruleGroup);
 
     for (const rule of ruleGroup.rules) {
+      if (!rule.name) {
+        continue;
+      }
       const ruleResult = await createUpdateRule(conn, rule, ruleGroupResult.id, ruleGroup);
       result.push(ruleResult.id);
 
