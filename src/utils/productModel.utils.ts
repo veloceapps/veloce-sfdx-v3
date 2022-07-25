@@ -9,7 +9,7 @@ export async function fetchProductModels(
   let query =
     'SELECT Id,Name,VELOCPQ__Version__c,VELOCPQ__ReferenceId__c,VELOCPQ__Active__c,VELOCPQ__BundleProduct__c,VELOCPQ__Comment__c,VELOCPQ__ContentId__c,VELOCPQ__UiDefinitionsId__c from VELOCPQ__ProductModel__c';
   if (!dumpAll) {
-    query += ` WHERE VELOCPQ__ReferenceId__c IN ('${modelNames?.join("','")}')`;
+    query += ` WHERE Name IN ('${modelNames?.join("','")}')`;
   }
 
   const result = await conn.query<ProductModel>(query);
