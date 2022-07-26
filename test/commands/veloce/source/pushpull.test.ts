@@ -1,8 +1,8 @@
-import {promisify} from 'node:util';
-import {cwd} from 'process';
-import {exec as plainExec} from 'node:child_process';
-import {hashElement} from 'folder-hash';
-import {expect} from 'chai';
+import { promisify } from 'node:util';
+import { cwd } from 'process';
+import { exec as plainExec } from 'node:child_process';
+import { hashElement } from 'folder-hash';
+import { expect } from 'chai';
 
 const exec = promisify(plainExec);
 const env = 'test-sfdx-plugin';
@@ -22,20 +22,12 @@ const filesOptions = {
   matchPath: true,
 };
 
-const allOptions = {
-  folders: {
-    include: ['**/*'],
-  },
-  files: filesOptions,
-};
-
 const configUiOptions = {
   folders: {
     include: ['config-ui'],
   },
   files: filesOptions,
 };
-
 
 const configUiAndPmlOptions = {
   folders: {
@@ -59,7 +51,7 @@ const ruleOptions = {
     include: ['**/METRIC_Default Metrics*'],
     matchBasename: false,
     matchPath: true,
-  }
+  },
 };
 
 const settingsOptions = {
@@ -74,9 +66,9 @@ const settingsOptions = {
 };
 
 async function calculateFolderHash(dir: string, options: any) {
-  var pushHashElement = await hashElement(dir, options);
+  const pushHashElement = await hashElement(dir, options);
   console.log(pushHashElement);
-  var hash = pushHashElement.hash;
+  const hash = pushHashElement.hash;
   console.log(hash);
   return hash;
 }
@@ -86,11 +78,11 @@ describe('veloce:source:push|pull', () => {
     const fs = require('fs');
     if (!fs.existsSync(dir)) {
       fs.mkdirSync(dir);
-      fs.mkdirSync(pushDir, {recursive: true});
+      fs.mkdirSync(pushDir, { recursive: true });
       await exec(`cp -ar test-data/source/* ${pushDir}`);
       fs.mkdirSync(pullDir);
     }
-    fs.writeFileSync(`${pushDir}/settings/test.json`, JSON.stringify({testId: 'testid value'}));
+    fs.writeFileSync(`${pushDir}/settings/test.json`, JSON.stringify({ testId: 'testid value' }));
     const octaModelTemplate = `${curDir}/test-data/source/model/OCTA/OCTA.json`;
     const octaModelPMLTemplate = 'test-data/source/model/OCTA/OCTA.pml';
     const octaModel = require(octaModelTemplate);
@@ -107,11 +99,12 @@ describe('veloce:source:push|pull', () => {
     console.log(cmdResult.stdout);
     cmdResult = await exec(`sfdx veloce:source:pull -u ${env} -p ${pullDir}`);
     console.log(cmdResult.stdout);
-    var pushHash = await calculateFolderHash(pushDir, allOptions);
-    var pullHash = await calculateFolderHash(pullDir, allOptions);
-    expect(pushHash === pullHash,
-      `pulled files are different from push;\n Check difference with: 'diff --brief --recursive ${pushDir} ${pullDir}'`,
-    ).to.be.true;
+    cmdResult = await exec(`diff --brief --recursive ${pushDir} ${pullDir} || true`);
+    console.log(cmdResult.stdout);
+    expect(cmdResult.stdout).to.not.contain(
+      `Only in ${pushDir}`,
+      'All pushed files should be present in pull directory',
+    );
   });
 
   it('should pull UI sources from org', async () => {
