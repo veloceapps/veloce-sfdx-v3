@@ -1,5 +1,5 @@
 
-rule "Calculate Surcharge end Price" salience 650
+rule "Calculate Simple Price" salience 650
 when
 $context: PriceContext(getBooleanValue("#OPTIONS_STEP") == false, getPropertyValue("#CONFIGURATION_STEP") == "UPDATE" || getPropertyValue("#CONFIGURATION_STEP") == "START")
 $bundle : PriceItem(instanceOf("Bundle"), $endDate : endDate)

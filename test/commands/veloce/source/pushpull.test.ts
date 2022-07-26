@@ -41,7 +41,7 @@ const drlOptions = {
     include: ['drl'],
   },
   files: {
-    include: ['**/Simple_Rules.drl', 'Simple_Rules.json'],
+    include: ['**/Calculate_110_SimpleRules.drl', 'Calculate_110_SimpleRules.json'],
     matchBasename: false,
     matchPath: true,
   },
