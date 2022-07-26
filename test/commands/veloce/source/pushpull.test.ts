@@ -40,7 +40,11 @@ const drlOptions = {
   folders: {
     include: ['drl'],
   },
-  files: filesOptions,
+  files: {
+    include: ['**/Simple_Rules.drl', 'Simple_Rules.json'],
+    matchBasename: false,
+    matchPath: true,
+  },
 };
 
 const ruleOptions = {
@@ -54,16 +58,16 @@ const ruleOptions = {
   },
 };
 
-const settingsOptions = {
-  folders: {
-    include: ['settings'],
-  },
-  files: {
-    include: ['**/natalija_mocha_test.json'],
-    matchBasename: false,
-    matchPath: true,
-  },
-};
+// const settingsOptions = {
+//   folders: {
+//     include: ['settings'],
+//   },
+//   files: {
+//     include: ['**/natalija_mocha_test.json'],
+//     matchBasename: false,
+//     matchPath: true,
+//   },
+// };
 
 async function calculateFolderHash(dir: string, options: any) {
   const pushHashElement = await hashElement(dir, options);
@@ -112,7 +116,7 @@ describe('veloce:source:push|pull', () => {
     const cmdResult = await exec(`sfdx veloce:source:pull -u ${env} -m config-ui:OCTA -p ${testPullDir}`);
     console.log(cmdResult.stdout);
     const pushHash = await calculateFolderHash(pushDir, configUiOptions);
-    const pullHash = await calculateFolderHash(pullDir, configUiOptions);
+    const pullHash = await calculateFolderHash(testPullDir, configUiOptions);
     expect(
       pushHash === pullHash,
       `pulled config-ui files are different from push for Octa model;\n Check difference with: 'diff --brief --recursive ${pushDir}/config-ui ${testPullDir}/config-ui'`,
@@ -124,7 +128,7 @@ describe('veloce:source:push|pull', () => {
     const cmdResult = await exec(`sfdx veloce:source:pull -u ${env} -m model:OCTA,config-ui:OCTA -p ${testPullDir}`);
     console.log(cmdResult.stdout);
     const pushHash = await calculateFolderHash(pushDir, configUiAndPmlOptions);
-    const pullHash = await calculateFolderHash(pullDir, configUiAndPmlOptions);
+    const pullHash = await calculateFolderHash(testPullDir, configUiAndPmlOptions);
     expect(
       pushHash === pullHash,
       `pulled config-ui and model files are different from push for Octa model;\n Check difference with: 'for member in config-ui model; do diff --brief --recursive ${pushDir}/$member ${testPullDir}/$member; done'`,
@@ -133,14 +137,12 @@ describe('veloce:source:push|pull', () => {
 
   it('should pull Configuration Settings sources from org', async () => {
     const testPullDir = `${pullDir}/should_pull_config-settings/source`;
+    const settingsFile = "settings/natalija_mocha_test.json";
     const cmdResult = await exec(`sfdx veloce:source:pull -u ${env} -m config-settings -p ${testPullDir}`);
     console.log(cmdResult.stdout);
-    const pushHash = await calculateFolderHash(pushDir, settingsOptions);
-    const pullHash = await calculateFolderHash(pullDir, settingsOptions);
-    expect(
-      pushHash === pullHash,
-      `pulled config-settings files are different from pushed;\n Check difference with: 'diff --brief --recursive ${pushDir}/settings ${testPullDir}/settings'`,
-    ).to.be.true;
+    const pullObj = require(`${testPullDir}/${settingsFile}`);
+    const pushObj = require(`${pushDir}/${settingsFile}`);
+    expect(pushObj, "pulled config-settings files are different from pushed;").to.be.deep.equal(pullObj);
   });
 
   it('should pull drools sources from org', async () => {
@@ -148,7 +150,7 @@ describe('veloce:source:push|pull', () => {
     const cmdResult = await exec(`sfdx veloce:source:pull -u ${env} -m drl -p ${testPullDir}`);
     console.log(cmdResult.stdout);
     const pushHash = await calculateFolderHash(pushDir, drlOptions);
-    const pullHash = await calculateFolderHash(pullDir, drlOptions);
+    const pullHash = await calculateFolderHash(testPullDir, drlOptions);
     expect(
       pushHash === pullHash,
       `pulled drl files are different from pushed;\n Check difference with: 'diff --brief --recursive ${pushDir}/drl ${testPullDir}/drl'`,
@@ -160,7 +162,7 @@ describe('veloce:source:push|pull', () => {
     const cmdResult = await exec(`sfdx veloce:source:pull -u ${env} -m rule -p ${testPullDir}`);
     console.log(cmdResult.stdout);
     const pushHash = await calculateFolderHash(pushDir, ruleOptions);
-    const pullHash = await calculateFolderHash(pullDir, ruleOptions);
+    const pullHash = await calculateFolderHash(testPullDir, ruleOptions);
     expect(
       pushHash === pullHash,
       `pulled rules files are different from pushed;\n Check difference with: 'diff --brief --recursive ${pushDir}/rule ${testPullDir}/rule'`,
