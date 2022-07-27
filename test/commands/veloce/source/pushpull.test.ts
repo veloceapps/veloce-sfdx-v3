@@ -72,7 +72,7 @@ describe('veloce:source:push|pull', () => {
     if (!fs.existsSync(dir)) {
       fs.mkdirSync(dir);
       fs.mkdirSync(pushDir, { recursive: true });
-      await exec(`cp -ar test-data/source/* ${pushDir}`);
+      await exec(`cp -a test-data/source/* ${pushDir}`);
       fs.mkdirSync(pullDir);
     }
     fs.writeFileSync(`${pushDir}/settings/test.json`, JSON.stringify({ testId: 'testid value' }));
@@ -126,12 +126,12 @@ describe('veloce:source:push|pull', () => {
 
   it('should pull Configuration Settings sources from org', async () => {
     const testPullDir = `${pullDir}/should_pull_config-settings/source`;
-    const settingsFile = "settings/natalija_mocha_test.json";
+    const settingsFile = 'settings/natalija_mocha_test.json';
     const cmdResult = await exec(`sfdx veloce:source:pull -u ${env} -m config-settings -p ${testPullDir}`);
     console.log(cmdResult.stdout);
     const pullObj = require(`${testPullDir}/${settingsFile}`);
     const pushObj = require(`${pushDir}/${settingsFile}`);
-    expect(pushObj, "pulled config-settings files are different from pushed;").to.be.deep.equal(pullObj);
+    expect(pushObj, 'pulled config-settings files are different from pushed;').to.be.deep.equal(pullObj);
   });
 
   it('should pull drools sources from org', async () => {
