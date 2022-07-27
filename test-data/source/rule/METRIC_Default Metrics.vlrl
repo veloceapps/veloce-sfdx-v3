@@ -1,43 +1,101 @@
+rule "Annual Recurring Revenue newnew"
+    sequence 1
+    condition
+        chargeItem: ChargeItem((chargeItem.chargeMethod=="RECURRING"))
+    transformation
+        result: chargeItem.recurringNetPrice*12
+    action
+        chargeItem.setMetric(VDM_ARR,result,VDM_Total_ARR)
+end
+rule "Annual Recurring Revenue new"
+    sequence 1
+    condition
+        chargeItem: ChargeItem((chargeItem.chargeMethod=="RECURRING"))
+        chargeItem: ChargeItem((chargeItem.chargeMethod=="RECURRING"))
+    transformation
+        result: chargeItem.recurringNetPrice*12
+    action
+        chargeItem.setMetric(VDM_ARR,result,VDM_Total_ARR)
+        chargeItem.setMetric(VDM_ARR,result,VDM_Total_ARR)
+end
 rule "Annual Contract Value"
     sequence 4
     condition
-        null: undefined((chargeItem.chargeMethod=="RECURRING"))
+        chargeItem: ChargeItem((chargeItem.chargeMethod=="RECURRING"))
+        chargeItem: ChargeItem((chargeItem.chargeMethod=="RECURRING"))
+        chargeItem: ChargeItem((chargeItem.chargeMethod=="RECURRING"))
+        chargeItem: ChargeItem((chargeItem.chargeMethod=="RECURRING"))
     transformation
-        result: (chargeItem.sellingTerm <= 12) ? chargeItem.netPrice : (chargeItem.recurringNetPrice * 12)
+        result: (chargeItem.sellingTerm<=12)?chargeItem.netPrice:(chargeItem.recurringNetPrice*12)
     action
-        header.setMetric(VDM_ACV,result,VDM_Total_ACV)
+        chargeItem.setMetric(VDM_ACV,result,VDM_Total_ACV)
+        chargeItem.setMetric(VDM_ACV,result,VDM_Total_ACV)
+        chargeItem.setMetric(VDM_ACV,result,VDM_Total_ACV)
+        chargeItem.setMetric(VDM_ACV,result,VDM_Total_ACV)
 end
 rule "Non-Recurring Revenue"
     sequence 3
     condition
-        null: undefined((chargeItem.chargeMethod=="ONE_TIME"))
+        chargeItem: ChargeItem((chargeItem.chargeMethod=="ONE_TIME"))
+        chargeItem: ChargeItem((chargeItem.chargeMethod=="ONE_TIME"))
+        chargeItem: ChargeItem((chargeItem.chargeMethod=="ONE_TIME"))
+        chargeItem: ChargeItem((chargeItem.chargeMethod=="ONE_TIME"))
     transformation
         result: chargeItem.netPrice
     action
-        header.setMetric(VDM_NRR,result,VDM_Total_NRR)
+        chargeItem.setMetric(VDM_NRR,result,VDM_Total_NRR)
+        chargeItem.setMetric(VDM_NRR,result,VDM_Total_NRR)
+        chargeItem.setMetric(VDM_NRR,result,VDM_Total_NRR)
+        chargeItem.setMetric(VDM_NRR,result,VDM_Total_NRR)
 end
 rule "Annual Recurring Revenue"
     sequence 1
     condition
-        null: undefined((chargeItem.chargeMethod=="RECURRING"))
+        chargeItem: ChargeItem((chargeItem.chargeMethod=="RECURRING"))
+        chargeItem: ChargeItem((chargeItem.chargeMethod=="RECURRING"))
+        chargeItem: ChargeItem((chargeItem.chargeMethod=="RECURRING"))
+        chargeItem: ChargeItem((chargeItem.chargeMethod=="RECURRING"))
     transformation
         result: chargeItem.recurringNetPrice*12
     action
-        header.setMetric(VDM_ARR,result,VDM_Total_ARR)
+        chargeItem.setMetric(VDM_ARR,result,VDM_Total_ARR)
+        chargeItem.setMetric(VDM_ARR,result,VDM_Total_ARR)
+        chargeItem.setMetric(VDM_ARR,result,VDM_Total_ARR)
+        chargeItem.setMetric(VDM_ARR,result,VDM_Total_ARR)
 end
 rule "Monthly Recurring Revenue"
     sequence 2
     condition
-        null: undefined((chargeItem.chargeMethod=="RECURRING"))
+        chargeItem: ChargeItem((chargeItem.chargeMethod=="RECURRING"))
+        chargeItem: ChargeItem((chargeItem.chargeMethod=="RECURRING"))
+        chargeItem: ChargeItem((chargeItem.chargeMethod=="RECURRING"))
     transformation
         result: chargeItem.recurringNetPrice
     action
-        header.setMetric(VDM_MRR,result,VDM_Total_MRR)
+        chargeItem.setMetric(VDM_MRR,result,VDM_Total_MRR)
+        chargeItem.setMetric(VDM_MRR,result,VDM_Total_MRR)
+        chargeItem.setMetric(VDM_MRR,result,VDM_Total_MRR)
 end
 rule "Total Contract Value"
     sequence 5
     transformation
         result: chargeItem.netPrice
     action
-        header.setMetric(VDM_TCV,result,VDM_Total_TCV)
+        chargeItem.setMetric(VDM_TCV,result,VDM_Total_TCV)
+        chargeItem.setMetric(VDM_TCV,result,VDM_Total_TCV)
+        chargeItem.setMetric(VDM_TCV,result,VDM_Total_TCV)
+        chargeItem.setMetric(VDM_TCV,result,VDM_Total_TCV)
+        chargeItem.setMetric(VDM_TCV,result,VDM_Total_TCV)
+        chargeItem.setMetric(VDM_TCV,result,VDM_Total_TCV)
+        chargeItem.setMetric(VDM_TCV,result,VDM_Total_TCV)
+        chargeItem.setMetric(VDM_TCV,result,VDM_Total_TCV)
+        chargeItem.setMetric(VDM_TCV,result,VDM_Total_TCV)
+        chargeItem.setMetric(VDM_TCV,result,VDM_Total_TCV)
+        chargeItem.setMetric(VDM_TCV,result,VDM_Total_TCV)
+        chargeItem.setMetric(VDM_TCV,result,VDM_Total_TCV)
+        chargeItem.setMetric(VDM_TCV,result,VDM_Total_TCV)
+        chargeItem.setMetric(VDM_TCV,result,VDM_Total_TCV)
+        chargeItem.setMetric(VDM_TCV,result,VDM_Total_TCV)
+        chargeItem.setMetric(VDM_TCV,result,VDM_Total_TCV)
+        chargeItem.setMetric(VDM_TCV,result,VDM_Total_TCV)
 end

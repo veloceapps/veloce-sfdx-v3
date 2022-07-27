@@ -58,17 +58,6 @@ const ruleOptions = {
   },
 };
 
-// const settingsOptions = {
-//   folders: {
-//     include: ['settings'],
-//   },
-//   files: {
-//     include: ['**/natalija_mocha_test.json'],
-//     matchBasename: false,
-//     matchPath: true,
-//   },
-// };
-
 async function calculateFolderHash(dir: string, options: any) {
   const pushHashElement = await hashElement(dir, options);
   console.log(pushHashElement);
