@@ -1,6 +1,6 @@
 import {
-  createRuleAction,
   createUpdateRule,
+  createUpdateRuleAction,
   createUpdateRuleCondition,
   createUpdateRuleGroup,
   createUpdateRuleTransformation,
@@ -38,7 +38,7 @@ export async function pushRule(params: CommandParams): Promise<string[]> {
       }
 
       for (const action of rule.mappers || []) {
-        await createRuleAction(conn, action, ruleResult.id);
+        await createUpdateRuleAction(conn, action, ruleResult.id);
       }
     }
   }
