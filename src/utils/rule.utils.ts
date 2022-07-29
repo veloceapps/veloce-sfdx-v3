@@ -454,7 +454,31 @@ export async function createUpdateRuleTransformation(
   return result;
 }
 
-export async function createRuleAction(conn: Connection, action: RuleAction, ruleId: string): Promise<SuccessResult> {
+export async function searchRuleActions(
+  conn: Connection,
+  action: RuleAction,
+  ruleId: string,
+): Promise<SFProcedureRuleTransformation[]> {
+  const query = `SELECT Id FROM VELOCPQ__RuleMapper__c WHERE
+VELOCPQ__Value__c='${action.value}'
+AND VELOCPQ__Action__c='${action.action}'
+AND VELOCPQ__Type__c=${action.type ? "'" + action.type + "'" : null}
+AND VELOCPQ__ValueType__c=${action.valueType ? "'" + action.valueType + "'" : null}
+AND VELOCPQ__TargetFieldName__c=${action.targetFieldName ? "'" + action.targetFieldName + "'" : null}
+AND VELOCPQ__TotalMetricName__c=${action.totalMetricName ? "'" + action.totalMetricName + "'" : null}
+AND VELOCPQ__VariableName__c=${action.variableName ? "'" + action.variableName + "'" : null}
+AND VELOCPQ__IsCalculateTotalMetric__c=${action.isCalculateTotalMetric ?? false}
+AND VELOCPQ__RuleId__c ='${ruleId}'`;
+
+  const result = await conn.autoFetchQuery<SFProcedureRuleTransformation>(query, { autoFetch: true, maxFetch: 100000 });
+  return result?.records ?? [];
+}
+
+export async function createUpdateRuleAction(
+  conn: Connection,
+  action: RuleAction,
+  ruleId: string,
+): Promise<SuccessResult> {
   const body = {
     Id: '',
     VELOCPQ__Value__c: action.value,
@@ -469,10 +493,20 @@ export async function createRuleAction(conn: Connection, action: RuleAction, rul
     VELOCPQ__Action__c: action.action,
   };
 
-  const result = await conn.sobject('VELOCPQ__RuleMapper__c').create(body);
+  const existingRuleAction = (await searchRuleActions(conn, action, ruleId))[0];
+  let result;
+  if (existingRuleAction) {
+    result = await conn.sobject('VELOCPQ__RuleMapper__c').update({ ...body, Id: existingRuleAction.Id });
+  } else {
+    result = await conn.sobject('VELOCPQ__RuleMapper__c').create(body);
+  }
 
   if (result.success) {
-    console.log(`New Procedure Rule Action ${body.VELOCPQ__Action__c} created with id ${result.id}`);
+    if (existingRuleAction) {
+      console.log(`Procedure Rule Action ${body.VELOCPQ__Action__c} already created`);
+    } else {
+      console.log(`New Procedure Rule Action ${body.VELOCPQ__Action__c} created with id ${result.id}`);
+    }
   } else {
     throw new SfdxError(`Failed to create document: ${JSON.stringify(result)}`);
   }
@@ -484,7 +518,7 @@ export async function createJavaScript(conn: Connection, javaScript: string, tra
   const body = {
     Title: 'script.js',
     PathOnClient: 'script.js',
-    VersionData: btoa(javaScript),
+    VersionData: Buffer.from(javaScript, 'binary').toString('base64'),
     TagCsv: 'transformationRuleScript',
   };
   const contentVersionResult = await conn.sobject('ContentVersion').create(body);
