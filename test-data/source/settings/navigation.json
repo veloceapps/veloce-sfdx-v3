@@ -1,0 +1,15 @@
+{
+  "Products Model": true,
+  "Price Lists": true,
+  "Catalogs": true,
+  "Offerings": false,
+  "Templates": true,
+  "Dynamic Pages": false,
+  "Approval Types": true,
+  "Accounts": true,
+  "Switch To Agent View": true,
+  "Switch To Admin View": true,
+  "Settings": true,
+  "Products": true,
+  "Approvals": true
+}

@@ -1,0 +1,7 @@
+{
+  "name": "documentFormat",
+  "label": "Document Format",
+  "value": "PDF",
+  "type": "RADIO",
+  "lov": ["PDF", "DOCX"]
+}

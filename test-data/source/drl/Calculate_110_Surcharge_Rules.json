@@ -1,0 +1,71 @@
+{
+  "active": true,
+  "description": "Surcharge Rules",
+  "name": "Surcharge Rules",
+  "priceListId": "a0V63000003a5AXEAY",
+  "referenceId": "tsttst0000ymVwBQAU",
+  "sequence": 110,
+  "type": "Calculate",
+  "priceRules": [
+    {
+      "active": true,
+      "description": "Calculate Surcharge Price",
+      "name": "Calculate Surcharge end Price",
+      "referenceId": "tsttst0000jYazpQAC"
+    },
+    {
+      "active": true,
+      "description": "Apply New Effective Date to Surcharge",
+      "name": "Apply New Effective Date to Surcharge",
+      "referenceId": "tsttst0000014REQAY"
+    },
+    {
+      "active": true,
+      "description": "Set Surcharge Effective Date By Updated Addons",
+      "name": "Set Surcharge Effective Date By Updated Addons",
+      "referenceId": "tsttst0000014ROQAY"
+    },
+    {
+      "active": true,
+      "description": "Accamulate Surcharge Effective Date By Updated Addons",
+      "name": "Accamulate Surcharge Effective Date By Updated Addons",
+      "referenceId": "tsttst0000014R9QAI"
+    },
+    {
+      "active": true,
+      "description": "Calculate Surcharge Effective Date By New Addons",
+      "name": "Calculate Surcharge Effective Date By New Addons",
+      "referenceId": "tsttst0000014R4QAI"
+    },
+    {
+      "active": true,
+      "description": "Recalculate New Surcharge Start Date",
+      "name": "Recalculate New Surcharge Start Date",
+      "referenceId": "tsttst0000014QzQAI"
+    },
+    {
+      "active": true,
+      "description": "Calculate Surcharge Base MLP",
+      "name": "Calculate Surcharge Base MLP",
+      "referenceId": "tsttst0000014QuQAI"
+    },
+    {
+      "active": true,
+      "description": "Calculate Surcharge TotalAddonPrice",
+      "name": "Calculate Surcharge TotalAddonPrice",
+      "referenceId": "tsttst0000014QpQAI"
+    },
+    {
+      "active": true,
+      "description": "Clean Surcharge Data",
+      "name": "Clean Surcharge Data",
+      "referenceId": "tsttst0000jYazkQAC"
+    },
+    {
+      "active": true,
+      "description": "Clean Surcharge Data number 3",
+      "name": "Clean Surcharge Data number 3",
+      "referenceId": "tst0000000jYazkQAC"
+    }
+  ]
+}

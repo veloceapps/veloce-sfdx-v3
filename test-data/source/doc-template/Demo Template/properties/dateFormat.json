@@ -1,0 +1,6 @@
+{
+  "name": "dateFormat",
+  "label": "Date Format",
+  "value": "mm.dd.yyyy",
+  "type": "TEXT"
+}

@@ -1,0 +1,38 @@
+[
+  {
+    "id": "test-360",
+    "properties": {
+      "entryPath": "/product",
+      "queryParams": {
+        "productId": "01t6300000HiFKhAAN"
+      }
+    }
+  },
+  {
+    "id": "l-360",
+    "properties": {
+      "entryPath": "/product",
+      "queryParams": {
+        "productId": "01t0R00000BJyldQAD"
+      }
+    }
+  },
+  {
+    "id": "default-360",
+    "properties": {
+      "entryPath": "/product",
+      "queryParams": {
+        "productId": "01t0R00000BJyldQAD"
+      }
+    }
+  },
+  {
+    "id": "sm-shopping-cart",
+    "properties": {
+      "entryPath": "/shopping-cart",
+      "queryParams": {
+        "productId": "01t6300000HiFKhAAN"
+      }
+    }
+  }
+]

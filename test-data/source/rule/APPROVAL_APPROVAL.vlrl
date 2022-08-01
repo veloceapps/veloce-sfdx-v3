@@ -1,0 +1,14 @@
+rule "MARY_APPROVAL_REGRESSION"
+    sequence 1
+    condition
+        ppp: ChargeItem((ppp.costAdjustment.amount))
+        s: PriceItem((s.qty>0))
+        sss: PriceItem((sss.parent.parent.lineNumber))
+    transformation
+        test: (s.qty)
+    action
+        s.addMessage("MATY")
+        s.setScore("344")
+        s.addMessage("MATY")
+        s.setScore("344")
+end

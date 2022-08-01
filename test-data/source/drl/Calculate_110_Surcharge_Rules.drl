@@ -1,0 +1,170 @@
+
+rule "Calculate Surcharge end Price" salience 650
+when
+$context: PriceContext(getBooleanValue("#OPTIONS_STEP") == false, getPropertyValue("#CONFIGURATION_STEP") == "UPDATE" || getPropertyValue("#CONFIGURATION_STEP") == "START")
+$bundle : PriceItem(instanceOf("Bundle"), $endDate : endDate)
+$surcharge : PriceItem(parent == $bundle, instanceOf("Surcharge"))
+then
+BigDecimal surchargeMLP = $surcharge.getDecimalValue("SurchargeMLP");
+BigDecimal totalAddonPrice = $surcharge.getDecimalValue("TotalAddonPrice");
+System.out.println("## Surcharge:650 Surcharge Data: " + $surcharge.getDateValue("StartDate") + ", " + surchargeMLP + ", " + totalAddonPrice);
+if (surchargeMLP.compareTo(totalAddonPrice) > 0) {
+    BigDecimal price = surchargeMLP.subtract(totalAddonPrice);
+    $surcharge.setEndDate($endDate);
+    $surcharge.setProperty("EndDate", $surcharge.getEndDate());
+    $surcharge.setProperty("Quantity", BigDecimal.ONE);
+    $surcharge.setProperty("ToDelete", null);
+    for (ChargeItem chargeItem : $surcharge.getChargeItems()) {
+        final BigDecimal sellingTerm = PricerUtils.calculateMonths($surcharge.getStartDate(), $surcharge.getEndDate());
+        BigDecimal listPrice = price.multiply(sellingTerm);
+
+        chargeItem.setStartDate($surcharge.getStartDate());
+        chargeItem.setEndDate($surcharge.getEndDate());
+        chargeItem.setSellingTerm(sellingTerm);
+        chargeItem.setQuantity(BigDecimal.ONE);
+        chargeItem.getPriceWaterfalls().clear();
+        chargeItem.getPriceWaterfalls().add(new PriceWaterfall(AdjustmentType.OVERRIDE_AMOUNT, listPrice, "Surcharge Calculation"));
+
+        chargeItem.setNetPrice(listPrice);
+        chargeItem.setListPrice(listPrice);
+        chargeItem.setRecurringListPrice(price);
+    }
+} else {
+    $surcharge.setActionCode(ActionCode.DELETE);
+    $surcharge.setProperty("ToDelete", "true");
+    $surcharge.getChargeItems().forEach(c -> {
+        c.setNetPrice(BigDecimal.ZERO);
+    });
+}
+end
+
+rule "Apply New Effective Date to Surcharge" salience 700
+when
+$context: PriceContext(getBooleanValue("#OPTIONS_STEP") == false, getPropertyValue("#CONFIGURATION_STEP") == "UPDATE" || getPropertyValue("#CONFIGURATION_STEP") == "START")
+$bundle : PriceItem(instanceOf("Bundle"), endDate != null, $bundleEndDate : endDate)
+$surcharge : PriceItem(activated, parent == $bundle, instanceOf("Surcharge"), getPropertyValue("CoveredProduct") != null, actionCode in (ActionCode.UPDATE, ActionCode.EXIST))
+then
+LocalDate effectiveDateFromStartDate = $surcharge.getDateValue("EffectiveDateFromStartDate");
+LocalDate effectiveDateFromEffDate = $surcharge.getDateValue("EffectiveDateFromEffDate");
+if (effectiveDateFromStartDate != null || effectiveDateFromEffDate != null){
+    LocalDate effectiveDateToSet;
+    if (effectiveDateFromStartDate == null){
+        effectiveDateToSet = effectiveDateFromEffDate;
+    } else if (effectiveDateFromEffDate == null){
+        effectiveDateToSet = effectiveDateFromStartDate;
+    } else {
+        effectiveDateToSet = effectiveDateFromStartDate.isBefore(effectiveDateFromEffDate) ? effectiveDateFromStartDate : effectiveDateFromEffDate;
+    }
+    $surcharge.setProperty("StartDate", effectiveDateToSet);
+    $surcharge.setEffectiveDate(effectiveDateToSet);
+}
+else{
+    $surcharge.setEffectiveDate(null);
+}
+end
+
+rule "Set Surcharge Effective Date By Updated Addons" salience 740
+when
+$context: PriceContext(getBooleanValue("#OPTIONS_STEP") == false, getPropertyValue("#CONFIGURATION_STEP") == "UPDATE" || getPropertyValue("#CONFIGURATION_STEP") == "START")
+$bundle : PriceItem(instanceOf("Bundle"), endDate != null, $bundleEndDate : endDate)
+$surcharge : PriceItem(parent == $bundle, instanceOf("Surcharge"), getPropertyValue("CoveredProduct") != null, actionCode in (ActionCode.UPDATE, ActionCode.EXIST), startDate != null, $surchargeStartDate : startDate)
+then
+if ($surcharge.getPropertyValue("EffectiveDateFromEffDate") != null){
+    LocalDate minEffectiveDate = $surcharge.getDateValue("EffectiveDateFromEffDate");
+    if ($surchargeStartDate.isAfter(minEffectiveDate)){
+        $surcharge.setProperty("EffectiveDateFromEffDate", $surchargeStartDate);
+    }
+}
+end
+
+rule "Accamulate Surcharge Effective Date By Updated Addons" salience 750
+when
+$context: PriceContext(getBooleanValue("#OPTIONS_STEP") == false, getPropertyValue("#CONFIGURATION_STEP") == "UPDATE" || getPropertyValue("#CONFIGURATION_STEP") == "START")
+$bundle : PriceItem(instanceOf("Bundle"), endDate != null, $bundleEndDate : endDate)
+$surcharge : PriceItem(parent == $bundle, instanceOf("Surcharge"), getPropertyValue("CoveredProduct") != null, actionCode in (ActionCode.UPDATE, ActionCode.EXIST), startDate != null, $surchargeStartDate : startDate)
+$addon : PriceItem(parent != $bundle, root == $bundle, endDate != null, effectiveDate != null, $effectiveDate : effectiveDate, $bundleEndDate.compareTo(endDate) == 0,
+    (actionCode in (ActionCode.UPDATE, ActionCode.DELETE)  || (pending && activated)),
+    productId == $surcharge.getPropertyValue("CoveredProduct"))
+$chargeItem : ChargeItem(priceItem == $addon, $price : recurringListPrice)
+then
+if ($addon.getActionCode() == ActionCode.DELETE || $chargeItem.getRecurringListPrice().compareTo($addon.getDecimalValue("ActivationPrice")) != 0){
+    if ($surcharge.getPropertyValue("EffectiveDateFromEffDate") == null || $surcharge.getDateValue("EffectiveDateFromEffDate").isAfter($effectiveDate)){
+        $surcharge.setProperty("EffectiveDateFromEffDate", $effectiveDate);
+    }
+}
+end
+
+rule "Calculate Surcharge Effective Date By New Addons" salience 800
+when
+$context: PriceContext(getBooleanValue("#OPTIONS_STEP") == false, getPropertyValue("#CONFIGURATION_STEP") == "UPDATE" || getPropertyValue("#CONFIGURATION_STEP") == "START")
+$bundle : PriceItem(instanceOf("Bundle"), endDate != null, $bundleEndDate : endDate)
+$surcharge : PriceItem(parent == $bundle, instanceOf("Surcharge"), getPropertyValue("CoveredProduct") != null, actionCode in (ActionCode.UPDATE, ActionCode.EXIST), startDate != null, $surchargeStartDate : startDate)
+$minStartDate : Comparable() from accumulate(PriceItem(parent != $bundle, root == $bundle, endDate != null, $startDate : startDate, startDate != null, $bundleEndDate.compareTo(endDate) == 0,
+    (actionCode == ActionCode.ADD || (pending && !activated)), productId == $surcharge.getPropertyValue("CoveredProduct")), min($startDate))
+then
+LocalDate minEffectiveDate = (LocalDate) $minStartDate;
+if ($surchargeStartDate.isAfter(minEffectiveDate)){
+    $surcharge.setProperty("EffectiveDateFromStartDate", $surchargeStartDate);
+}
+else{
+    $surcharge.setProperty("EffectiveDateFromStartDate", minEffectiveDate);
+}
+end
+
+rule "Recalculate New Surcharge Start Date" salience 850
+when
+$context: PriceContext(getBooleanValue("#OPTIONS_STEP") == false, getPropertyValue("#CONFIGURATION_STEP") == "UPDATE" || getPropertyValue("#CONFIGURATION_STEP") == "START")
+$bundle : PriceItem(instanceOf("Bundle"), endDate != null, $bundleEndDate : endDate)
+$surcharge : PriceItem(parent == $bundle, instanceOf("Surcharge"), getPropertyValue("CoveredProduct") != null, actionCode in (ActionCode.ADD, ActionCode.RENEW))
+$maxStartDate : Comparable() from accumulate(PriceItem(parent != $bundle, root == $bundle, endDate != null, $startDate : startDate, startDate != null, $bundleEndDate.compareTo(endDate) == 0,
+    actionCode != ActionCode.DELETE, productId == $surcharge.getPropertyValue("CoveredProduct")), max($startDate))
+then
+$surcharge.setStartDate((LocalDate) $maxStartDate);
+$surcharge.setProperty("StartDate", $maxStartDate);
+end
+
+rule "Calculate Surcharge Base MLP" salience 900
+when
+$context: PriceContext(getBooleanValue("#OPTIONS_STEP") == false, getPropertyValue("#CONFIGURATION_STEP") == "UPDATE" || getPropertyValue("#CONFIGURATION_STEP") == "START")
+$bundle : PriceItem(instanceOf("Bundle"), endDate != null, $bundleEndDate : endDate)
+$surcharge : PriceItem(parent == $bundle, instanceOf("Surcharge"), getPropertyValue("CoveredProduct") != null)
+$surchargeMLP : BigDecimal() from accumulate(ChargeItem(priceItem == $surcharge, $price : charge.getListPrice()), sum($price))
+$addOn : PriceItem(parent != $bundle, root == $bundle, endDate != null, $bundleEndDate.compareTo(endDate) == 0, actionCode != ActionCode.DELETE, productId == $surcharge.getPropertyValue("CoveredProduct"))
+then
+$surcharge.setProperty("SurchargeMLP", $surchargeMLP);
+end
+
+rule "Calculate Surcharge TotalAddonPrice" salience 950
+when
+$context : PriceContext(getBooleanValue("#OPTIONS_STEP") == false, getPropertyValue("#CONFIGURATION_STEP") == "UPDATE" || getPropertyValue("#CONFIGURATION_STEP") == "START")
+$bundle : PriceItem(instanceOf("Bundle"), endDate != null, $bundleEndDate : endDate)
+$surcharge : PriceItem(parent == $bundle, instanceOf("Surcharge"), getPropertyValue("CoveredProduct") != null)
+$addOn : PriceItem(parent != $bundle, root == $bundle, endDate != null, $bundleEndDate.compareTo(endDate) == 0, actionCode != ActionCode.DELETE, productId == $surcharge.getPropertyValue("CoveredProduct"))
+$addOnMLP : BigDecimal() from accumulate(ChargeItem(priceItem == $addOn, $price : recurringListPrice), sum($price))
+then
+$surcharge.setProperty("TotalAddonPrice", $surcharge.getDecimalValue("TotalAddonPrice").add($addOnMLP));
+end
+
+rule "Clean Surcharge Data" salience 1000
+when
+$context: PriceContext(getBooleanValue("#OPTIONS_STEP") == false, getPropertyValue("#CONFIGURATION_STEP") == "UPDATE" || getPropertyValue("#CONFIGURATION_STEP") == "START")
+$surcharge : PriceItem(instanceOf("Surcharge"))
+then
+$surcharge.setProperty("SurchargeMLP", BigDecimal.ZERO);
+$surcharge.setProperty("TotalAddonPrice", null);
+$surcharge.setProperty("StartDate", $surcharge.getStartDate());
+$surcharge.setProperty("EffectiveDateFromStartDate", null);
+$surcharge.setProperty("EffectiveDateFromEffDate", null);
+end
+
+rule "Clean Surcharge Data number 3" salience 1000
+when
+$context: PriceContext(getBooleanValue("#OPTIONS_STEP") == false, getPropertyValue("#CONFIGURATION_STEP") == "UPDATE" || getPropertyValue("#CONFIGURATION_STEP") == "START")
+$surcharge : PriceItem(instanceOf("Surcharge"))
+then
+$surcharge.setProperty("SurchargeMLP", BigDecimal.ZERO);
+$surcharge.setProperty("TotalAddonPrice", null);
+$surcharge.setProperty("StartDate", $surcharge.getStartDate());
+$surcharge.setProperty("EffectiveDateFromStartDate", null);
+$surcharge.setProperty("EffectiveDateFromEffDate", null);
+end

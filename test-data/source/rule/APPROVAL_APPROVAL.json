@@ -1,0 +1,28 @@
+{
+  "id": "a1B63000008G0tZEAS",
+  "name": "APPROVAL",
+  "type": "APPROVAL",
+  "sequence": null,
+  "description": null,
+  "active": false,
+  "rules": [
+    { "id": "a1163000002fxXfAAI", "name": "Approval Rule", "description": null, "active": true, "isDefault": false },
+    { "id": "a1163000002fq7BAAQ", "name": "asd", "description": null, "active": true, "isDefault": false },
+    { "id": "a1163000002fq7LAAQ", "name": "approval", "description": null, "active": true, "isDefault": false },
+    {
+      "id": "a1163000002fq76AAA",
+      "name": "MARY_APPROVAL_REGRESSION",
+      "description": "TEST",
+      "active": true,
+      "isDefault": false
+    },
+    {
+      "id": "a1163000002fq7GAAQ",
+      "name": "Approval (QTY > 1000)",
+      "description": "meaningful description",
+      "active": true,
+      "isDefault": false
+    },
+    { "id": "a1163000002fq7QAAQ", "name": "ttt", "description": null, "active": true, "isDefault": false }
+  ]
+}
