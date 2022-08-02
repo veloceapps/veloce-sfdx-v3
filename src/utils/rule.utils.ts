@@ -338,6 +338,7 @@ export async function createUpdateRule(
     VELOCPQ__Description__c: rule.description,
     VELOCPQ__Sequence__c: rule.sequence,
     VELOCPQ__Active__c: rule.active,
+    VELOCPQ__Default__c: rule.isDefault,
     VELOCPQ__RuleGroupId__c: ruleGroupId,
   };
   const existingRule = (await searchRules(conn, rule, ruleGroup))[0];
