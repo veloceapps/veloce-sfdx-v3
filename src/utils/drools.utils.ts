@@ -230,7 +230,7 @@ export async function getDroolGroups(conn: Connection, groupNames: string[]): Pr
       };
       group.priceRules.push(rule);
     }
-    group.priceRules.sort((a, b) => (a.sequence ?? 0) - (b.sequence ?? 0));
+    group.priceRules.sort((a, b) => (b.sequence ?? 0) - (a.sequence ?? 0));
     result.push(group);
   }
   return result;
