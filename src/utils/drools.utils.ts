@@ -160,9 +160,9 @@ export async function fetchDroolGroups(conn: Connection, groupNames: string[]): 
   return result?.records ?? [];
 }
 
-export async function setIdFromReferenceId(a: Group[], conn: Connection): Promise<void> {
+export async function setIdFromReferenceId(groups: Group[], conn: Connection): Promise<void> {
   const referenceIds = [];
-  for (const group of a) {
+  for (const group of groups) {
     referenceIds.push(group.priceListReferenceId);
   }
   const query = `SELECT Id,VELOCPQ__ReferenceId__c from VELOCPQ__PriceList__c WHERE VELOCPQ__ReferenceId__c in ('${referenceIds.join(
@@ -176,16 +176,16 @@ export async function setIdFromReferenceId(a: Group[], conn: Connection): Promis
     referenceIdToId[priceListRecord.VELOCPQ__ReferenceId__c] = priceListRecord.Id;
   }
 
-  for (const group of a) {
+  for (const group of groups) {
     if (group.priceListReferenceId) {
       group.priceListId = referenceIdToId[group.priceListReferenceId];
     }
   }
 }
 
-export async function setReferenceIdFromId(a: Group[], conn: Connection): Promise<void> {
+export async function setReferenceIdFromId(groups: Group[], conn: Connection): Promise<void> {
   const ids = [];
-  for (const group of a) {
+  for (const group of groups) {
     ids.push(group.priceListId);
   }
   const query = `SELECT Id,VELOCPQ__ReferenceId__c from VELOCPQ__PriceList__c WHERE Id in ('${ids.join("','")}')`;
@@ -197,7 +197,7 @@ export async function setReferenceIdFromId(a: Group[], conn: Connection): Promis
     idToReferenceId[priceListRecord.Id] = priceListRecord.VELOCPQ__ReferenceId__c;
   }
 
-  for (const group of a) {
+  for (const group of groups) {
     if (group.priceListId) {
       group.priceListReferenceId = idToReferenceId[group.priceListId];
     }
