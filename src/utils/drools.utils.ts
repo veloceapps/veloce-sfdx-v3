@@ -4,6 +4,7 @@ import { SfdxError } from '@salesforce/core';
 import { Connection } from '@salesforce/core';
 import { PriceRuleGroup } from '../types/priceRuleGroup.types';
 import { PriceRule } from '../types/priceRule.types';
+import { PriceList } from '../types/priceList.types';
 import { parseJsonSafe, writeFileSafe } from './common.utils';
 
 const ruleExtractRegex = /(rule\b)([\S\s]*?)(\nend\b)/g;
@@ -25,7 +26,8 @@ export interface Group {
   active: boolean;
   name: string;
   description: string;
-  priceListId: string;
+  priceListReferenceId?: string;
+  priceListId?: string;
   sequence: number;
   type: string;
   priceRules: Rule[];
@@ -86,8 +88,8 @@ export function validateGroupMeta(groupRecord: Group, groupFile: string): void {
   if (!groupRecord.name) {
     throw new SfdxError(`Property 'name' is missing from MetaFile of group ${groupFile}`);
   }
-  if (!groupRecord.priceListId) {
-    throw new SfdxError(`Property 'priceListId' is missing from MetaFile of group ${groupFile}`);
+  if (!groupRecord.priceListReferenceId) {
+    throw new SfdxError(`Property 'priceListReferenceId' is missing from MetaFile of group ${groupFile}`);
   }
   if (groupRecord.sequence == null) {
     throw new SfdxError(`Property 'sequence' is missing from MetaFile of group ${groupFile}`);
@@ -158,13 +160,57 @@ export async function fetchDroolGroups(conn: Connection, groupNames: string[]): 
   return result?.records ?? [];
 }
 
+export async function setIdFromReferenceId(a: Group[], conn: Connection): Promise<void> {
+  const referenceIds = [];
+  for (const group of a) {
+    referenceIds.push(group.priceListReferenceId);
+  }
+  const query = `SELECT Id,VELOCPQ__ReferenceId__c from VELOCPQ__PriceList__c WHERE VELOCPQ__ReferenceId__c in ('${referenceIds.join(
+    "','",
+  )}')`;
+  const result = await conn.query<PriceList>(query);
+  const priceListRecords = result?.records ?? [];
+  const referenceIdToId: { [key: string]: string } = {};
+
+  for (const priceListRecord of priceListRecords) {
+    referenceIdToId[priceListRecord.VELOCPQ__ReferenceId__c] = priceListRecord.Id;
+  }
+
+  for (const group of a) {
+    if (group.priceListReferenceId) {
+      group.priceListId = referenceIdToId[group.priceListReferenceId];
+    }
+  }
+}
+
+export async function setReferenceIdFromId(a: Group[], conn: Connection): Promise<void> {
+  const ids = [];
+  for (const group of a) {
+    ids.push(group.priceListId);
+  }
+  const query = `SELECT Id,VELOCPQ__ReferenceId__c from VELOCPQ__PriceList__c WHERE Id in ('${ids.join("','")}')`;
+  const result = await conn.query<PriceList>(query);
+  const priceListRecords = result?.records ?? [];
+  const idToReferenceId: { [key: string]: string } = {};
+
+  for (const priceListRecord of priceListRecords) {
+    idToReferenceId[priceListRecord.Id] = priceListRecord.VELOCPQ__ReferenceId__c;
+  }
+
+  for (const group of a) {
+    if (group.priceListId) {
+      group.priceListReferenceId = idToReferenceId[group.priceListId];
+    }
+  }
+}
+
 export function saveDroolGroups(groups: Group[], savePath: string): void {
   for (const group of groups) {
     const groupToSave: Group = {
       active: group.active,
       description: group.description,
       name: group.name,
-      priceListId: group.priceListId,
+      priceListReferenceId: group.priceListReferenceId,
       referenceId: group.referenceId,
       sequence: group.sequence,
       type: group.type,
