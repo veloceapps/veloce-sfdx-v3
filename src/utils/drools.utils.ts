@@ -161,10 +161,7 @@ export async function fetchDroolGroups(conn: Connection, groupNames: string[]): 
 }
 
 export async function setIdFromReferenceId(groups: Group[], conn: Connection): Promise<void> {
-  const referenceIds = [];
-  for (const group of groups) {
-    referenceIds.push(group.priceListReferenceId);
-  }
+  const referenceIds = groups.map((group) => group.priceListReferenceId);
   const query = `SELECT Id,VELOCPQ__ReferenceId__c from VELOCPQ__PriceList__c WHERE VELOCPQ__ReferenceId__c in ('${referenceIds.join(
     "','",
   )}')`;
@@ -184,10 +181,7 @@ export async function setIdFromReferenceId(groups: Group[], conn: Connection): P
 }
 
 export async function setReferenceIdFromId(groups: Group[], conn: Connection): Promise<void> {
-  const ids = [];
-  for (const group of groups) {
-    ids.push(group.priceListId);
-  }
+  const ids = groups.map((group) => group.priceListId);
   const query = `SELECT Id,VELOCPQ__ReferenceId__c from VELOCPQ__PriceList__c WHERE Id in ('${ids.join("','")}')`;
   const result = await conn.query<PriceList>(query);
   const priceListRecords = result?.records ?? [];
