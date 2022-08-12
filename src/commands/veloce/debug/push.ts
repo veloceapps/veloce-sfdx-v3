@@ -119,9 +119,13 @@ export default class Push extends DebugSfdxCommand {
     for (const group of result) {
       if (member.all || member.names.includes(group.name)) {
         try {
-          await axios.post(`${debugSession.backendUrl}/services/dev-override/drools/${group.priceListId}`, group, {
-            headers,
-          });
+          await axios.post(
+            `${debugSession.backendUrl}/services/dev-override/drools/${group.priceListReferenceId}`,
+            group,
+            {
+              headers,
+            },
+          );
         } catch (error) {
           logError('Failed to deploy', error);
         }

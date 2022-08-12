@@ -1,6 +1,6 @@
 import { Connection, SfdxError } from '@salesforce/core';
 import { ExecuteService } from '@salesforce/apex-node';
-import { extractGroupsFromFolder, Group, Rule } from '../utils/drools.utils';
+import { extractGroupsFromFolder, Group, Rule, setIdFromReferenceId } from '../utils/drools.utils';
 import { CommandParams } from '../types/command.types';
 
 async function saveRule(group: Group, rule: Rule, conn: Connection): Promise<void> {
@@ -111,6 +111,8 @@ export async function pushDRL(params: CommandParams): Promise<string[]> {
   }
   const sourcePath: string = rootPath + '/drl';
   const result = extractGroupsFromFolder(sourcePath);
+  await setIdFromReferenceId(result, conn);
+
   for (const group of result) {
     if (member.all || member.names.includes(group.name)) {
       await saveGroup(group, conn);
