@@ -1,11 +1,11 @@
 import { EOL } from 'node:os';
 import { existsSync, readdirSync, readFileSync } from 'node:fs';
 import { flags } from '@salesforce/command';
-import { Messages } from '@salesforce/core';
+import { Connection, Messages } from '@salesforce/core';
 import { AnyJson } from '@salesforce/ts-types';
 import { default as axios } from 'axios';
 import { DebugSfdxCommand } from '../../../common/debug.command';
-import { extractGroupsFromFolder } from '../../../utils/drools.utils';
+import { extractGroupsFromFolder, setIdFromReferenceId } from '../../../utils/drools.utils';
 import { getDebugClientHeaders } from '../../../utils/auth.utils';
 import DebugSessionInfo from '../../../types/DebugSessionInfo';
 import { getPath } from '../../../utils/path.utils';
@@ -47,6 +47,10 @@ export default class Push extends DebugSfdxCommand {
   protected static requiresProject = false;
 
   public async run(): Promise<AnyJson> {
+    if (!this.org) {
+      return Promise.reject('Org is not defined');
+    }
+
     if (!existsSync('sfdx-project.json') && this.flags.noproject === false) {
       return Promise.reject('You must have sfdx-project.json while runnign this plugin.');
     }
@@ -60,9 +64,10 @@ export default class Push extends DebugSfdxCommand {
     const members = this.flags.members as string;
     const rootPath = getPath(this.flags.sourcepath) ?? 'source';
     const memberMap = new MembersMap(members);
+    const conn = this.org.getConnection();
 
     await this.sendModel(debugSession, rootPath, memberMap.get('model'));
-    await this.sendDrools(debugSession, rootPath, memberMap.get('drl'));
+    await this.sendDrools(debugSession, conn, rootPath, memberMap.get('drl'));
     await this.sendRules(debugSession, rootPath, memberMap.get('rule'));
     // Return an object to be displayed with --json
     return {};
@@ -107,6 +112,7 @@ export default class Push extends DebugSfdxCommand {
 
   private async sendDrools(
     debugSession: DebugSessionInfo,
+    conn: Connection,
     rootPath: string,
     member: Member | undefined,
   ): Promise<void> {
@@ -116,16 +122,14 @@ export default class Push extends DebugSfdxCommand {
     const sourcePath = rootPath + '/drl';
     const headers = getDebugClientHeaders(debugSession);
     const result = extractGroupsFromFolder(sourcePath);
+    await setIdFromReferenceId(result, conn);
+
     for (const group of result) {
       if (member.all || member.names.includes(group.name)) {
         try {
-          await axios.post(
-            `${debugSession.backendUrl}/services/dev-override/drools/${group.priceListReferenceId}`,
-            group,
-            {
-              headers,
-            },
-          );
+          await axios.post(`${debugSession.backendUrl}/services/dev-override/drools/${group.priceListId}`, group, {
+            headers,
+          });
         } catch (error) {
           logError('Failed to deploy', error);
         }
