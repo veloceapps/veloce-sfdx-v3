@@ -2,6 +2,7 @@ import { promisify } from 'node:util';
 import { exec as plainExec } from 'node:child_process';
 
 const exec = promisify(plainExec);
+const env = process.env.ENV || 'studio-dev';
 
 describe('veloce:data:push', () => {
   it('should push veloce data to org', async () => {
@@ -11,7 +12,7 @@ describe('veloce:data:push', () => {
     // `
     //    writeFileSync("/tmp/VELOCPQ__ProductModel__c.csv", dataCSV)
     const cmdResult = await exec(
-      'sfdx veloce:data:push -s VELOCPQ__ProductModel__c -u studio-dev -p test-data/data/VELOCPQ__ProductModel__c.csv --upsert',
+      `sfdx veloce:data:push -s VELOCPQ__ProductModel__c -u ${env} -p test-data/data/VELOCPQ__ProductModel__c.csv --upsert`,
     );
     console.log(cmdResult.stdout);
     // var check = await exec(`sfdx force:data:soql:query  -u studio-dev -q "select fields(all) from VELOCPQ__ProductModel__c where Name = '${name}' limit 10" --json`)
