@@ -1,5 +1,4 @@
 {
-  "id": "a2B1g000001XVVMEA4",
   "name": "test",
   "type": "GENERAL",
   "sequence": null,
@@ -7,7 +6,6 @@
   "active": true,
   "rules": [
     {
-      "id": "a211g000002b5lnAAA",
       "name": "test",
       "description": "test",
       "active": false,

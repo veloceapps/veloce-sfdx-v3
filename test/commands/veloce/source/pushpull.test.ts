@@ -3,6 +3,7 @@ import { cwd } from 'process';
 import { exec as plainExec } from 'node:child_process';
 import { hashElement } from 'folder-hash';
 import { expect } from 'chai';
+import * as fs from "fs";
 
 const exec = promisify(plainExec);
 const env = process.env.ENV || 'studio-dev';
@@ -42,17 +43,6 @@ const drlOptions = {
   },
   files: {
     include: ['**/Calculate_110_SimpleRules.drl', 'Calculate_110_SimpleRules.json'],
-    matchBasename: false,
-    matchPath: true,
-  },
-};
-
-const ruleOptions = {
-  folders: {
-    include: ['rule'],
-  },
-  files: {
-    include: ['**/METRIC_Default Metrics*'],
     matchBasename: false,
     matchPath: true,
   },
@@ -150,11 +140,12 @@ describe('veloce:source:push|pull', () => {
     const testPullDir = `${pullDir}/should_pull_rules/source`;
     const cmdResult = await exec(`sfdx veloce:source:pull -u ${env} -m rule -p ${testPullDir}`);
     console.log(cmdResult.stdout);
-    const pushHash = await calculateFolderHash(pushDir, ruleOptions);
-    const pullHash = await calculateFolderHash(testPullDir, ruleOptions);
+    const file = "GENERAL_test";
+    const pullObj = fs.readFileSync(`${testPullDir}/rule/${file}.vlrl`, 'utf8').trim();
+    const pushObj = fs.readFileSync(`${pushDir}/rule/${file}.vlrl`, 'utf8').trim();
     expect(
-      pushHash === pullHash,
+      pullObj,
       `pulled rules files are different from pushed;\n Check difference with: 'diff --brief --recursive ${pushDir}/rule ${testPullDir}/rule'`,
-    ).to.be.true;
+    ).to.be.equal(pushObj);
   });
 });
