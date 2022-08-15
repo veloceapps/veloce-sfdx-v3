@@ -4,6 +4,7 @@ import { exec as plainExec } from 'node:child_process';
 // import { writeFileSync } from 'node:fs'
 
 const exec = promisify(plainExec);
+const env = process.env.ENV || 'studio-dev';
 
 describe('veloce:source:push', () => {
   it('should push PML sources to org', async () => {
@@ -12,7 +13,7 @@ describe('veloce:source:push', () => {
     // aBQ040000008RMfGAM,${name},false,false,"Super cool company",01504000000ISZRAA4,,,,aBQ040000008RMfDAM,,01504000000ISZWAA4,
     // `
     //    writeFileSync("/tmp/VELOCPQ__ProductModel__c.csv", dataCSV)
-    const cmdResult = await exec('sfdx veloce:source:push -u studio-dev -m model:OCTA -p test-data/source');
+    const cmdResult = await exec(`sfdx veloce:source:push -u ${env} -m model:OCTA -p test-data/source`);
     console.log(cmdResult.stdout);
     // var check = await exec(`sfdx force:data:soql:query  -u studio-dev -q "select fields(all) from VELOCPQ__ProductModel__c where Name = '${name}' limit 10" --json`)
     // var checkParsed = JSON.parse(check.stdout)
@@ -24,7 +25,7 @@ describe('veloce:source:push', () => {
     // aBQ040000008RMfGAM,${name},false,false,"Super cool company",01504000000ISZRAA4,,,,aBQ040000008RMfDAM,,01504000000ISZWAA4,
     // `
     //    writeFileSync("/tmp/VELOCPQ__ProductModel__c.csv", dataCSV)
-    const cmdResult = await exec('sfdx veloce:source:push -u studio-dev -m config-ui:OCTA -p test-data/source');
+    const cmdResult = await exec(`sfdx veloce:source:push -u ${env} -m config-ui:OCTA -p test-data/source`);
     console.log(cmdResult.stdout);
     // var check = await exec(`sfdx force:data:soql:query  -u studio-dev -q "select fields(all) from VELOCPQ__ProductModel__c where Name = '${name}' limit 10" --json`)
     // var checkParsed = JSON.parse(check.stdout)
@@ -37,7 +38,7 @@ describe('veloce:source:push', () => {
     // `
     //    writeFileSync("/tmp/VELOCPQ__ProductModel__c.csv", dataCSV)
     const cmdResult = await exec(
-      'sfdx veloce:source:push -u studio-dev -m model:OCTA,config-ui:OCTA -p test-data/source',
+      `sfdx veloce:source:push -u ${env} -m model:OCTA,config-ui:OCTA -p test-data/source`,
     );
     console.log(cmdResult.stdout);
     // var check = await exec(`sfdx force:data:soql:query  -u studio-dev -q "select fields(all) from VELOCPQ__ProductModel__c where Name = '${name}' limit 10" --json`)
@@ -45,7 +46,7 @@ describe('veloce:source:push', () => {
     // console.log(checkParsed)
   });
   it('should push Configuration Settings sources to org', async () => {
-    const cmdResult = await exec('sfdx veloce:source:push -u studio-dev -m config-settings -p test-data/source -d');
+    const cmdResult = await exec(`sfdx veloce:source:push -u ${env} -m config-settings -p test-data/source -d`);
     console.log(cmdResult.stdout);
   });
 });

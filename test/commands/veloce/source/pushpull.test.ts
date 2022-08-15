@@ -5,7 +5,7 @@ import { hashElement } from 'folder-hash';
 import { expect } from 'chai';
 
 const exec = promisify(plainExec);
-const env = 'test-sfdx-plugin';
+const env = process.env.ENV || 'studio-dev';
 const testId = Date.now();
 const dir = `/tmp/veloce-sfdx-v3-test-${testId}`;
 const pushDir = `${dir}/push/source`;
