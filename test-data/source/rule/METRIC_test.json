@@ -1,6 +1,6 @@
 {
   "name": "test",
-  "type": "GENERAL",
+  "type": "METRIC",
   "sequence": null,
   "description": null,
   "active": true,
