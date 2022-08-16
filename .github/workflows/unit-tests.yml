@@ -12,10 +12,11 @@ jobs:
       - run: |
           yarn install
           yarn prepack
+          export ENV=test-sfdx-plugin
           npm -g i install sfdx-cli@7.144.2
           sfdx plugins:link .
           echo "$SF_PASS" > ./sf-pass
-          sfdx veloce:login -r ${SF_URL} -u ${SF_USER} -p ./sf-pass -a studio-dev
+          sfdx veloce:login -r ${SF_URL} -u ${SF_USER} -p ./sf-pass -a $ENV
           yarn test
         env:
           SF_URL: ${{ secrets.SF_URL }}
