@@ -1,10 +1,11 @@
-import { promisify } from 'node:util';
-import { cwd } from 'process';
-import { exec as plainExec } from 'node:child_process';
-import { hashElement } from 'folder-hash';
-import { expect } from 'chai';
-import * as fs from "fs";
+import {promisify} from 'node:util';
+import {cwd} from 'process';
+import {exec as plainExec} from 'node:child_process';
+import * as fs from 'fs';
+import {expect} from 'chai';
+import {hashElement} from 'folder-hash';
 
+/* eslint-disable @typescript-eslint/no-var-requires, @typescript-eslint/no-unsafe-member-access */
 const exec = promisify(plainExec);
 const env = process.env.ENV || 'studio-dev';
 const testId = Date.now();
@@ -48,7 +49,7 @@ const drlOptions = {
   },
 };
 
-async function calculateFolderHash(directory: string, options: any) : Promise<string> {
+async function calculateFolderHash(directory: string, options: any): Promise<string> {
   const pushHashElement = await hashElement(directory, options);
   console.log(pushHashElement);
   const hash = pushHashElement.hash;
@@ -60,11 +61,11 @@ describe('veloce:source:push|pull', () => {
   before(async () => {
     if (!fs.existsSync(dir)) {
       fs.mkdirSync(dir);
-      fs.mkdirSync(pushDir, { recursive: true });
+      fs.mkdirSync(pushDir, {recursive: true});
       await exec(`cp -a test-data/source/* ${pushDir}`);
       fs.mkdirSync(pullDir);
     }
-    fs.writeFileSync(`${pushDir}/settings/test.json`, JSON.stringify({ testId: 'testid value' }));
+    fs.writeFileSync(`${pushDir}/settings/test.json`, JSON.stringify({testId: 'testid value'}));
     const octaModelTemplate = `${curDir}/test-data/source/model/OCTA/OCTA.json`;
     const octaModelPMLTemplate = 'test-data/source/model/OCTA/OCTA.pml';
     const octaModel = require(octaModelTemplate);
@@ -83,7 +84,7 @@ describe('veloce:source:push|pull', () => {
     console.log(cmdResult.stdout);
     cmdResult = await exec(`diff --brief --recursive ${pushDir} ${pullDir} || true`);
     console.log(cmdResult.stdout);
-    // eslint-disable-next-line no-unused-expression
+    // eslint-disable-next-line no-unused-expressions
     expect(cmdResult.stdout).to.not.contain(
       `Only in ${pushDir}`,
       'All pushed files should be present in pull directory',
@@ -94,9 +95,9 @@ describe('veloce:source:push|pull', () => {
     const testPullDir = `${pullDir}/should_pull_ui/source`;
     const cmdResult = await exec(`sfdx veloce:source:pull -u ${env} -m config-ui:OCTA -p ${testPullDir}`);
     console.log(cmdResult.stdout);
-    const pushHash = await calculateFolderHash(pushDir, configUiOptions);
-    const pullHash = await calculateFolderHash(testPullDir, configUiOptions);
-    // eslint-disable-next-line no-unused-expression
+    const pushHash = await calculateFolderHash(pushDir, configUiOptions); // eslint-disable-line no-unused-expressions
+    const pullHash = await calculateFolderHash(testPullDir, configUiOptions); // eslint-disable-line no-unused-expressions
+    // eslint-disable-next-line no-unused-expressions
     expect(
       pushHash === pullHash,
       `pulled config-ui files are different from push for Octa model;\n Check difference with: 'diff --brief --recursive ${pushDir}/config-ui ${testPullDir}/config-ui'`,
@@ -107,9 +108,9 @@ describe('veloce:source:push|pull', () => {
     const testPullDir = `${pullDir}/should_pull_ui_pml/source`;
     const cmdResult = await exec(`sfdx veloce:source:pull -u ${env} -m model:OCTA,config-ui:OCTA -p ${testPullDir}`);
     console.log(cmdResult.stdout);
-    const pushHash = await calculateFolderHash(pushDir, configUiAndPmlOptions);
-    const pullHash = await calculateFolderHash(testPullDir, configUiAndPmlOptions);
-    // eslint-disable-next-line no-unused-expression
+    const pushHash = await calculateFolderHash(pushDir, configUiAndPmlOptions); // eslint-disable-line no-unused-expressions
+    const pullHash = await calculateFolderHash(testPullDir, configUiAndPmlOptions); // eslint-disable-line no-unused-expressions
+    // eslint-disable-next-line no-unused-expressions
     expect(
       pushHash === pullHash,
       `pulled config-ui and model files are different from push for Octa model;\n Check difference with: 'for member in config-ui model; do diff --brief --recursive ${pushDir}/$member ${testPullDir}/$member; done'`,
@@ -123,7 +124,7 @@ describe('veloce:source:push|pull', () => {
     console.log(cmdResult.stdout);
     const pullObj = require(`${testPullDir}/${settingsFile}`);
     const pushObj = require(`${pushDir}/${settingsFile}`);
-    // eslint-disable-next-line no-unused-expression
+    // eslint-disable-next-line no-unused-expressions
     expect(pushObj, 'pulled config-settings file should have same content as pushed;').to.be.deep.equal(pullObj);
   });
 
@@ -131,9 +132,9 @@ describe('veloce:source:push|pull', () => {
     const testPullDir = `${pullDir}/should_pull_drools/source`;
     const cmdResult = await exec(`sfdx veloce:source:pull -u ${env} -m drl -p ${testPullDir}`);
     console.log(cmdResult.stdout);
-    const pushHash = await calculateFolderHash(pushDir, drlOptions);
-    const pullHash = await calculateFolderHash(testPullDir, drlOptions);
-    // eslint-disable-next-line no-unused-expression
+    const pushHash = await calculateFolderHash(pushDir, drlOptions); // eslint-disable-line no-unused-expressions
+    const pullHash = await calculateFolderHash(testPullDir, drlOptions); // eslint-disable-line no-unused-expressions
+    // eslint-disable-next-line no-unused-expressions
     expect(
       pushHash === pullHash,
       `pulled drl files are different from pushed;\n Check difference with: 'diff --brief --recursive ${pushDir}/drl ${testPullDir}/drl'`,
