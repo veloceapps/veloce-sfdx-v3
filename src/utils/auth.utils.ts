@@ -11,7 +11,7 @@ export const getDebugClientHeaders = (debugSession: DebugSessionInfo): { [key: s
   ).toString('base64');
   const authorization = authToken;
   return {
-    'dev-token': debugSession.token,
+    'Veloce-Dev-Token': debugSession.token,
     Authorization: authorization,
     'Content-Type': 'application/json',
   };
