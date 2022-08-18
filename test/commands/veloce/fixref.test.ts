@@ -4,6 +4,7 @@ import { exec as plainExec } from 'node:child_process';
 // import { writeFileSync } from 'node:fs'
 
 const exec = promisify(plainExec);
+const env = process.env.ENV;
 
 describe('veloce:fixref', () => {
   it('should fix references in org', async () => {
@@ -12,7 +13,7 @@ describe('veloce:fixref', () => {
     // aBQ040000008RMfGAM,${name},false,false,"Super cool company",01504000000ISZRAA4,,,,aBQ040000008RMfDAM,,01504000000ISZWAA4,
     // `
     //    writeFileSync("/tmp/VELOCPQ__ProductModel__c.csv", dataCSV)
-    const cmdResult = await exec('sfdx veloce:fixref -u studio-dev --dry');
+    const cmdResult = await exec(`sfdx veloce:fixref -u ${env} --dry`);
     console.log(cmdResult.stdout);
     // var check = await exec(`sfdx force:data:soql:query  -u studio-dev -q "select fields(all) from VELOCPQ__ProductModel__c where Name = '${name}' limit 10" --json`)
     // var checkParsed = JSON.parse(check.stdout)
