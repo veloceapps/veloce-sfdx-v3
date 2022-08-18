@@ -7,7 +7,7 @@ import {hashElement} from 'folder-hash';
 
 /* eslint-disable @typescript-eslint/no-var-requires, @typescript-eslint/no-unsafe-member-access */
 const exec = promisify(plainExec);
-const env = process.env.ENV || 'studio-dev';
+const env = process.env.ENV;
 const testId = Date.now();
 const dir = `/tmp/veloce-sfdx-v3-test-${testId}`;
 const pushDir = `${dir}/push/source`;

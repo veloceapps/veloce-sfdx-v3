@@ -4,7 +4,7 @@ import { exec as plainExec } from 'node:child_process';
 // import { writeFileSync } from 'node:fs'
 
 const exec = promisify(plainExec);
-const env = process.env.ENV || '${env}';
+const env = process.env.ENV;
 
 describe('veloce:source:pull', () => {
   it('should pull veloce sources from org', async () => {

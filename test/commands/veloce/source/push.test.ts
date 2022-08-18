@@ -4,7 +4,7 @@ import { exec as plainExec } from 'node:child_process';
 // import { writeFileSync } from 'node:fs'
 
 const exec = promisify(plainExec);
-const env = process.env.ENV || 'studio-dev';
+const env = process.env.ENV;
 
 describe('veloce:source:push', () => {
   it('should push PML sources to org', async () => {
