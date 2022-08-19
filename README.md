@@ -13,8 +13,8 @@ Extension to sfdx which allows veloce specific data pull and push
 
 - [veloce](#veloce)
   <!-- tocstop -->
-                          <!-- install -->
-                          <!-- usage -->
+                            <!-- install -->
+                            <!-- usage -->
 
 ```sh-session
 $ npm install -g veloce-sfdx-v3
@@ -458,7 +458,7 @@ OPTIONS
 
 EXAMPLE
   sfdx veloce:source:push --targetusername myOrg@example.com --targetdevhubusername devhub@org.com --members model:OCTA
-  --sourcepath ./source/pmls
+  --sourcepath ./source/models
 ```
 
 _See code: [src/commands/veloce/source/pack.ts](https://github.com/veloceapps/veloce-sfdx-v3/blob/v0.0.9/src/commands/veloce/source/pack.ts)_
@@ -538,7 +538,7 @@ OPTIONS
 
 EXAMPLE
   sfdx veloce:source:push --targetusername myOrg@example.com --targetdevhubusername devhub@org.com --members model:OCTA
-  --sourcepath ./source/pmls
+  --sourcepath ./source/models
 ```
 
 _See code: [src/commands/veloce/source/push.ts](https://github.com/veloceapps/veloce-sfdx-v3/blob/v0.0.9/src/commands/veloce/source/push.ts)_
