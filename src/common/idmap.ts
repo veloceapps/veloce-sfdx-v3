@@ -32,7 +32,7 @@ export async function loadIdMap(conn: Connection): Promise<IdMap> {
 
 const chunkItems = <T>(items: T[]): T[][] =>
   items.reduce((chunks: T[][], item: T, index) => {
-    const chunk = Math.floor(index / 48);
+    const chunk = Math.floor(index / 10);
     chunks[chunk] = ([] as T[]).concat(chunks[chunk] || [], item);
     return chunks;
   }, []);
