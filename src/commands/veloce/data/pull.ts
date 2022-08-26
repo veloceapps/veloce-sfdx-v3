@@ -4,7 +4,7 @@
  * Licensed under the BSD 3-Clause license.
  * For full license text, see LICENSE.txt file in the repo root or https://opensource.org/licenses/BSD-3-Clause
  */
-import { existsSync, createWriteStream } from 'node:fs';
+import { existsSync, createWriteStream, lstatSync } from 'node:fs';
 import * as os from 'os';
 import { WriteStream } from 'fs';
 import { flags, SfdxCommand } from '@salesforce/command';
@@ -107,6 +107,11 @@ export default class Pull extends SfdxCommand {
     }
     const conn = this.org.getConnection();
 
+    let sourcepath = this.flags.sourcepath;
+    if (lstatSync(sourcepath).isDirectory()) {
+      sourcepath = (this.flags.sobjecttype as string) + '.csv';
+    }
+
     const idReplaceFieldsFlag = this.flags.idreplacefields as string;
     const ignoreFieldsFlag = this.flags.ignorefields as string;
 
@@ -144,7 +149,7 @@ export default class Pull extends SfdxCommand {
       sendHeaders: true,
       bom: true,
     });
-    writer.pipe(createWriteStream(this.flags.sourcepath as string, { flags: 'w+' }));
+    writer.pipe(createWriteStream(sourcepath, { flags: 'w+' }));
 
     const { fields, lookupFields } = await this.getFields(conn, ignoreFields);
     let query;

@@ -4,7 +4,7 @@
  * Licensed under the BSD 3-Clause license.
  * For full license text, see LICENSE.txt file in the repo root or https://opensource.org/licenses/BSD-3-Clause
  */
-import { existsSync, readFileSync } from 'node:fs';
+import { existsSync, readFileSync, lstatSync } from 'node:fs';
 import * as os from 'os';
 import * as parse from 'csv-parse/lib/sync';
 import { flags, SfdxCommand } from '@salesforce/command';
@@ -121,6 +121,10 @@ export default class Push extends SfdxCommand {
     const upsert = this.flags.upsert || false;
     const dry = this.flags.dry || false;
     let diff = this.flags.diff || true;
+    let sourcepath = this.flags.sourcepath;
+    if (lstatSync(sourcepath).isDirectory()) {
+      sourcepath = (this.flags.sobjecttype as string) + '.csv';
+    }
 
     const match = ignoreFieldsParam?.match(/(?<appendMode>[+-])?\s*(?<fieldsToIgnore>.*)/);
     const { appendMode, fieldsToIgnore } = match?.groups ?? {};
@@ -153,7 +157,7 @@ export default class Push extends SfdxCommand {
     const datefields = [];
     const numericfields = [];
 
-    const fileContent = readFileSync(this.flags.sourcepath);
+    const fileContent = readFileSync(sourcepath);
     console.log('B1');
     let idmap = await loadIdMap(conn);
     // retrieve types of args
