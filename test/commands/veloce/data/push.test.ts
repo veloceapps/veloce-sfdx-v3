@@ -1,8 +1,9 @@
 import { promisify } from 'node:util';
 import { exec as plainExec } from 'node:child_process';
+import { getTestEnv } from '../../../utils';
 
 const exec = promisify(plainExec);
-const env = process.env.ENV;
+const env = getTestEnv();
 
 describe('veloce:data:push', () => {
   it('should push veloce data to org', async () => {

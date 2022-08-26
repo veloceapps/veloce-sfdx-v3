@@ -1,10 +1,11 @@
 import { promisify } from 'node:util';
 import { exec as plainExec } from 'node:child_process';
+import { getTestEnv } from '../../../utils';
 
 // import { writeFileSync } from 'node:fs'
 
 const exec = promisify(plainExec);
-const env = process.env.ENV;
+const env = getTestEnv();
 
 describe('veloce:source:push', () => {
   it('should push PML sources to org', async () => {
@@ -37,9 +38,7 @@ describe('veloce:source:push', () => {
     // aBQ040000008RMfGAM,${name},false,false,"Super cool company",01504000000ISZRAA4,,,,aBQ040000008RMfDAM,,01504000000ISZWAA4,
     // `
     //    writeFileSync("/tmp/VELOCPQ__ProductModel__c.csv", dataCSV)
-    const cmdResult = await exec(
-      `sfdx veloce:source:push -u ${env} -m model:OCTA,config-ui:OCTA -p test-data/source`,
-    );
+    const cmdResult = await exec(`sfdx veloce:source:push -u ${env} -m model:OCTA,config-ui:OCTA -p test-data/source`);
     console.log(cmdResult.stdout);
     // var check = await exec(`sfdx force:data:soql:query  -u studio-dev -q "select fields(all) from VELOCPQ__ProductModel__c where Name = '${name}' limit 10" --json`)
     // var checkParsed = JSON.parse(check.stdout)
