@@ -1,10 +1,11 @@
 import { promisify } from 'node:util';
 import { exec as plainExec } from 'node:child_process';
+import { getTestEnv } from '../../utils';
 
 // import { writeFileSync } from 'node:fs'
 
 const exec = promisify(plainExec);
-const env = process.env.ENV;
+const env = getTestEnv();
 
 describe('veloce:fixref', () => {
   it('should fix references in org', async () => {

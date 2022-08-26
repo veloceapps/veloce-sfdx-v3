@@ -1,13 +1,14 @@
-import {promisify} from 'node:util';
-import {cwd} from 'process';
-import {exec as plainExec} from 'node:child_process';
+import { promisify } from 'node:util';
+import { cwd } from 'process';
+import { exec as plainExec } from 'node:child_process';
 import * as fs from 'fs';
-import {expect} from 'chai';
-import {hashElement} from 'folder-hash';
+import { expect } from 'chai';
+import { hashElement } from 'folder-hash';
+import { getTestEnv } from '../../../utils';
 
 /* eslint-disable @typescript-eslint/no-var-requires, @typescript-eslint/no-unsafe-member-access */
 const exec = promisify(plainExec);
-const env = process.env.ENV;
+const env = getTestEnv();
 const testId = Date.now();
 const dir = `/tmp/veloce-sfdx-v3-test-${testId}`;
 const pushDir = `${dir}/push/source`;
@@ -61,11 +62,11 @@ describe('veloce:source:push|pull', () => {
   before(async () => {
     if (!fs.existsSync(dir)) {
       fs.mkdirSync(dir);
-      fs.mkdirSync(pushDir, {recursive: true});
+      fs.mkdirSync(pushDir, { recursive: true });
       await exec(`cp -a test-data/source/* ${pushDir}`);
       fs.mkdirSync(pullDir);
     }
-    fs.writeFileSync(`${pushDir}/settings/test.json`, JSON.stringify({testId: 'testid value'}));
+    fs.writeFileSync(`${pushDir}/settings/test.json`, JSON.stringify({ testId: 'testid value' }));
     const octaModelTemplate = `${curDir}/test-data/source/model/OCTA/OCTA.json`;
     const octaModelPMLTemplate = 'test-data/source/model/OCTA/OCTA.pml';
     const octaModel = require(octaModelTemplate);

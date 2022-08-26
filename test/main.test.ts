@@ -1,4 +1,6 @@
-const env = process.env.ENV ?? '';
+import { getTestEnv } from './utils';
+
+const env = getTestEnv();
 const restrictedEnvs = ['studio-dev'];
 
 beforeEach(() => {
