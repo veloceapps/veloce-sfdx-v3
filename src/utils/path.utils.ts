@@ -1,12 +1,14 @@
-export const getPath = (path: unknown): string | null => {
-  if (path == null) {
+import * as path from 'path';
+
+export const getPath = (p: unknown): string | null => {
+  if (p == null) {
     return null;
   }
 
   // trim last slash if present
-  return String(path).replace(/\/$/, '');
+  return String(p).replace(/\/$/, '');
 };
 
-export const getPathParts = (path: string): string[] => {
-  return path.split('/');
+export const getPathParts = (p: string): string[] => {
+  return p.split(path.sep);
 };
