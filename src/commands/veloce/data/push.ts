@@ -321,7 +321,7 @@ ${objects}
       }
 
       if (!dry) {
-        const { ok: execOk, output: execOutput } = await this.executeScript(conn, script);
+        const { ok: execOk, output: execOutput } = await this.executeScript(conn, script, sType);
         if (!execOk) {
           ok = false;
         }
@@ -502,7 +502,34 @@ ${objects}
     return outputText;
   }
 
-  private async executeScript(conn: Connection, script: string): Promise<ExecuteScriptResult> {
+  private remapErrorOutput(entity: string, output: string): string {
+    let lastReferenceId = '';
+    const referenceIdLogPrefix = 'Execute Anonymous: o = [SELECT Id FROM';
+    const noRowsForAssignmentLogPart = 'System.QueryException: List has no rows for assignment to SObject';
+
+    let newOutput = '';
+    for (const l of output.split('\n')) {
+      // Execute Anonymous: o = [SELECT Id FROM velocpq__productmodel__c WHERE velocpq__referenceid__c='3f261fa60d7116f25c' LIMIT 1];
+      if (l.includes(referenceIdLogPrefix)) {
+        const parts = l.split("'");
+        if (parts.length >= 3) {
+          lastReferenceId = parts[1];
+        }
+      } else if (l.includes(noRowsForAssignmentLogPart)) {
+        const replaced = l.replaceAll(
+          noRowsForAssignmentLogPart,
+          `“Unable to update "${entity}" record, no record with reference Id "${lastReferenceId}" found“. Try push with --upsert flag`,
+        );
+        newOutput += replaced;
+      } else {
+        newOutput += l;
+      }
+      newOutput += '\n';
+    }
+    return newOutput;
+  }
+
+  private async executeScript(conn: Connection, script: string, entity: string): Promise<ExecuteScriptResult> {
     const exec = new ExecuteService(conn);
     const execAnonOptions = Object.assign({}, { apexCode: script });
     const result = await exec.executeAnonymous(execAnonOptions);
@@ -518,7 +545,7 @@ ${objects}
       this.ux.log('Executed Script END');
       output += `${out}\n`;
     }
-    return { ok, output };
+    return { ok, output: this.remapErrorOutput(entity, output) };
   }
 
   private async updateIds(
