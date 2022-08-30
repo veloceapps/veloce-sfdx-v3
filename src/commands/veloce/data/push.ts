@@ -53,6 +53,10 @@ export default class Push extends SfdxCommand {
   ];
 
   protected static flagsConfig = {
+    members: flags.string({
+      char: 'm',
+      description: messages.getMessage('membersFlagDescription'),
+    }),
     sourcepath: flags.string({
       char: 'p',
       description: messages.getMessage('sourcepathFlagDescription'),
@@ -122,7 +126,7 @@ export default class Push extends SfdxCommand {
     const dry = this.flags.dry || false;
     let diff = this.flags.diff || true;
     let sourcepath = this.flags.sourcepath;
-    if (lstatSync(sourcepath).isDirectory()) {
+    if (existsSync(sourcepath) && lstatSync(sourcepath).isDirectory()) {
       sourcepath = (this.flags.sobjecttype as string) + '.csv';
     }
 

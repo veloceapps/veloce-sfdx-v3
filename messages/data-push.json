@@ -1,4 +1,5 @@
 {
+  "membersFlagDescription": "Pushes only specific type of data or even name of object",
   "commandDescription": "Uploads Data from CSVs to Salesforce org",
   "sourcepathFlagDescription": "Path where to get data",
   "noprojectFlagDescription": "Bypass check of sfdx-project.json to exist",

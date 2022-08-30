@@ -61,6 +61,11 @@ export default class Pull extends SfdxCommand {
   ];
 
   protected static flagsConfig = {
+    // flag with a value (-m, --members=VALUE)
+    members: flags.string({
+      char: 'm',
+      description: messages.getMessage('membersFlagDescription'),
+    }),
     where: flags.string({
       char: 'w',
       description: messages.getMessage('whereFlagDescription'),
@@ -108,7 +113,7 @@ export default class Pull extends SfdxCommand {
     const conn = this.org.getConnection();
 
     let sourcepath = this.flags.sourcepath;
-    if (lstatSync(sourcepath).isDirectory()) {
+    if (existsSync(sourcepath) && lstatSync(sourcepath).isDirectory()) {
       sourcepath = (this.flags.sobjecttype as string) + '.csv';
     }
 
