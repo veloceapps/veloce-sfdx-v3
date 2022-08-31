@@ -127,7 +127,7 @@ export default class Push extends SfdxCommand {
     let diff = this.flags.diff || true;
     let sourcepath = this.flags.sourcepath;
     if (existsSync(sourcepath) && lstatSync(sourcepath).isDirectory()) {
-      sourcepath = (this.flags.sobjecttype as string) + '.csv';
+      sourcepath = `${this.flags.sourcepath as string}/${this.flags.sobjecttype as string}.csv`;
     }
 
     const match = ignoreFieldsParam?.match(/(?<appendMode>[+-])?\s*(?<fieldsToIgnore>.*)/);

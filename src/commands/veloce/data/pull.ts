@@ -8,11 +8,12 @@ import { existsSync, createWriteStream, lstatSync } from 'node:fs';
 import * as os from 'os';
 import { WriteStream } from 'fs';
 import { flags, SfdxCommand } from '@salesforce/command';
-import { Connection, Messages } from '@salesforce/core';
+import { Connection, Messages, SfdxError } from '@salesforce/core';
 import { AnyJson } from '@salesforce/ts-types';
 import { EntityDefinition } from '../../../types/entityDefinition';
 import { SalesforceEntity } from '../../../types/salesforceEntity';
 import { loadIdMap } from '../../../common/idmap';
+import { Member, parseMembers } from '../../../utils/members';
 //
 type CsvWriterPipeFunction = (stream: WriteStream) => void;
 type CsvWriterEndFunction = () => void;
@@ -102,46 +103,14 @@ export default class Pull extends SfdxCommand {
   // Set this to true if your command requires a project workspace; 'requiresProject' is false by default
   protected static requiresProject = false;
 
-  /* eslint complexity: ["error", 25]*/
-  public async run(): Promise<AnyJson> {
-    if (!this.org) {
-      return Promise.reject('Org is not defined');
-    }
-    if (!existsSync('sfdx-project.json') && this.flags.noproject === false) {
-      return Promise.reject('You must have sfdx-project.json while runnign this plugin.');
-    }
-    const conn = this.org.getConnection();
-
-    let sourcepath = this.flags.sourcepath;
-    if (existsSync(sourcepath) && lstatSync(sourcepath).isDirectory()) {
-      sourcepath = (this.flags.sobjecttype as string) + '.csv';
-    }
-
-    const idReplaceFieldsFlag = this.flags.idreplacefields as string;
-    const ignoreFieldsFlag = this.flags.ignorefields as string;
-
-    const idReplaceFields = idReplaceFieldsFlag ? idReplaceFieldsFlag?.split(',') : [];
-
-    const match = ignoreFieldsFlag?.match(/(?<appendMode>[+-])?\s*(?<fieldsToIgnore>.*)/);
-    const { appendMode, fieldsToIgnore } = match?.groups ?? {};
-    let ignoreFields = [];
-    if (fieldsToIgnore) {
-      const fieldsArray = fieldsToIgnore?.split(',');
-      switch (appendMode) {
-        case '+':
-          ignoreFields = [...Pull.defaultIgnoreFields, ...fieldsArray];
-          break;
-        case '-':
-          ignoreFields = Pull.defaultIgnoreFields.filter((item) => fieldsArray.indexOf(item) < 0);
-          break;
-        default:
-          ignoreFields = fieldsArray;
-          break;
-      }
-    } else {
-      ignoreFields = Pull.defaultIgnoreFields;
-    }
-
+  public async PullData(
+    conn: Connection,
+    sourcepath: string,
+    ignoreFields: string[],
+    sobjecttype: string,
+    where: string,
+    idReplaceFields: string[],
+  ): Promise<string[]> {
     const reverseIdmap: { [key: string]: string } = {};
     const idmap = await loadIdMap(conn);
     for (const [key, value] of Object.entries(idmap)) {
@@ -158,19 +127,19 @@ export default class Pull extends SfdxCommand {
 
     const { fields, lookupFields } = await this.getFields(conn, ignoreFields);
     let query;
-    if (this.flags.where) {
-      query = `SELECT ${fields.join(',')} FROM ${this.flags.sobjecttype as string} WHERE ${
-        this.flags.where as string
-      } ORDER BY Name,Id`;
+    if (where) {
+      query = `SELECT ${fields.join(',')} FROM ${sobjecttype} WHERE ${where} ORDER BY Name,Id`;
     } else {
-      query = `SELECT ${fields.join(',')} FROM ${this.flags.sobjecttype as string} ORDER BY Name,Id`;
+      query = `SELECT ${fields.join(',')} FROM ${sobjecttype} ORDER BY Name,Id`;
     }
-
+    console.log(`\nfields: ${fields.join(',')}\n`);
+    const ids: string[] = [];
     const result = await conn.autoFetchQuery<SalesforceEntity>(query, { autoFetch: true, maxFetch: 100000 });
     this.ux.log(`Query complete with ${result.totalSize} records returned`);
     if (result.totalSize) {
       for (const r of result.records) {
         delete r['attributes'];
+        ids.push(r['id']);
         // reverse map Ids
         for (const f of lookupFields) {
           const newId = reverseIdmap[r[f]];
@@ -198,6 +167,115 @@ export default class Pull extends SfdxCommand {
       }
     }
     writer.end();
+    return ids;
+  }
+
+  /* eslint complexity: ["error", 25]*/
+  public async run(): Promise<AnyJson> {
+    if (!this.org) {
+      return Promise.reject('Org is not defined');
+    }
+    if (!existsSync('sfdx-project.json') && this.flags.noproject === false) {
+      return Promise.reject('You must have sfdx-project.json while runnign this plugin.');
+    }
+    const conn = this.org.getConnection();
+
+    let sourcepath = this.flags.sourcepath as string;
+    if (!this.flags.members && existsSync(sourcepath) && lstatSync(sourcepath).isDirectory()) {
+      sourcepath = `${this.flags.sourcepath as string}/${this.flags.sobjecttype as string}.csv`;
+    }
+
+    if (this.flags.members && (this.flags.idreplacefields || this.flags.ignorefields || this.flags.sobjecttype)) {
+      throw new SfdxError('-m flag cannot be used with -R -o or -s flags');
+    }
+
+    const idReplaceFieldsFlag = this.flags.idreplacefields as string;
+    const ignoreFieldsFlag = this.flags.ignorefields as string;
+
+    const idReplaceFields = idReplaceFieldsFlag ? idReplaceFieldsFlag?.split(',') : [];
+
+    const match = ignoreFieldsFlag?.match(/(?<appendMode>[+-])?\s*(?<fieldsToIgnore>.*)/);
+    const { appendMode, fieldsToIgnore } = match?.groups ?? {};
+    let ignoreFields = [];
+    if (fieldsToIgnore) {
+      const fieldsArray = fieldsToIgnore?.split(',');
+      switch (appendMode) {
+        case '+':
+          ignoreFields = [...Pull.defaultIgnoreFields, ...fieldsArray];
+          break;
+        case '-':
+          ignoreFields = Pull.defaultIgnoreFields.filter((item) => fieldsArray.indexOf(item) < 0);
+          break;
+        default:
+          ignoreFields = fieldsArray;
+          break;
+      }
+    } else {
+      ignoreFields = Pull.defaultIgnoreFields;
+    }
+    let sobjecttype = this.flags.sobjecttype;
+    let members: Member[] = [];
+    let where = this.flags.where;
+
+    if (this.flags.members) {
+      if (!lstatSync(sourcepath).isDirectory()) {
+        throw new SfdxError(`${sourcepath} must be a dir if -m flag is used.`);
+      }
+      sobjecttype = 'VELOCPQ__PriceList__c';
+      members = parseMembers(this.flags.members);
+      where = `Name IN ('${members.map((m) => m.name).join("','")}')`;
+    }
+    const ids = await this.PullData(conn, sourcepath, ignoreFields, sobjecttype, where, idReplaceFields);
+    if (this.flags.members) {
+      const pricePlanIds = await this.PullData(
+        conn,
+        `${sourcepath}/VELOCPQ__PricePlan__c.csv`,
+        Pull.defaultIgnoreFields,
+        'VELOCPQ__PricePlan__c',
+        `Id IN ('${ids.join("','")}')`,
+        [],
+      );
+      await this.PullData(
+        conn,
+        `${sourcepath}/VELOCPQ__PricePlanCharge__c.csv`,
+        Pull.defaultIgnoreFields,
+        'VELOCPQ__PricePlanCharge__c',
+        `VELOCPQ__PricePlanId__c IN ('${pricePlanIds.join("','")}')`,
+        [],
+      );
+      await this.PullData(
+        conn,
+        `${sourcepath}/VELOCPQ__PlanChargeTier__c.csv`,
+        Pull.defaultIgnoreFields,
+        'VELOCPQ__PlanChargeTier__c',
+        `VELOCPQ__PricePlanId__c IN ('${pricePlanIds.join("','")}')`,
+        [],
+      );
+      await this.PullData(
+        conn,
+        `${sourcepath}/VELOCPQ__PlanChargeRamp__c.csv`,
+        Pull.defaultIgnoreFields,
+        'VELOCPQ__PlanChargeRamp__c',
+        `VELOCPQ__PricePlanId__c IN ('${pricePlanIds.join("','")}')`,
+        [],
+      );
+      await this.PullData(
+        conn,
+        `${sourcepath}/VELOCPQ__RampChargeTier__c.csv`,
+        Pull.defaultIgnoreFields,
+        'VELOCPQ__RampChargeTier__c',
+        `VELOCPQ__PricePlanId__c IN ('${pricePlanIds.join("','")}')`,
+        [],
+      );
+      await this.PullData(
+        conn,
+        `${sourcepath}/VELOCPQ__RampRelatedPrice__c.csv`,
+        Pull.defaultIgnoreFields,
+        'VELOCPQ__RampRelatedPrice__c',
+        `VELOCPQ__PricePlanId__c IN ('${pricePlanIds.join("','")}')`,
+        [],
+      );
+    }
     // Return an object to be displayed with --json
     return {};
   }
