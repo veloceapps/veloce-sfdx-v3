@@ -75,7 +75,7 @@ export default class Pull extends SfdxCommand {
     sobjecttype: flags.string({
       char: 's',
       description: messages.getMessage('sobjecttypeFlagDescription'),
-      required: true,
+      required: false,
     }),
     sourcepath: flags.string({
       char: 'p',
@@ -125,21 +125,20 @@ export default class Pull extends SfdxCommand {
     });
     writer.pipe(createWriteStream(sourcepath, { flags: 'w+' }));
 
-    const { fields, lookupFields } = await this.getFields(conn, ignoreFields);
+    const { fields, lookupFields } = await this.getFields(conn, sobjecttype, ignoreFields);
     let query;
     if (where) {
       query = `SELECT ${fields.join(',')} FROM ${sobjecttype} WHERE ${where} ORDER BY Name,Id`;
     } else {
       query = `SELECT ${fields.join(',')} FROM ${sobjecttype} ORDER BY Name,Id`;
     }
-    console.log(`\nfields: ${fields.join(',')}\n`);
     const ids: string[] = [];
     const result = await conn.autoFetchQuery<SalesforceEntity>(query, { autoFetch: true, maxFetch: 100000 });
     this.ux.log(`Query complete with ${result.totalSize} records returned`);
     if (result.totalSize) {
       for (const r of result.records) {
         delete r['attributes'];
-        ids.push(r['id']);
+        ids.push(r['Id']);
         // reverse map Ids
         for (const f of lookupFields) {
           const newId = reverseIdmap[r[f]];
@@ -213,63 +212,93 @@ export default class Pull extends SfdxCommand {
     } else {
       ignoreFields = Pull.defaultIgnoreFields;
     }
-    let sobjecttype = this.flags.sobjecttype;
+    let sobjecttype = this.flags.sobjecttype as string;
     let members: Member[] = [];
     let where = this.flags.where;
 
     if (this.flags.members) {
-      if (!lstatSync(sourcepath).isDirectory()) {
-        throw new SfdxError(`${sourcepath} must be a dir if -m flag is used.`);
+      if (!lstatSync(this.flags.sourcepath).isDirectory()) {
+        throw new SfdxError(`${this.flags.sourcepath as string} must be a dir if -m flag is used.`);
       }
+      sourcepath = `${this.flags.sourcepath as string}/VELOCPQ__PriceList__c.csv`;
       sobjecttype = 'VELOCPQ__PriceList__c';
       members = parseMembers(this.flags.members);
       where = `Name IN ('${members.map((m) => m.name).join("','")}')`;
     }
+    this.ux.log(`Pulling data for ${sobjecttype} into ${sourcepath}`);
     const ids = await this.PullData(conn, sourcepath, ignoreFields, sobjecttype, where, idReplaceFields);
     if (this.flags.members) {
+      this.ux.log(
+        `Pulling data for VELOCPQ__PricePlan__c into ${this.flags.sourcepath as string}/VELOCPQ__PricePlan__c.csv`,
+      );
       const pricePlanIds = await this.PullData(
         conn,
-        `${sourcepath}/VELOCPQ__PricePlan__c.csv`,
+        `${this.flags.sourcepath as string}/VELOCPQ__PricePlan__c.csv`,
         Pull.defaultIgnoreFields,
         'VELOCPQ__PricePlan__c',
         `Id IN ('${ids.join("','")}')`,
         [],
       );
+      this.ux.log(
+        `Pulling data for VELOCPQ__PricePlanCharge__c into ${
+          this.flags.sourcepath as string
+        }/VELOCPQ__PricePlanCharge__c.csv`,
+      );
       await this.PullData(
         conn,
-        `${sourcepath}/VELOCPQ__PricePlanCharge__c.csv`,
+        `${this.flags.sourcepath as string}/VELOCPQ__PricePlanCharge__c.csv`,
         Pull.defaultIgnoreFields,
         'VELOCPQ__PricePlanCharge__c',
         `VELOCPQ__PricePlanId__c IN ('${pricePlanIds.join("','")}')`,
         [],
       );
+      this.ux.log(
+        `Pulling data for VELOCPQ__PlanChargeTier__c into ${
+          this.flags.sourcepath as string
+        }/VELOCPQ__PlanChargeTier__c.csv`,
+      );
       await this.PullData(
         conn,
-        `${sourcepath}/VELOCPQ__PlanChargeTier__c.csv`,
+        `${this.flags.sourcepath as string}/VELOCPQ__PlanChargeTier__c.csv`,
         Pull.defaultIgnoreFields,
         'VELOCPQ__PlanChargeTier__c',
         `VELOCPQ__PricePlanId__c IN ('${pricePlanIds.join("','")}')`,
         [],
       );
+      this.ux.log(
+        `Pulling data for VELOCPQ__PlanChargeRamp__c into ${
+          this.flags.sourcepath as string
+        }/VELOCPQ__PlanChargeRamp__c.csv`,
+      );
       await this.PullData(
         conn,
-        `${sourcepath}/VELOCPQ__PlanChargeRamp__c.csv`,
+        `${this.flags.sourcepath as string}/VELOCPQ__PlanChargeRamp__c.csv`,
         Pull.defaultIgnoreFields,
         'VELOCPQ__PlanChargeRamp__c',
         `VELOCPQ__PricePlanId__c IN ('${pricePlanIds.join("','")}')`,
         [],
       );
+      this.ux.log(
+        `Pulling data for VELOCPQ__RampChargeTier__c into ${
+          this.flags.sourcepath as string
+        }/VELOCPQ__RampChargeTier__c.csv`,
+      );
       await this.PullData(
         conn,
-        `${sourcepath}/VELOCPQ__RampChargeTier__c.csv`,
+        `${this.flags.sourcepath as string}/VELOCPQ__RampChargeTier__c.csv`,
         Pull.defaultIgnoreFields,
         'VELOCPQ__RampChargeTier__c',
         `VELOCPQ__PricePlanId__c IN ('${pricePlanIds.join("','")}')`,
         [],
       );
+      this.ux.log(
+        `Pulling data for VELOCPQ__RampRelatedPrice__c into ${
+          this.flags.sourcepath as string
+        }/VELOCPQ__RampRelatedPrice__c.csv`,
+      );
       await this.PullData(
         conn,
-        `${sourcepath}/VELOCPQ__RampRelatedPrice__c.csv`,
+        `${this.flags.sourcepath as string}/VELOCPQ__RampRelatedPrice__c.csv`,
         Pull.defaultIgnoreFields,
         'VELOCPQ__RampRelatedPrice__c',
         `VELOCPQ__PricePlanId__c IN ('${pricePlanIds.join("','")}')`,
@@ -280,7 +309,7 @@ export default class Pull extends SfdxCommand {
     return {};
   }
 
-  private async getFields(conn: Connection, ignoreFields: string[]): Promise<FieldsResult> {
+  private async getFields(conn: Connection, sobjecttype: string, ignoreFields: string[]): Promise<FieldsResult> {
     const fields = [];
     const lookupFields = [];
 
@@ -288,7 +317,7 @@ export default class Pull extends SfdxCommand {
       `
 SELECT EntityDefinition.QualifiedApiName, QualifiedApiName, DataType
 FROM FieldDefinition
-WHERE EntityDefinition.QualifiedApiName IN ('${this.flags.sobjecttype as string}') ORDER BY QualifiedApiName
+WHERE EntityDefinition.QualifiedApiName IN ('${sobjecttype}') ORDER BY QualifiedApiName
     `,
       { autoFetch: true, maxFetch: 50000 },
     );
