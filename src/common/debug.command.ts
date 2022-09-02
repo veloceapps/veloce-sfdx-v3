@@ -7,7 +7,6 @@ import { Org as oorg, Org, SfdxError } from '@salesforce/core';
 import DebugSessionInfo from '../types/DebugSessionInfo';
 import { getDebugClientHeaders } from '../utils/auth.utils';
 import { OrgInfo } from '../types/common.types';
-import { logError } from './log.handler';
 
 export abstract class DebugSfdxCommand extends SfdxCommand {
   protected getDebugSessionFromFile(): DebugSessionInfo | null {
@@ -33,9 +32,8 @@ export abstract class DebugSfdxCommand extends SfdxCommand {
           headers,
         },
       );
-    } catch (error) {
-      logError('Failed to stop session', error);
-    }
+      // eslint-disable-next-line no-empty
+    } catch (ignored) {}
   }
 
   protected async getOrgInfo(orgId: string): Promise<OrgInfo> {
