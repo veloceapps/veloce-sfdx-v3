@@ -12,7 +12,7 @@ export function parseMembers(membersFlag: string): Member[] {
     result.push({
       sobjectType: mParts[0],
       name: mParts.length > 1 ? mParts[1] : '',
-      all: mParts.length == 1,
+      all: mParts.length === 1,
     });
   }
   return result;

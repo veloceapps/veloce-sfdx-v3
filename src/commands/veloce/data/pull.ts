@@ -169,7 +169,7 @@ export default class Pull extends SfdxCommand {
     return ids;
   }
 
-  /* eslint complexity: ["error", 25]*/
+  /* eslint complexity: ["error", 26]*/
   public async run(): Promise<AnyJson> {
     if (!this.org) {
       return Promise.reject('Org is not defined');
@@ -223,7 +223,7 @@ export default class Pull extends SfdxCommand {
       sourcepath = `${this.flags.sourcepath as string}/VELOCPQ__PriceList__c.csv`;
       sobjecttype = 'VELOCPQ__PriceList__c';
       members = parseMembers(this.flags.members);
-      where = members[0].all ? `` : `Name IN ('${members.map((m) => m.name).join("','")}')`;
+      where = members[0].all ? '' : `Name IN ('${members.map((m) => m.name).join("','")}')`;
     }
     this.ux.log(`Pulling data for ${sobjecttype} into ${sourcepath}`);
     const ids = await this.PullData(conn, sourcepath, ignoreFields, sobjecttype, where, idReplaceFields);

@@ -102,6 +102,345 @@ export default class Push extends SfdxCommand {
   // Set this to true if your command requires a project workspace; 'requiresProject' is false by default
   protected static requiresProject = false;
 
+  /* eslint complexity: ["error", 65]*/
+  public async run(): Promise<AnyJson> {
+    if (!this.org) {
+      return Promise.reject('Org is not defined');
+    }
+    if (!existsSync('sfdx-project.json') && this.flags.noproject === false) {
+      return Promise.reject('You must have sfdx-project.json while runnign this plugin.');
+    }
+
+    const conn = this.org.getConnection();
+
+    const batchSize = parseInt(this.flags.batch || '5', 10);
+    let sType = this.flags.sobjecttype ? (this.flags.sobjecttype as string).toLowerCase() : '';
+    const extIdParam = this.flags.externalid as string;
+    const extId = extIdParam ? extIdParam.toLowerCase() : 'VELOCPQ__ReferenceId__c'.toLowerCase();
+    const idReplaceFieldsParam = this.flags.idreplacefields as string;
+    const idReplaceFields = idReplaceFieldsParam ? idReplaceFieldsParam.toLowerCase().split(',') : [];
+    const ignoreFieldsParam = this.flags.ignorefields as string;
+    let upsert = this.flags.upsert || false;
+    const dry = this.flags.dry || false;
+    const diff = this.flags.diff || true;
+    let sourcepath = this.flags.sourcepath as string;
+    if (!this.flags.members && existsSync(sourcepath) && lstatSync(sourcepath).isDirectory()) {
+      sourcepath = `${this.flags.sourcepath as string}/${this.flags.sobjecttype as string}.csv`;
+    }
+    if (
+      this.flags.members &&
+      (this.flags.idreplacefields || this.flags.ignorefields || this.flags.sobjecttype || this.flags.upsert)
+    ) {
+      throw new SfdxError('-m flag cannot be used with -R -o --upsert or -s flags');
+    }
+    if (this.flags.members) {
+      upsert = true;
+    }
+
+    const match = ignoreFieldsParam?.match(/(?<appendMode>[+-])?\s*(?<fieldsToIgnore>.*)/);
+    const { appendMode, fieldsToIgnore } = match?.groups ?? {};
+    let ignoreFields: string[];
+    if (fieldsToIgnore) {
+      const fieldsArray = fieldsToIgnore?.toLocaleString().split(',');
+      switch (appendMode) {
+        case '+':
+          ignoreFields = [...Push.defaultIgnoreFields, ...fieldsArray];
+          break;
+        case '-':
+          ignoreFields = Push.defaultIgnoreFields.filter((item) => fieldsArray.indexOf(item) < 0);
+          break;
+        default:
+          ignoreFields = fieldsArray;
+          break;
+      }
+    } else {
+      ignoreFields = Push.defaultIgnoreFields;
+    }
+
+    if (!ignoreFields.includes('id')) {
+      ignoreFields.push('id');
+    }
+    if (!ignoreFields.includes(extId) && !upsert) {
+      ignoreFields.push(extId);
+    }
+
+    let members: Member[] = [];
+
+    if (this.flags.members) {
+      if (!lstatSync(this.flags.sourcepath).isDirectory()) {
+        throw new SfdxError(`${this.flags.sourcepath as string} must be a dir if -m flag is used.`);
+      }
+      sourcepath = `${this.flags.sourcepath as string}/VELOCPQ__PriceList__c.csv`;
+      sType = 'VELOCPQ__PriceList__c'.toLowerCase();
+      members = parseMembers(this.flags.members);
+    }
+    this.ux.log(`Pushing data ${sourcepath} to ${sType}`);
+    const ids = await this.PushData(
+      conn,
+      diff,
+      sourcepath,
+      sType,
+      ignoreFields,
+      members.length > 0 ? 'id' : null,
+      members.map((m) => m.name),
+      extId,
+      batchSize,
+      idReplaceFields,
+      upsert,
+      dry,
+      this.flags.printids,
+    );
+
+    if (members.length > 0) {
+      this.ux.log(`Pushing data ${this.flags.sourcepath as string}/VELOCPQ__PricePlan__c.csv to VELOCPQ__PricePlan__c`);
+      const priceListIds = await this.PushData(
+        conn,
+        diff,
+        `${this.flags.sourcepath as string}/VELOCPQ__PricePlan__c.csv`,
+        'VELOCPQ__PricePlan__c',
+        ignoreFields,
+        'VELOCPQ__PriceListId__c',
+        ids,
+        extId,
+        batchSize,
+        idReplaceFields,
+        upsert,
+        dry,
+        this.flags.printids,
+      );
+
+      this.ux.log(
+        `Pushing data ${
+          this.flags.sourcepath as string
+        }/VELOCPQ__PricePlanCharge__c.csv to VELOCPQ__PricePlanCharge__c`,
+      );
+      await this.PushData(
+        conn,
+        diff,
+        `${this.flags.sourcepath as string}/VELOCPQ__PricePlanCharge__c.csv`,
+        'VELOCPQ__PricePlanCharge__c',
+        ignoreFields,
+        'VELOCPQ__PricePlanId__c',
+        priceListIds,
+        extId,
+        batchSize,
+        idReplaceFields,
+        upsert,
+        dry,
+        this.flags.printids,
+      );
+
+      this.ux.log(
+        `Pushing data ${this.flags.sourcepath as string}/VELOCPQ__PlanChargeTier__c.csv to VELOCPQ__PlanChargeTier__c`,
+      );
+      await this.PushData(
+        conn,
+        diff,
+        `${this.flags.sourcepath as string}/VELOCPQ__PlanChargeTier__c.csv`,
+        'VELOCPQ__PlanChargeTier__c',
+        ignoreFields,
+        'VELOCPQ__PricePlanId__c',
+        priceListIds,
+        extId,
+        batchSize,
+        idReplaceFields,
+        upsert,
+        dry,
+        this.flags.printids,
+      );
+
+      this.ux.log(
+        `Pushing data ${this.flags.sourcepath as string}/VELOCPQ__PlanChargeRamp__c.csv to VELOCPQ__PlanChargeRamp__c`,
+      );
+      await this.PushData(
+        conn,
+        diff,
+        `${this.flags.sourcepath as string}/VELOCPQ__PlanChargeRamp__c.csv`,
+        'VELOCPQ__PlanChargeRamp__c',
+        ignoreFields,
+        'VELOCPQ__PricePlanId__c',
+        priceListIds,
+        extId,
+        batchSize,
+        idReplaceFields,
+        upsert,
+        dry,
+        this.flags.printids,
+      );
+
+      this.ux.log(
+        `Pushing data ${this.flags.sourcepath as string}/VELOCPQ__RampChargeTier__c.csv to VELOCPQ__RampChargeTier__c`,
+      );
+      await this.PushData(
+        conn,
+        diff,
+        `${this.flags.sourcepath as string}/VELOCPQ__RampChargeTier__c.csv`,
+        'VELOCPQ__RampChargeTier__c',
+        ignoreFields,
+        'VELOCPQ__PricePlanId__c',
+        priceListIds,
+        extId,
+        batchSize,
+        idReplaceFields,
+        upsert,
+        dry,
+        this.flags.printids,
+      );
+
+      this.ux.log(
+        `Pushing data ${
+          this.flags.sourcepath as string
+        }/VELOCPQ__RampRelatedPrice__c.csv to VELOCPQ__RampRelatedPrice__c`,
+      );
+      await this.PushData(
+        conn,
+        diff,
+        `${this.flags.sourcepath as string}/VELOCPQ__RampRelatedPrice__c.csv`,
+        'VELOCPQ__RampRelatedPrice__c',
+        ignoreFields,
+        'VELOCPQ__PricePlanId__c',
+        priceListIds,
+        extId,
+        batchSize,
+        idReplaceFields,
+        upsert,
+        dry,
+        this.flags.printids,
+      );
+    }
+    // Return an object to be displayed with --json
+    return { orgId: this.org.getOrgId() };
+  }
+
+  private hasChanges(
+    idmap: IdMap,
+    ignorefields: string[],
+    extId: string,
+    oldObj: SalesforceEntity,
+    obj: SalesforceEntity,
+  ): 'NEW' | 'CHANGE' | 'UNCHANGED' {
+    for (const k of Object.keys(obj)) {
+      if (!k) {
+        continue;
+      }
+      if (ignorefields.includes(k)) {
+        continue;
+      }
+      if (k === 'id') {
+        continue;
+      }
+      if (!oldObj) {
+        return 'NEW';
+      }
+      let o = obj[k];
+      if (k !== extId && idmap[obj[k]]) {
+        o = idmap[obj[k]];
+      }
+      if ('' + oldObj[k] !== '' + o && !(oldObj[k] === null && o === '')) {
+        return 'CHANGE';
+      }
+    }
+    return 'UNCHANGED';
+  }
+
+  private printChanges(
+    idmap: IdMap,
+    ignorefields: string[],
+    extId: string,
+    oldObj: SalesforceEntity,
+    obj: SalesforceEntity,
+  ): void {
+    for (const k of Object.keys(obj)) {
+      if (k === 'id') {
+        continue;
+      }
+      if (ignorefields.includes(k)) {
+        continue;
+      }
+      if (!k) {
+        continue;
+      }
+      if (!oldObj) {
+        this.ux.log(`  ${k}: ${('' + obj[k]).length > 512 ? '...' : obj[k]}`);
+        continue;
+      }
+      let o = obj[k];
+      if (k !== extId && idmap[obj[k]]) {
+        o = idmap[obj[k]];
+      }
+      if ('' + oldObj[k] !== '' + o && !(oldObj[k] === null && o === '')) {
+        this.ux.log(
+          `  ${k}: ${oldObj[k] === undefined ? '' : ('' + oldObj[k]).length > 512 ? '...' : oldObj[k]} => ${
+            ('' + o).length > 512 ? '...' : o
+          }`,
+        );
+      }
+    }
+  }
+
+  private async getOldRecords(
+    conn: Connection,
+    keys: string[],
+    sType: string,
+    extIdField: string,
+    ids: string[],
+  ): Promise<{ [key: string]: SalesforceEntity }> {
+    const extId2OldValues: { [key: string]: SalesforceEntity } = {};
+    // Query back Ids
+    const query = `SELECT ${keys.join(',')}
+                   FROM ${sType}
+                   WHERE ${extIdField} in ('${ids.join("','")}')`;
+
+    const queryResult: QueryResult<SalesforceEntity> = await this.runSoqlQuery(conn, query);
+
+    if (!queryResult.done) {
+      throw new SfdxError(`Query not done: ${query}`, 'ApexError');
+    }
+    queryResult.records.forEach((rWithCase: any) => {
+      const r = keysToLowerCase(rWithCase);
+      extId2OldValues[r[extIdField]] = r;
+    });
+    return extId2OldValues;
+  }
+
+  private async getIds(
+    conn: Connection,
+    sType: string,
+    extIdField: string,
+    ids: string[],
+  ): Promise<{ [key: string]: string }> {
+    const extId2OldValues: { [key: string]: string } = {};
+    // Query back Ids
+    const query = `SELECT Id,${extIdField}
+                   FROM ${sType}
+                   WHERE ${extIdField} in ('${ids.join("','")}')`;
+
+    const queryResult: QueryResult<SalesforceEntity> = await this.runSoqlQuery(conn, query);
+
+    if (!queryResult.done) {
+      throw new SfdxError(`Query not done: ${query}`, 'ApexError');
+    }
+    queryResult.records.forEach((rWithCase: any) => {
+      const r = keysToLowerCase(rWithCase);
+      extId2OldValues[r[extIdField]] = r['id'];
+    });
+    return extId2OldValues;
+  }
+
+  private async runSoqlQuery(connection: Connection | Tooling, query: string): Promise<QueryResult<SalesforceEntity>> {
+    console.debug('running query');
+
+    const result = await connection.autoFetchQuery<SalesforceEntity>(query, { autoFetch: true, maxFetch: 50000 });
+    console.debug(`Query complete with ${result.totalSize} records returned`);
+    if (result.totalSize) {
+      console.debug('fetching columns for query');
+    }
+    // remove nextRecordsUrl and force done to true
+    delete result.nextRecordsUrl;
+    result.done = true;
+    return result;
+  }
+
   private async PushData(
     conn: Connection,
     diff: boolean,
@@ -119,7 +458,7 @@ export default class Push extends SfdxCommand {
   ): Promise<string[]> {
     let ok = true;
     let output = '';
-    let outputIds: string[] = [];
+    const outputIds: string[] = [];
 
     const boolfields = [];
     const datefields = [];
@@ -322,345 +661,6 @@ ${objects}
     }
     this.ux.log('Data successfully loaded');
     return outputIds;
-  }
-
-  /* eslint complexity: ["error", 65]*/
-  public async run(): Promise<AnyJson> {
-    if (!this.org) {
-      return Promise.reject('Org is not defined');
-    }
-    if (!existsSync('sfdx-project.json') && this.flags.noproject === false) {
-      return Promise.reject('You must have sfdx-project.json while runnign this plugin.');
-    }
-
-    const conn = this.org.getConnection();
-
-    const batchSize = parseInt(this.flags.batch || '5', 10);
-    let sType = this.flags.sobjecttype ? (this.flags.sobjecttype as string).toLowerCase() : '';
-    const extIdParam = this.flags.externalid as string;
-    const extId = extIdParam ? extIdParam.toLowerCase() : 'VELOCPQ__ReferenceId__c'.toLowerCase();
-    const idReplaceFieldsParam = this.flags.idreplacefields as string;
-    const idReplaceFields = idReplaceFieldsParam ? idReplaceFieldsParam.toLowerCase().split(',') : [];
-    const ignoreFieldsParam = this.flags.ignorefields as string;
-    let upsert = this.flags.upsert || false;
-    const dry = this.flags.dry || false;
-    let diff = this.flags.diff || true;
-    let sourcepath = this.flags.sourcepath;
-    if (!this.flags.members && existsSync(sourcepath) && lstatSync(sourcepath).isDirectory()) {
-      sourcepath = `${this.flags.sourcepath as string}/${this.flags.sobjecttype as string}.csv`;
-    }
-    if (
-      this.flags.members &&
-      (this.flags.idreplacefields || this.flags.ignorefields || this.flags.sobjecttype || this.flags.upsert)
-    ) {
-      throw new SfdxError('-m flag cannot be used with -R -o --upsert or -s flags');
-    }
-    if (this.flags.members) {
-      upsert = true;
-    }
-
-    const match = ignoreFieldsParam?.match(/(?<appendMode>[+-])?\s*(?<fieldsToIgnore>.*)/);
-    const { appendMode, fieldsToIgnore } = match?.groups ?? {};
-    let ignoreFields: string[];
-    if (fieldsToIgnore) {
-      const fieldsArray = fieldsToIgnore?.toLocaleString().split(',');
-      switch (appendMode) {
-        case '+':
-          ignoreFields = [...Push.defaultIgnoreFields, ...fieldsArray];
-          break;
-        case '-':
-          ignoreFields = Push.defaultIgnoreFields.filter((item) => fieldsArray.indexOf(item) < 0);
-          break;
-        default:
-          ignoreFields = fieldsArray;
-          break;
-      }
-    } else {
-      ignoreFields = Push.defaultIgnoreFields;
-    }
-
-    if (!ignoreFields.includes('id')) {
-      ignoreFields.push('id');
-    }
-    if (!ignoreFields.includes(extId) && !upsert) {
-      ignoreFields.push(extId);
-    }
-
-    let members: Member[] = [];
-
-    if (this.flags.members) {
-      if (!lstatSync(this.flags.sourcepath).isDirectory()) {
-        throw new SfdxError(`${this.flags.sourcepath as string} must be a dir if -m flag is used.`);
-      }
-      sourcepath = `${this.flags.sourcepath as string}/VELOCPQ__PriceList__c.csv`;
-      sType = 'VELOCPQ__PriceList__c'.toLowerCase();
-      members = parseMembers(this.flags.members);
-    }
-    this.ux.log(`Pushing data ${sourcepath} to ${sType}`);
-    const ids = await this.PushData(
-      conn,
-      diff,
-      sourcepath,
-      sType,
-      ignoreFields,
-      members.length > 0 ? 'id' : null,
-      members.map((m) => m.name),
-      extId,
-      batchSize,
-      idReplaceFields,
-      upsert,
-      dry,
-      this.flags.printids,
-    );
-
-    if (members.length > 0) {
-      this.ux.log(`Pushing data ${this.flags.sourcepath as string}/VELOCPQ__PricePlan__c.csv to VELOCPQ__PricePlan__c`);
-      const priceListIds = await this.PushData(
-        conn,
-        diff,
-        `${this.flags.sourcepath as string}/VELOCPQ__PricePlan__c.csv`,
-        'VELOCPQ__PricePlan__c',
-        ignoreFields,
-        'VELOCPQ__PriceListId__c',
-        ids,
-        extId,
-        batchSize,
-        idReplaceFields,
-        upsert,
-        dry,
-        this.flags.printids,
-      );
-
-      this.ux.log(
-        `Pushing data ${
-          this.flags.sourcepath as string
-        }/VELOCPQ__PricePlanCharge__c.csv to VELOCPQ__PricePlanCharge__c`,
-      );
-      await this.PushData(
-        conn,
-        diff,
-        `${this.flags.sourcepath as string}/VELOCPQ__PricePlanCharge__c.csv`,
-        'VELOCPQ__PricePlanCharge__c',
-        ignoreFields,
-        'VELOCPQ__PricePlanId__c',
-        priceListIds,
-        extId,
-        batchSize,
-        idReplaceFields,
-        upsert,
-        dry,
-        this.flags.printids,
-      );
-
-      this.ux.log(
-        `Pushing data ${this.flags.sourcepath as string}/VELOCPQ__PlanChargeTier__c.csv to VELOCPQ__PlanChargeTier__c`,
-      );
-      await this.PushData(
-        conn,
-        diff,
-        `${this.flags.sourcepath as string}/VELOCPQ__PlanChargeTier__c.csv`,
-        'VELOCPQ__PlanChargeTier__c',
-        ignoreFields,
-        'VELOCPQ__PricePlanId__c',
-        priceListIds,
-        extId,
-        batchSize,
-        idReplaceFields,
-        upsert,
-        dry,
-        this.flags.printids,
-      );
-
-      this.ux.log(
-        `Pushing data ${this.flags.sourcepath as string}/VELOCPQ__PlanChargeRamp__c.csv to VELOCPQ__PlanChargeRamp__c`,
-      );
-      await this.PushData(
-        conn,
-        diff,
-        `${this.flags.sourcepath as string}/VELOCPQ__PlanChargeRamp__c.csv`,
-        'VELOCPQ__PlanChargeRamp__c',
-        ignoreFields,
-        'VELOCPQ__PricePlanId__c',
-        priceListIds,
-        extId,
-        batchSize,
-        idReplaceFields,
-        upsert,
-        dry,
-        this.flags.printids,
-      );
-
-      this.ux.log(
-        `Pushing data ${this.flags.sourcepath as string}/VELOCPQ__RampChargeTier__c.csv to VELOCPQ__RampChargeTier__c`,
-      );
-      await this.PushData(
-        conn,
-        diff,
-        `${this.flags.sourcepath as string}/VELOCPQ__RampChargeTier__c.csv`,
-        'VELOCPQ__RampChargeTier__c',
-        ignoreFields,
-        'VELOCPQ__PricePlanId__c',
-        priceListIds,
-        extId,
-        batchSize,
-        idReplaceFields,
-        upsert,
-        dry,
-        this.flags.printids,
-      );
-
-      this.ux.log(
-        `Pushing data ${
-          this.flags.sourcepath as string
-        }/VELOCPQ__RampRelatedPrice__c.csv to VELOCPQ__RampRelatedPrice__c`,
-      );
-      await this.PushData(
-        conn,
-        diff,
-        `${this.flags.sourcepath as string}/VELOCPQ__RampRelatedPrice__c.csv`,
-        'VELOCPQ__RampRelatedPrice__c',
-        ignoreFields,
-        'VELOCPQ__PricePlanId__c',
-        priceListIds,
-        extId,
-        batchSize,
-        idReplaceFields,
-        upsert,
-        dry,
-        this.flags.printids,
-      );
-    }
-    // Return an object to be displayed with --json
-    return { orgId: this.org.getOrgId() };
-  }
-
-  public hasChanges(
-    idmap: IdMap,
-    ignorefields: string[],
-    extId: string,
-    oldObj: SalesforceEntity,
-    obj: SalesforceEntity,
-  ): 'NEW' | 'CHANGE' | 'UNCHANGED' {
-    for (const k of Object.keys(obj)) {
-      if (!k) {
-        continue;
-      }
-      if (ignorefields.includes(k)) {
-        continue;
-      }
-      if (k === 'id') {
-        continue;
-      }
-      if (!oldObj) {
-        return 'NEW';
-      }
-      let o = obj[k];
-      if (k !== extId && idmap[obj[k]]) {
-        o = idmap[obj[k]];
-      }
-      if ('' + oldObj[k] !== '' + o && !(oldObj[k] === null && o === '')) {
-        return 'CHANGE';
-      }
-    }
-    return 'UNCHANGED';
-  }
-
-  public printChanges(
-    idmap: IdMap,
-    ignorefields: string[],
-    extId: string,
-    oldObj: SalesforceEntity,
-    obj: SalesforceEntity,
-  ): void {
-    for (const k of Object.keys(obj)) {
-      if (k === 'id') {
-        continue;
-      }
-      if (ignorefields.includes(k)) {
-        continue;
-      }
-      if (!k) {
-        continue;
-      }
-      if (!oldObj) {
-        this.ux.log(`  ${k}: ${('' + obj[k]).length > 512 ? '...' : obj[k]}`);
-        continue;
-      }
-      let o = obj[k];
-      if (k !== extId && idmap[obj[k]]) {
-        o = idmap[obj[k]];
-      }
-      if ('' + oldObj[k] !== '' + o && !(oldObj[k] === null && o === '')) {
-        this.ux.log(
-          `  ${k}: ${oldObj[k] === undefined ? '' : ('' + oldObj[k]).length > 512 ? '...' : oldObj[k]} => ${
-            ('' + o).length > 512 ? '...' : o
-          }`,
-        );
-      }
-    }
-  }
-
-  public async getOldRecords(
-    conn: Connection,
-    keys: string[],
-    sType: string,
-    extIdField: string,
-    ids: string[],
-  ): Promise<{ [key: string]: SalesforceEntity }> {
-    const extId2OldValues: { [key: string]: SalesforceEntity } = {};
-    // Query back Ids
-    const query = `SELECT ${keys.join(',')}
-                   FROM ${sType}
-                   WHERE ${extIdField} in ('${ids.join("','")}')`;
-
-    const queryResult: QueryResult<SalesforceEntity> = await this.runSoqlQuery(conn, query);
-
-    if (!queryResult.done) {
-      throw new SfdxError(`Query not done: ${query}`, 'ApexError');
-    }
-    queryResult.records.forEach((rWithCase: any) => {
-      const r = keysToLowerCase(rWithCase);
-      extId2OldValues[r[extIdField]] = r;
-    });
-    return extId2OldValues;
-  }
-
-  public async getIds(
-    conn: Connection,
-    sType: string,
-    extIdField: string,
-    ids: string[],
-  ): Promise<{ [key: string]: string }> {
-    const extId2OldValues: { [key: string]: string } = {};
-    // Query back Ids
-    const query = `SELECT Id,${extIdField}
-                   FROM ${sType}
-                   WHERE ${extIdField} in ('${ids.join("','")}')`;
-
-    const queryResult: QueryResult<SalesforceEntity> = await this.runSoqlQuery(conn, query);
-
-    if (!queryResult.done) {
-      throw new SfdxError(`Query not done: ${query}`, 'ApexError');
-    }
-    queryResult.records.forEach((rWithCase: any) => {
-      const r = keysToLowerCase(rWithCase);
-      extId2OldValues[r[extIdField]] = r['id'];
-    });
-    return extId2OldValues;
-  }
-
-  public async runSoqlQuery(connection: Connection | Tooling, query: string): Promise<QueryResult<SalesforceEntity>> {
-    console.debug('running query');
-
-    const result = await connection.autoFetchQuery<SalesforceEntity>(query, { autoFetch: true, maxFetch: 50000 });
-    console.debug(`Query complete with ${result.totalSize} records returned`);
-    if (result.totalSize) {
-      console.debug('fetching columns for query');
-    }
-    // remove nextRecordsUrl and force done to true
-    delete result.nextRecordsUrl;
-    result.done = true;
-    return result;
   }
 
   private formatDefault(response: ExecuteAnonymousResponse): string {
