@@ -1,7 +1,7 @@
 {
   "membersFlagDescription": "Pull only specific type of data or even name of object",
   "commandDescription": "Retrieves data from Salesforce org and stores it in provided folder as CSVs",
-  "sourcepathFlagDescription": "Path to file where to store data",
+  "sourcepathFlagDescription": "Path to file where to read data",
   "noprojectFlagDescription": "Bypass check of sfdx-project.json to exist",
   "examples": [
     "sfdx veloce:data:pull --targetusername myOrg@example.com --targetdevhubusername devhub@org.com --sourcepath ./source/templates",
