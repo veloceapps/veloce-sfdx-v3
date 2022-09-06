@@ -18,6 +18,7 @@ import { IdMap } from '../../../types/idmap';
 import { SalesforceEntity } from '../../../types/salesforceEntity';
 import { keysToLowerCase, validSFID } from '../../../utils/common.utils';
 import { loadIdMap, saveIdMap } from '../../../common/idmap';
+import { Member, parseMembers } from '../../../utils/members';
 
 // Initialize Messages with the current plugin directory
 Messages.importMessagesDirectory(__dirname);
@@ -68,7 +69,7 @@ export default class Push extends SfdxCommand {
     sobjecttype: flags.string({
       char: 's',
       description: messages.getMessage('sobjecttypeFlagDescription'),
-      required: true,
+      required: false,
     }),
     externalid: flags.string({
       char: 'e',
@@ -80,7 +81,6 @@ export default class Push extends SfdxCommand {
       description: messages.getMessage('idreplacefieldsFlagDescription'),
       required: false,
     }),
-
     printids: flags.boolean({
       char: 'P',
       description: messages.getMessage('printidsFlagDescription'),
@@ -102,75 +102,37 @@ export default class Push extends SfdxCommand {
   // Set this to true if your command requires a project workspace; 'requiresProject' is false by default
   protected static requiresProject = false;
 
-  /* eslint complexity: ["error", 65]*/
-  public async run(): Promise<AnyJson> {
-    if (!this.org) {
-      return Promise.reject('Org is not defined');
-    }
-    if (!existsSync('sfdx-project.json') && this.flags.noproject === false) {
-      return Promise.reject('You must have sfdx-project.json while runnign this plugin.');
-    }
-
-    const conn = this.org.getConnection();
-
+  private async PushData(
+    conn: Connection,
+    diff: boolean,
+    sourcepath: string,
+    sType: string,
+    ignoreFields: string[],
+    onlyField: string | null,
+    onlyFieldValues: string[],
+    extId: string,
+    batchSize: number,
+    idReplaceFields: string[],
+    upsert: boolean,
+    dry: boolean,
+    printids: boolean,
+  ): Promise<string[]> {
     let ok = true;
     let output = '';
-    const batchSize = parseInt(this.flags.batch || '5', 10);
-    const sType = (this.flags.sobjecttype as string).toLowerCase();
-    const extIdParam = this.flags.externalid as string;
-    const extId = extIdParam ? extIdParam.toLowerCase() : 'VELOCPQ__ReferenceId__c'.toLowerCase();
-    const idReplaceFieldsParam = this.flags.idreplacefields as string;
-    const idReplaceFields = idReplaceFieldsParam ? idReplaceFieldsParam.toLowerCase().split(',') : [];
-    const ignoreFieldsParam = this.flags.ignorefields as string;
-    const upsert = this.flags.upsert || false;
-    const dry = this.flags.dry || false;
-    let diff = this.flags.diff || true;
-    let sourcepath = this.flags.sourcepath;
-    if (existsSync(sourcepath) && lstatSync(sourcepath).isDirectory()) {
-      sourcepath = `${this.flags.sourcepath as string}/${this.flags.sobjecttype as string}.csv`;
-    }
-
-    const match = ignoreFieldsParam?.match(/(?<appendMode>[+-])?\s*(?<fieldsToIgnore>.*)/);
-    const { appendMode, fieldsToIgnore } = match?.groups ?? {};
-    let ignoreFields: string[];
-    if (fieldsToIgnore) {
-      const fieldsArray = fieldsToIgnore?.toLocaleString().split(',');
-      switch (appendMode) {
-        case '+':
-          ignoreFields = [...Push.defaultIgnoreFields, ...fieldsArray];
-          break;
-        case '-':
-          ignoreFields = Push.defaultIgnoreFields.filter((item) => fieldsArray.indexOf(item) < 0);
-          break;
-        default:
-          ignoreFields = fieldsArray;
-          break;
-      }
-    } else {
-      ignoreFields = Push.defaultIgnoreFields;
-    }
-
-    if (!ignoreFields.includes('id')) {
-      ignoreFields.push('id');
-    }
-    if (!ignoreFields.includes(extId) && !upsert) {
-      ignoreFields.push(extId);
-    }
+    let outputIds: string[] = [];
 
     const boolfields = [];
     const datefields = [];
     const numericfields = [];
 
     const fileContent = readFileSync(sourcepath);
-    console.log('B1');
     let idmap = await loadIdMap(conn);
     // retrieve types of args
-    console.log('B2');
     const fieldsResult = await conn.autoFetchQuery<SalesforceEntity>(
       `
       SELECT EntityDefinition.QualifiedApiName, QualifiedApiName, DataType
       FROM FieldDefinition
-      WHERE EntityDefinition.QualifiedApiName IN ('${this.flags.sobjecttype as string}')
+      WHERE EntityDefinition.QualifiedApiName IN ('${sType}')
       ORDER BY QualifiedApiName
     `,
       { autoFetch: true, maxFetch: 50000 },
@@ -192,7 +154,7 @@ export default class Push extends SfdxCommand {
 
     const records: SalesforceEntity[] = parse(fileContent, { columns: true, bom: true });
 
-    if (records.length > 128 && !this.flags.diff) {
+    if (records.length > 128 && !diff) {
       this.ux.log('Turning off Auto-Diff mode because too much data, use --diff to force it ON');
       diff = false;
     }
@@ -202,6 +164,10 @@ export default class Push extends SfdxCommand {
 
     records.forEach((rWithCase) => {
       const r = keysToLowerCase(rWithCase);
+      if (onlyField && !onlyFieldValues.includes(r[onlyField])) {
+        return;
+      }
+      outputIds.push(r['id']);
 
       if (r[extId] && seenExtIds.includes(r[extId])) {
         this.ux.log(
@@ -297,7 +263,7 @@ export default class Push extends SfdxCommand {
         if (upsert) {
           objects += `o.add(new ${sType} (${fields.join(',')}));\n`;
         } else {
-          if (this.flags.printids) {
+          if (printids) {
             this.ux.log(`ID: ${extId} = ${r[extId]}`);
           }
           objects += `o = [SELECT Id FROM ${sType} WHERE ${extId}='${r[extId]}' LIMIT 1];\n`;
@@ -355,6 +321,215 @@ ${objects}
       throw new SfdxError(output, 'ApexError');
     }
     this.ux.log('Data successfully loaded');
+    return outputIds;
+  }
+
+  /* eslint complexity: ["error", 65]*/
+  public async run(): Promise<AnyJson> {
+    if (!this.org) {
+      return Promise.reject('Org is not defined');
+    }
+    if (!existsSync('sfdx-project.json') && this.flags.noproject === false) {
+      return Promise.reject('You must have sfdx-project.json while runnign this plugin.');
+    }
+
+    const conn = this.org.getConnection();
+
+    const batchSize = parseInt(this.flags.batch || '5', 10);
+    let sType = this.flags.sobjecttype ? (this.flags.sobjecttype as string).toLowerCase() : '';
+    const extIdParam = this.flags.externalid as string;
+    const extId = extIdParam ? extIdParam.toLowerCase() : 'VELOCPQ__ReferenceId__c'.toLowerCase();
+    const idReplaceFieldsParam = this.flags.idreplacefields as string;
+    const idReplaceFields = idReplaceFieldsParam ? idReplaceFieldsParam.toLowerCase().split(',') : [];
+    const ignoreFieldsParam = this.flags.ignorefields as string;
+    let upsert = this.flags.upsert || false;
+    const dry = this.flags.dry || false;
+    let diff = this.flags.diff || true;
+    let sourcepath = this.flags.sourcepath;
+    if (!this.flags.members && existsSync(sourcepath) && lstatSync(sourcepath).isDirectory()) {
+      sourcepath = `${this.flags.sourcepath as string}/${this.flags.sobjecttype as string}.csv`;
+    }
+    if (
+      this.flags.members &&
+      (this.flags.idreplacefields || this.flags.ignorefields || this.flags.sobjecttype || this.flags.upsert)
+    ) {
+      throw new SfdxError('-m flag cannot be used with -R -o --upsert or -s flags');
+    }
+    if (this.flags.members) {
+      upsert = true;
+    }
+
+    const match = ignoreFieldsParam?.match(/(?<appendMode>[+-])?\s*(?<fieldsToIgnore>.*)/);
+    const { appendMode, fieldsToIgnore } = match?.groups ?? {};
+    let ignoreFields: string[];
+    if (fieldsToIgnore) {
+      const fieldsArray = fieldsToIgnore?.toLocaleString().split(',');
+      switch (appendMode) {
+        case '+':
+          ignoreFields = [...Push.defaultIgnoreFields, ...fieldsArray];
+          break;
+        case '-':
+          ignoreFields = Push.defaultIgnoreFields.filter((item) => fieldsArray.indexOf(item) < 0);
+          break;
+        default:
+          ignoreFields = fieldsArray;
+          break;
+      }
+    } else {
+      ignoreFields = Push.defaultIgnoreFields;
+    }
+
+    if (!ignoreFields.includes('id')) {
+      ignoreFields.push('id');
+    }
+    if (!ignoreFields.includes(extId) && !upsert) {
+      ignoreFields.push(extId);
+    }
+
+    let members: Member[] = [];
+
+    if (this.flags.members) {
+      if (!lstatSync(this.flags.sourcepath).isDirectory()) {
+        throw new SfdxError(`${this.flags.sourcepath as string} must be a dir if -m flag is used.`);
+      }
+      sourcepath = `${this.flags.sourcepath as string}/VELOCPQ__PriceList__c.csv`;
+      sType = 'VELOCPQ__PriceList__c'.toLowerCase();
+      members = parseMembers(this.flags.members);
+    }
+    this.ux.log(`Pushing data ${sourcepath} to ${sType}`);
+    const ids = await this.PushData(
+      conn,
+      diff,
+      sourcepath,
+      sType,
+      ignoreFields,
+      members.length > 0 ? 'id' : null,
+      members.map((m) => m.name),
+      extId,
+      batchSize,
+      idReplaceFields,
+      upsert,
+      dry,
+      this.flags.printids,
+    );
+
+    if (members.length > 0) {
+      this.ux.log(`Pushing data ${this.flags.sourcepath as string}/VELOCPQ__PricePlan__c.csv to VELOCPQ__PricePlan__c`);
+      const priceListIds = await this.PushData(
+        conn,
+        diff,
+        `${this.flags.sourcepath as string}/VELOCPQ__PricePlan__c.csv`,
+        'VELOCPQ__PricePlan__c',
+        ignoreFields,
+        'VELOCPQ__PriceListId__c',
+        ids,
+        extId,
+        batchSize,
+        idReplaceFields,
+        upsert,
+        dry,
+        this.flags.printids,
+      );
+
+      this.ux.log(
+        `Pushing data ${
+          this.flags.sourcepath as string
+        }/VELOCPQ__PricePlanCharge__c.csv to VELOCPQ__PricePlanCharge__c`,
+      );
+      await this.PushData(
+        conn,
+        diff,
+        `${this.flags.sourcepath as string}/VELOCPQ__PricePlanCharge__c.csv`,
+        'VELOCPQ__PricePlanCharge__c',
+        ignoreFields,
+        'VELOCPQ__PricePlanId__c',
+        priceListIds,
+        extId,
+        batchSize,
+        idReplaceFields,
+        upsert,
+        dry,
+        this.flags.printids,
+      );
+
+      this.ux.log(
+        `Pushing data ${this.flags.sourcepath as string}/VELOCPQ__PlanChargeTier__c.csv to VELOCPQ__PlanChargeTier__c`,
+      );
+      await this.PushData(
+        conn,
+        diff,
+        `${this.flags.sourcepath as string}/VELOCPQ__PlanChargeTier__c.csv`,
+        'VELOCPQ__PlanChargeTier__c',
+        ignoreFields,
+        'VELOCPQ__PricePlanId__c',
+        priceListIds,
+        extId,
+        batchSize,
+        idReplaceFields,
+        upsert,
+        dry,
+        this.flags.printids,
+      );
+
+      this.ux.log(
+        `Pushing data ${this.flags.sourcepath as string}/VELOCPQ__PlanChargeRamp__c.csv to VELOCPQ__PlanChargeRamp__c`,
+      );
+      await this.PushData(
+        conn,
+        diff,
+        `${this.flags.sourcepath as string}/VELOCPQ__PlanChargeRamp__c.csv`,
+        'VELOCPQ__PlanChargeRamp__c',
+        ignoreFields,
+        'VELOCPQ__PricePlanId__c',
+        priceListIds,
+        extId,
+        batchSize,
+        idReplaceFields,
+        upsert,
+        dry,
+        this.flags.printids,
+      );
+
+      this.ux.log(
+        `Pushing data ${this.flags.sourcepath as string}/VELOCPQ__RampChargeTier__c.csv to VELOCPQ__RampChargeTier__c`,
+      );
+      await this.PushData(
+        conn,
+        diff,
+        `${this.flags.sourcepath as string}/VELOCPQ__RampChargeTier__c.csv`,
+        'VELOCPQ__RampChargeTier__c',
+        ignoreFields,
+        'VELOCPQ__PricePlanId__c',
+        priceListIds,
+        extId,
+        batchSize,
+        idReplaceFields,
+        upsert,
+        dry,
+        this.flags.printids,
+      );
+
+      this.ux.log(
+        `Pushing data ${
+          this.flags.sourcepath as string
+        }/VELOCPQ__RampRelatedPrice__c.csv to VELOCPQ__RampRelatedPrice__c`,
+      );
+      await this.PushData(
+        conn,
+        diff,
+        `${this.flags.sourcepath as string}/VELOCPQ__RampRelatedPrice__c.csv`,
+        'VELOCPQ__RampRelatedPrice__c',
+        ignoreFields,
+        'VELOCPQ__PricePlanId__c',
+        priceListIds,
+        extId,
+        batchSize,
+        idReplaceFields,
+        upsert,
+        dry,
+        this.flags.printids,
+      );
+    }
     // Return an object to be displayed with --json
     return { orgId: this.org.getOrgId() };
   }

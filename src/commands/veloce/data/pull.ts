@@ -223,7 +223,7 @@ export default class Pull extends SfdxCommand {
       sourcepath = `${this.flags.sourcepath as string}/VELOCPQ__PriceList__c.csv`;
       sobjecttype = 'VELOCPQ__PriceList__c';
       members = parseMembers(this.flags.members);
-      where = `Name IN ('${members.map((m) => m.name).join("','")}')`;
+      where = members[0].all ? `` : `Name IN ('${members.map((m) => m.name).join("','")}')`;
     }
     this.ux.log(`Pulling data for ${sobjecttype} into ${sourcepath}`);
     const ids = await this.PullData(conn, sourcepath, ignoreFields, sobjecttype, where, idReplaceFields);
@@ -236,7 +236,7 @@ export default class Pull extends SfdxCommand {
         `${this.flags.sourcepath as string}/VELOCPQ__PricePlan__c.csv`,
         Pull.defaultIgnoreFields,
         'VELOCPQ__PricePlan__c',
-        `Id IN ('${ids.join("','")}')`,
+        members[0].all ? '' : `VELOCPQ__PriceListId__c IN ('${ids.join("','")}')`,
         [],
       );
       this.ux.log(
@@ -249,7 +249,7 @@ export default class Pull extends SfdxCommand {
         `${this.flags.sourcepath as string}/VELOCPQ__PricePlanCharge__c.csv`,
         Pull.defaultIgnoreFields,
         'VELOCPQ__PricePlanCharge__c',
-        `VELOCPQ__PricePlanId__c IN ('${pricePlanIds.join("','")}')`,
+        members[0].all ? '' : `VELOCPQ__PricePlanId__c IN ('${pricePlanIds.join("','")}')`,
         [],
       );
       this.ux.log(
@@ -262,7 +262,7 @@ export default class Pull extends SfdxCommand {
         `${this.flags.sourcepath as string}/VELOCPQ__PlanChargeTier__c.csv`,
         Pull.defaultIgnoreFields,
         'VELOCPQ__PlanChargeTier__c',
-        `VELOCPQ__PricePlanId__c IN ('${pricePlanIds.join("','")}')`,
+        members[0].all ? '' : `VELOCPQ__PricePlanId__c IN ('${pricePlanIds.join("','")}')`,
         [],
       );
       this.ux.log(
@@ -275,7 +275,7 @@ export default class Pull extends SfdxCommand {
         `${this.flags.sourcepath as string}/VELOCPQ__PlanChargeRamp__c.csv`,
         Pull.defaultIgnoreFields,
         'VELOCPQ__PlanChargeRamp__c',
-        `VELOCPQ__PricePlanId__c IN ('${pricePlanIds.join("','")}')`,
+        members[0].all ? '' : `VELOCPQ__PricePlanId__c IN ('${pricePlanIds.join("','")}')`,
         [],
       );
       this.ux.log(
@@ -288,7 +288,7 @@ export default class Pull extends SfdxCommand {
         `${this.flags.sourcepath as string}/VELOCPQ__RampChargeTier__c.csv`,
         Pull.defaultIgnoreFields,
         'VELOCPQ__RampChargeTier__c',
-        `VELOCPQ__PricePlanId__c IN ('${pricePlanIds.join("','")}')`,
+        members[0].all ? '' : `VELOCPQ__PricePlanId__c IN ('${pricePlanIds.join("','")}')`,
         [],
       );
       this.ux.log(
@@ -301,7 +301,7 @@ export default class Pull extends SfdxCommand {
         `${this.flags.sourcepath as string}/VELOCPQ__RampRelatedPrice__c.csv`,
         Pull.defaultIgnoreFields,
         'VELOCPQ__RampRelatedPrice__c',
-        `VELOCPQ__PricePlanId__c IN ('${pricePlanIds.join("','")}')`,
+        members[0].all ? '' : `VELOCPQ__PricePlanId__c IN ('${pricePlanIds.join("','")}')`,
         [],
       );
     }
