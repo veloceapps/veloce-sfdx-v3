@@ -233,7 +233,7 @@ export default class Push extends SfdxCommand {
         conn,
         diff,
         'VELOCPQ__PlanChargeTier__c',
-        ignoreFields,
+        ignoreFields.concat(['name']),
         'VELOCPQ__PricePlanId__c',
         priceListIds,
         extId,
