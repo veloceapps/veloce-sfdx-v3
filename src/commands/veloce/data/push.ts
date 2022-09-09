@@ -4,7 +4,7 @@
  * Licensed under the BSD 3-Clause license.
  * For full license text, see LICENSE.txt file in the repo root or https://opensource.org/licenses/BSD-3-Clause
  */
-import { existsSync, readFileSync, lstatSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 import * as os from 'os';
 import * as parse from 'csv-parse/lib/sync';
 import { flags, SfdxCommand } from '@salesforce/command';
@@ -165,9 +165,6 @@ export default class Push extends SfdxCommand {
     let members: Member[] = [];
     let filename = '';
     if (this.flags.members) {
-      if (!lstatSync(this.flags.sourcepath).isDirectory()) {
-        throw new SfdxError(`${this.flags.sourcepath as string} must be a dir if -m flag is used.`);
-      }
       filename = 'VELOCPQ__PriceList__c.csv';
       sType = 'VELOCPQ__PriceList__c'.toLowerCase();
       members = parseMembers(this.flags.members);
