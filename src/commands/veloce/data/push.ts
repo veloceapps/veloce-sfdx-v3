@@ -123,10 +123,8 @@ export default class Push extends SfdxCommand {
     let upsert = this.flags.upsert || false;
     const dry = this.flags.dry || false;
     const diff = this.flags.diff || true;
-    let sourcepath = this.flags.sourcepath as string;
-    if (!this.flags.members && existsSync(sourcepath) && lstatSync(sourcepath).isDirectory()) {
-      sourcepath = `${this.flags.sourcepath as string}/${this.flags.sobjecttype as string}.csv`;
-    }
+    const rootPath = ((this.flags.sourcepath || 'data') as string).replace(/\/$/, ''); // trim last slash if present
+
     if (
       this.flags.members &&
       (this.flags.idreplacefields || this.flags.ignorefields || this.flags.sobjecttype || this.flags.upsert)
@@ -165,20 +163,23 @@ export default class Push extends SfdxCommand {
     }
 
     let members: Member[] = [];
-
+    let filename = '';
     if (this.flags.members) {
       if (!lstatSync(this.flags.sourcepath).isDirectory()) {
         throw new SfdxError(`${this.flags.sourcepath as string} must be a dir if -m flag is used.`);
       }
-      sourcepath = `${this.flags.sourcepath as string}/VELOCPQ__PriceList__c.csv`;
+      filename = 'VELOCPQ__PriceList__c.csv';
       sType = 'VELOCPQ__PriceList__c'.toLowerCase();
       members = parseMembers(this.flags.members);
+    } else {
+      filename = `${this.flags.sobjecttype as string}.csv`;
     }
-    this.ux.log(`Pushing data ${sourcepath} to ${sType}`);
+    this.ux.log(`Pushing data ${rootPath}/${filename} to ${sType}`);
     const ids = await this.PushData(
+      rootPath,
+      filename,
       conn,
       diff,
-      sourcepath,
       sType,
       ignoreFields,
       members.length > 0 ? 'id' : null,
@@ -194,9 +195,10 @@ export default class Push extends SfdxCommand {
     if (members.length > 0) {
       this.ux.log(`Pushing data ${this.flags.sourcepath as string}/VELOCPQ__PricePlan__c.csv to VELOCPQ__PricePlan__c`);
       const priceListIds = await this.PushData(
+        rootPath,
+        'VELOCPQ__PricePlan__c.csv',
         conn,
         diff,
-        `${this.flags.sourcepath as string}/VELOCPQ__PricePlan__c.csv`,
         'VELOCPQ__PricePlan__c',
         ignoreFields,
         'VELOCPQ__PriceListId__c',
@@ -215,9 +217,10 @@ export default class Push extends SfdxCommand {
         }/VELOCPQ__PricePlanCharge__c.csv to VELOCPQ__PricePlanCharge__c`,
       );
       await this.PushData(
+        rootPath,
+        'VELOCPQ__PricePlanCharge__c.csv',
         conn,
         diff,
-        `${this.flags.sourcepath as string}/VELOCPQ__PricePlanCharge__c.csv`,
         'VELOCPQ__PricePlanCharge__c',
         ignoreFields,
         'VELOCPQ__PricePlanId__c',
@@ -234,9 +237,10 @@ export default class Push extends SfdxCommand {
         `Pushing data ${this.flags.sourcepath as string}/VELOCPQ__PlanChargeTier__c.csv to VELOCPQ__PlanChargeTier__c`,
       );
       await this.PushData(
+        rootPath,
+        'VELOCPQ__PlanChargeTier__c.csv',
         conn,
         diff,
-        `${this.flags.sourcepath as string}/VELOCPQ__PlanChargeTier__c.csv`,
         'VELOCPQ__PlanChargeTier__c',
         ignoreFields,
         'VELOCPQ__PricePlanId__c',
@@ -253,9 +257,10 @@ export default class Push extends SfdxCommand {
         `Pushing data ${this.flags.sourcepath as string}/VELOCPQ__PlanChargeRamp__c.csv to VELOCPQ__PlanChargeRamp__c`,
       );
       await this.PushData(
+        rootPath,
+        'VELOCPQ__PlanChargeRamp__c.csv',
         conn,
         diff,
-        `${this.flags.sourcepath as string}/VELOCPQ__PlanChargeRamp__c.csv`,
         'VELOCPQ__PlanChargeRamp__c',
         ignoreFields,
         'VELOCPQ__PricePlanId__c',
@@ -272,9 +277,10 @@ export default class Push extends SfdxCommand {
         `Pushing data ${this.flags.sourcepath as string}/VELOCPQ__RampChargeTier__c.csv to VELOCPQ__RampChargeTier__c`,
       );
       await this.PushData(
+        rootPath,
+        'VELOCPQ__RampChargeTier__c.csv',
         conn,
         diff,
-        `${this.flags.sourcepath as string}/VELOCPQ__RampChargeTier__c.csv`,
         'VELOCPQ__RampChargeTier__c',
         ignoreFields,
         'VELOCPQ__PricePlanId__c',
@@ -293,9 +299,10 @@ export default class Push extends SfdxCommand {
         }/VELOCPQ__RampRelatedPrice__c.csv to VELOCPQ__RampRelatedPrice__c`,
       );
       await this.PushData(
+        rootPath,
+        'VELOCPQ__RampRelatedPrice__c.csv',
         conn,
         diff,
-        `${this.flags.sourcepath as string}/VELOCPQ__RampRelatedPrice__c.csv`,
         'VELOCPQ__RampRelatedPrice__c',
         ignoreFields,
         'VELOCPQ__PricePlanId__c',
@@ -442,9 +449,10 @@ export default class Push extends SfdxCommand {
   }
 
   private async PushData(
+    rootPath: string,
+    filename: string,
     conn: Connection,
     diff: boolean,
-    sourcepath: string,
     sType: string,
     ignoreFields: string[],
     onlyField: string | null,
@@ -464,7 +472,7 @@ export default class Push extends SfdxCommand {
     const datefields = [];
     const numericfields = [];
 
-    const fileContent = readFileSync(sourcepath);
+    const fileContent = readFileSync(`${rootPath}/${filename}`);
     let idmap = await loadIdMap(conn);
     // retrieve types of args
     const fieldsResult = await conn.autoFetchQuery<SalesforceEntity>(

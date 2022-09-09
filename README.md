@@ -13,8 +13,8 @@ Extension to sfdx which allows veloce specific data pull and push
 
 - [veloce](#veloce)
   <!-- tocstop -->
-                                                      <!-- install -->
-                                                      <!-- usage -->
+                                                        <!-- install -->
+                                                        <!-- usage -->
 
 ```sh-session
 $ npm install -g veloce-sfdx-v3
@@ -31,7 +31,7 @@ USAGE
 <!-- usagestop -->
 <!-- commands -->
 
-- [`sfdx veloce:data:pull -p <string> [-m <string>] [-w <string>] [-s <string>] [-o <string>] [-R <string>] [-v <string>] [-u <string>] [--apiversion <string>] [--json] [--loglevel trace|debug|info|warn|error|fatal|TRACE|DEBUG|INFO|WARN|ERROR|FATAL]`](#sfdx-velocedatapull--p-string--m-string--w-string--s-string--o-string--r-string--v-string--u-string---apiversion-string---json---loglevel-tracedebuginfowarnerrorfataltracedebuginfowarnerrorfatal)
+- [`sfdx veloce:data:pull [-m <string>] [-w <string>] [-s <string>] [-p <string>] [-o <string>] [-R <string>] [-v <string>] [-u <string>] [--apiversion <string>] [--json] [--loglevel trace|debug|info|warn|error|fatal|TRACE|DEBUG|INFO|WARN|ERROR|FATAL]`](#sfdx-velocedatapull--m-string--w-string--s-string--p-string--o-string--r-string--v-string--u-string---apiversion-string---json---loglevel-tracedebuginfowarnerrorfataltracedebuginfowarnerrorfatal)
 - [`sfdx veloce:data:push [-m <string>] [-p <string>] [-P] [-s <string>] [-e <string>] [-R <string>] [-P] [-U] [-d] [-D] [-o <string>] [-b <string>] [-v <string>] [-u <string>] [--apiversion <string>] [--json] [--loglevel trace|debug|info|warn|error|fatal|TRACE|DEBUG|INFO|WARN|ERROR|FATAL]`](#sfdx-velocedatapush--m-string--p-string--p--s-string--e-string--r-string--p--u--d--d--o-string--b-string--v-string--u-string---apiversion-string---json---loglevel-tracedebuginfowarnerrorfataltracedebuginfowarnerrorfatal)
 - [`sfdx veloce:debug:list [-P] [-v <string>] [-u <string>] [--apiversion <string>] [--json] [--loglevel trace|debug|info|warn|error|fatal|TRACE|DEBUG|INFO|WARN|ERROR|FATAL]`](#sfdx-velocedebuglist--p--v-string--u-string---apiversion-string---json---loglevel-tracedebuginfowarnerrorfataltracedebuginfowarnerrorfatal)
 - [`sfdx veloce:debug:logs [-P] [-l debug|info|warn|error|DEBUG|INFO|WARN|ERROR] [-v <string>] [-u <string>] [--apiversion <string>] [--json] [--loglevel trace|debug|info|warn|error|fatal|TRACE|DEBUG|INFO|WARN|ERROR|FATAL]`](#sfdx-velocedebuglogs--p--l-debuginfowarnerrordebuginfowarnerror--v-string--u-string---apiversion-string---json---loglevel-tracedebuginfowarnerrorfataltracedebuginfowarnerrorfatal)
@@ -45,13 +45,13 @@ USAGE
 - [`sfdx veloce:source:pull [-m <string>] [-p <string>] [-P] [-v <string>] [-u <string>] [--apiversion <string>] [--json] [--loglevel trace|debug|info|warn|error|fatal|TRACE|DEBUG|INFO|WARN|ERROR|FATAL]`](#sfdx-velocesourcepull--m-string--p-string--p--v-string--u-string---apiversion-string---json---loglevel-tracedebuginfowarnerrorfataltracedebuginfowarnerrorfatal)
 - [`sfdx veloce:source:push [-m <string>] [-p <string>] [-P] [-d] [-v <string>] [-u <string>] [--apiversion <string>] [--json] [--loglevel trace|debug|info|warn|error|fatal|TRACE|DEBUG|INFO|WARN|ERROR|FATAL]`](#sfdx-velocesourcepush--m-string--p-string--p--d--v-string--u-string---apiversion-string---json---loglevel-tracedebuginfowarnerrorfataltracedebuginfowarnerrorfatal)
 
-## `sfdx veloce:data:pull -p <string> [-m <string>] [-w <string>] [-s <string>] [-o <string>] [-R <string>] [-v <string>] [-u <string>] [--apiversion <string>] [--json] [--loglevel trace|debug|info|warn|error|fatal|TRACE|DEBUG|INFO|WARN|ERROR|FATAL]`
+## `sfdx veloce:data:pull [-m <string>] [-w <string>] [-s <string>] [-p <string>] [-o <string>] [-R <string>] [-v <string>] [-u <string>] [--apiversion <string>] [--json] [--loglevel trace|debug|info|warn|error|fatal|TRACE|DEBUG|INFO|WARN|ERROR|FATAL]`
 
 Retrieves data from Salesforce org and stores it in provided folder as CSVs
 
 ```
 USAGE
-  $ sfdx veloce:data:pull -p <string> [-m <string>] [-w <string>] [-s <string>] [-o <string>] [-R <string>] [-v
+  $ sfdx veloce:data:pull [-m <string>] [-w <string>] [-s <string>] [-p <string>] [-o <string>] [-R <string>] [-v
   <string>] [-u <string>] [--apiversion <string>] [--json] [--loglevel
   trace|debug|info|warn|error|fatal|TRACE|DEBUG|INFO|WARN|ERROR|FATAL]
 
@@ -68,8 +68,7 @@ OPTIONS
                                                                                     default list of ignored fields add +
                                                                                     in the front.
 
-  -p, --sourcepath=sourcepath                                                       (required) Path to file where to
-                                                                                    read data
+  -p, --sourcepath=sourcepath                                                       Path to file where to read data
 
   -s, --sobjecttype=sobjecttype                                                     The sObject type of the records you
                                                                                     want to dump.

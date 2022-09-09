@@ -6,7 +6,7 @@
  */
 import { existsSync, createWriteStream, lstatSync } from 'node:fs';
 import * as os from 'os';
-import { WriteStream } from 'fs';
+import { mkdirSync, WriteStream } from 'fs';
 import { flags, SfdxCommand } from '@salesforce/command';
 import { Connection, Messages, SfdxError } from '@salesforce/core';
 import { AnyJson } from '@salesforce/ts-types';
@@ -80,7 +80,7 @@ export default class Pull extends SfdxCommand {
     sourcepath: flags.string({
       char: 'p',
       description: messages.getMessage('sourcepathFlagDescription'),
-      required: true,
+      required: false,
     }),
     ignorefields: flags.string({
       char: 'o',
@@ -103,9 +103,156 @@ export default class Pull extends SfdxCommand {
   // Set this to true if your command requires a project workspace; 'requiresProject' is false by default
   protected static requiresProject = false;
 
-  public async PullData(
+  /* eslint complexity: ["error", 26]*/
+  public async run(): Promise<AnyJson> {
+    if (!this.org) {
+      return Promise.reject('Org is not defined');
+    }
+    if (!existsSync('sfdx-project.json') && this.flags.noproject === false) {
+      return Promise.reject('You must have sfdx-project.json while runnign this plugin.');
+    }
+    const conn = this.org.getConnection();
+
+    const rootPath = ((this.flags.sourcepath || 'data') as string).replace(/\/$/, ''); // trim last slash if present
+
+    if (this.flags.members && (this.flags.idreplacefields || this.flags.ignorefields || this.flags.sobjecttype)) {
+      throw new SfdxError('-m flag cannot be used with -R -o or -s flags');
+    }
+
+    const idReplaceFieldsFlag = this.flags.idreplacefields as string;
+    const ignoreFieldsFlag = this.flags.ignorefields as string;
+
+    const idReplaceFields = idReplaceFieldsFlag ? idReplaceFieldsFlag?.split(',') : [];
+
+    const match = ignoreFieldsFlag?.match(/(?<appendMode>[+-])?\s*(?<fieldsToIgnore>.*)/);
+    const { appendMode, fieldsToIgnore } = match?.groups ?? {};
+    let ignoreFields = [];
+    if (fieldsToIgnore) {
+      const fieldsArray = fieldsToIgnore?.split(',');
+      switch (appendMode) {
+        case '+':
+          ignoreFields = [...Pull.defaultIgnoreFields, ...fieldsArray];
+          break;
+        case '-':
+          ignoreFields = Pull.defaultIgnoreFields.filter((item) => fieldsArray.indexOf(item) < 0);
+          break;
+        default:
+          ignoreFields = fieldsArray;
+          break;
+      }
+    } else {
+      ignoreFields = Pull.defaultIgnoreFields;
+    }
+    let sobjecttype = this.flags.sobjecttype as string;
+    let members: Member[] = [];
+    let where = this.flags.where;
+
+    let filename = '';
+    if (this.flags.members) {
+      if (!lstatSync(this.flags.sourcepath).isDirectory()) {
+        throw new SfdxError(`${this.flags.sourcepath as string} must be a dir if -m flag is used.`);
+      }
+      filename = 'VELOCPQ__PriceList__c.csv';
+      sobjecttype = 'VELOCPQ__PriceList__c';
+      members = parseMembers(this.flags.members);
+      where = members[0].all ? '' : `Name IN ('${members.map((m) => m.name).join("','")}')`;
+    } else {
+      filename = `${this.flags.sobjecttype as string}.csv`;
+    }
+    this.ux.log(`Pulling data for ${sobjecttype} into ${filename}`);
+    const ids = await this.pullData(rootPath, filename, conn, ignoreFields, sobjecttype, where, idReplaceFields);
+    if (this.flags.members) {
+      this.ux.log(
+        `Pulling data for VELOCPQ__PricePlan__c into ${this.flags.sourcepath as string}/VELOCPQ__PricePlan__c.csv`,
+      );
+      const pricePlanIds = await this.pullData(
+        rootPath,
+        'VELOCPQ__PricePlan__c.csv',
+        conn,
+        Pull.defaultIgnoreFields,
+        'VELOCPQ__PricePlan__c',
+        members[0].all ? '' : `VELOCPQ__PriceListId__c IN ('${ids.join("','")}')`,
+        [],
+      );
+      this.ux.log(
+        `Pulling data for VELOCPQ__PricePlanCharge__c into ${
+          this.flags.sourcepath as string
+        }/VELOCPQ__PricePlanCharge__c.csv`,
+      );
+      await this.pullData(
+        rootPath,
+        'VELOCPQ__PricePlanCharge__c.csv',
+        conn,
+        Pull.defaultIgnoreFields,
+        'VELOCPQ__PricePlanCharge__c',
+        members[0].all ? '' : `VELOCPQ__PricePlanId__c IN ('${pricePlanIds.join("','")}')`,
+        [],
+      );
+      this.ux.log(
+        `Pulling data for VELOCPQ__PlanChargeTier__c into ${
+          this.flags.sourcepath as string
+        }/VELOCPQ__PlanChargeTier__c.csv`,
+      );
+      await this.pullData(
+        rootPath,
+        'VELOCPQ__PlanChargeTier__c.csv',
+        conn,
+        Pull.defaultIgnoreFields,
+        'VELOCPQ__PlanChargeTier__c',
+        members[0].all ? '' : `VELOCPQ__PricePlanId__c IN ('${pricePlanIds.join("','")}')`,
+        [],
+      );
+      this.ux.log(
+        `Pulling data for VELOCPQ__PlanChargeRamp__c into ${
+          this.flags.sourcepath as string
+        }/VELOCPQ__PlanChargeRamp__c.csv`,
+      );
+      await this.pullData(
+        rootPath,
+        'VELOCPQ__PlanChargeRamp__c.csv',
+        conn,
+        Pull.defaultIgnoreFields,
+        'VELOCPQ__PlanChargeRamp__c',
+        members[0].all ? '' : `VELOCPQ__PricePlanId__c IN ('${pricePlanIds.join("','")}')`,
+        [],
+      );
+      this.ux.log(
+        `Pulling data for VELOCPQ__RampChargeTier__c into ${
+          this.flags.sourcepath as string
+        }/VELOCPQ__RampChargeTier__c.csv`,
+      );
+      await this.pullData(
+        rootPath,
+        'VELOCPQ__RampChargeTier__c.csv',
+        conn,
+        Pull.defaultIgnoreFields,
+        'VELOCPQ__RampChargeTier__c',
+        members[0].all ? '' : `VELOCPQ__PricePlanId__c IN ('${pricePlanIds.join("','")}')`,
+        [],
+      );
+      this.ux.log(
+        `Pulling data for VELOCPQ__RampRelatedPrice__c into ${
+          this.flags.sourcepath as string
+        }/VELOCPQ__RampRelatedPrice__c.csv`,
+      );
+      await this.pullData(
+        rootPath,
+        'VELOCPQ__RampRelatedPrice__c.csv',
+        conn,
+        Pull.defaultIgnoreFields,
+        'VELOCPQ__RampRelatedPrice__c',
+        members[0].all ? '' : `VELOCPQ__PricePlanId__c IN ('${pricePlanIds.join("','")}')`,
+        [],
+      );
+    }
+    // Return an object to be displayed with --json
+    return {};
+  }
+
+  private async pullData(
+    rootPath: string,
+    filename: string,
     conn: Connection,
-    sourcepath: string,
     ignoreFields: string[],
     sobjecttype: string,
     where: string,
@@ -123,7 +270,11 @@ export default class Pull extends SfdxCommand {
       sendHeaders: true,
       bom: true,
     });
-    writer.pipe(createWriteStream(sourcepath, { flags: 'w+' }));
+    if (!existsSync(rootPath)) {
+      mkdirSync(rootPath, { recursive: true });
+    }
+
+    writer.pipe(createWriteStream(`${rootPath}/${filename}`, { flags: 'w+' }));
 
     const { fields, lookupFields } = await this.getFields(conn, sobjecttype, ignoreFields);
     let query;
@@ -167,146 +318,6 @@ export default class Pull extends SfdxCommand {
     }
     writer.end();
     return ids;
-  }
-
-  /* eslint complexity: ["error", 26]*/
-  public async run(): Promise<AnyJson> {
-    if (!this.org) {
-      return Promise.reject('Org is not defined');
-    }
-    if (!existsSync('sfdx-project.json') && this.flags.noproject === false) {
-      return Promise.reject('You must have sfdx-project.json while runnign this plugin.');
-    }
-    const conn = this.org.getConnection();
-
-    let sourcepath = this.flags.sourcepath as string;
-    if (!this.flags.members && existsSync(sourcepath) && lstatSync(sourcepath).isDirectory()) {
-      sourcepath = `${this.flags.sourcepath as string}/${this.flags.sobjecttype as string}.csv`;
-    }
-
-    if (this.flags.members && (this.flags.idreplacefields || this.flags.ignorefields || this.flags.sobjecttype)) {
-      throw new SfdxError('-m flag cannot be used with -R -o or -s flags');
-    }
-
-    const idReplaceFieldsFlag = this.flags.idreplacefields as string;
-    const ignoreFieldsFlag = this.flags.ignorefields as string;
-
-    const idReplaceFields = idReplaceFieldsFlag ? idReplaceFieldsFlag?.split(',') : [];
-
-    const match = ignoreFieldsFlag?.match(/(?<appendMode>[+-])?\s*(?<fieldsToIgnore>.*)/);
-    const { appendMode, fieldsToIgnore } = match?.groups ?? {};
-    let ignoreFields = [];
-    if (fieldsToIgnore) {
-      const fieldsArray = fieldsToIgnore?.split(',');
-      switch (appendMode) {
-        case '+':
-          ignoreFields = [...Pull.defaultIgnoreFields, ...fieldsArray];
-          break;
-        case '-':
-          ignoreFields = Pull.defaultIgnoreFields.filter((item) => fieldsArray.indexOf(item) < 0);
-          break;
-        default:
-          ignoreFields = fieldsArray;
-          break;
-      }
-    } else {
-      ignoreFields = Pull.defaultIgnoreFields;
-    }
-    let sobjecttype = this.flags.sobjecttype as string;
-    let members: Member[] = [];
-    let where = this.flags.where;
-
-    if (this.flags.members) {
-      if (!lstatSync(this.flags.sourcepath).isDirectory()) {
-        throw new SfdxError(`${this.flags.sourcepath as string} must be a dir if -m flag is used.`);
-      }
-      sourcepath = `${this.flags.sourcepath as string}/VELOCPQ__PriceList__c.csv`;
-      sobjecttype = 'VELOCPQ__PriceList__c';
-      members = parseMembers(this.flags.members);
-      where = members[0].all ? '' : `Name IN ('${members.map((m) => m.name).join("','")}')`;
-    }
-    this.ux.log(`Pulling data for ${sobjecttype} into ${sourcepath}`);
-    const ids = await this.PullData(conn, sourcepath, ignoreFields, sobjecttype, where, idReplaceFields);
-    if (this.flags.members) {
-      this.ux.log(
-        `Pulling data for VELOCPQ__PricePlan__c into ${this.flags.sourcepath as string}/VELOCPQ__PricePlan__c.csv`,
-      );
-      const pricePlanIds = await this.PullData(
-        conn,
-        `${this.flags.sourcepath as string}/VELOCPQ__PricePlan__c.csv`,
-        Pull.defaultIgnoreFields,
-        'VELOCPQ__PricePlan__c',
-        members[0].all ? '' : `VELOCPQ__PriceListId__c IN ('${ids.join("','")}')`,
-        [],
-      );
-      this.ux.log(
-        `Pulling data for VELOCPQ__PricePlanCharge__c into ${
-          this.flags.sourcepath as string
-        }/VELOCPQ__PricePlanCharge__c.csv`,
-      );
-      await this.PullData(
-        conn,
-        `${this.flags.sourcepath as string}/VELOCPQ__PricePlanCharge__c.csv`,
-        Pull.defaultIgnoreFields,
-        'VELOCPQ__PricePlanCharge__c',
-        members[0].all ? '' : `VELOCPQ__PricePlanId__c IN ('${pricePlanIds.join("','")}')`,
-        [],
-      );
-      this.ux.log(
-        `Pulling data for VELOCPQ__PlanChargeTier__c into ${
-          this.flags.sourcepath as string
-        }/VELOCPQ__PlanChargeTier__c.csv`,
-      );
-      await this.PullData(
-        conn,
-        `${this.flags.sourcepath as string}/VELOCPQ__PlanChargeTier__c.csv`,
-        Pull.defaultIgnoreFields,
-        'VELOCPQ__PlanChargeTier__c',
-        members[0].all ? '' : `VELOCPQ__PricePlanId__c IN ('${pricePlanIds.join("','")}')`,
-        [],
-      );
-      this.ux.log(
-        `Pulling data for VELOCPQ__PlanChargeRamp__c into ${
-          this.flags.sourcepath as string
-        }/VELOCPQ__PlanChargeRamp__c.csv`,
-      );
-      await this.PullData(
-        conn,
-        `${this.flags.sourcepath as string}/VELOCPQ__PlanChargeRamp__c.csv`,
-        Pull.defaultIgnoreFields,
-        'VELOCPQ__PlanChargeRamp__c',
-        members[0].all ? '' : `VELOCPQ__PricePlanId__c IN ('${pricePlanIds.join("','")}')`,
-        [],
-      );
-      this.ux.log(
-        `Pulling data for VELOCPQ__RampChargeTier__c into ${
-          this.flags.sourcepath as string
-        }/VELOCPQ__RampChargeTier__c.csv`,
-      );
-      await this.PullData(
-        conn,
-        `${this.flags.sourcepath as string}/VELOCPQ__RampChargeTier__c.csv`,
-        Pull.defaultIgnoreFields,
-        'VELOCPQ__RampChargeTier__c',
-        members[0].all ? '' : `VELOCPQ__PricePlanId__c IN ('${pricePlanIds.join("','")}')`,
-        [],
-      );
-      this.ux.log(
-        `Pulling data for VELOCPQ__RampRelatedPrice__c into ${
-          this.flags.sourcepath as string
-        }/VELOCPQ__RampRelatedPrice__c.csv`,
-      );
-      await this.PullData(
-        conn,
-        `${this.flags.sourcepath as string}/VELOCPQ__RampRelatedPrice__c.csv`,
-        Pull.defaultIgnoreFields,
-        'VELOCPQ__RampRelatedPrice__c',
-        members[0].all ? '' : `VELOCPQ__PricePlanId__c IN ('${pricePlanIds.join("','")}')`,
-        [],
-      );
-    }
-    // Return an object to be displayed with --json
-    return {};
   }
 
   private async getFields(conn: Connection, sobjecttype: string, ignoreFields: string[]): Promise<FieldsResult> {
