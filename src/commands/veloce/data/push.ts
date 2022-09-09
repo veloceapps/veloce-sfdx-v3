@@ -193,7 +193,7 @@ export default class Push extends SfdxCommand {
     );
 
     if (members.length > 0) {
-      this.ux.log(`Pushing data ${this.flags.sourcepath as string}/VELOCPQ__PricePlan__c.csv to VELOCPQ__PricePlan__c`);
+      this.ux.log(`Pushing data ${rootPath}/VELOCPQ__PricePlan__c.csv to VELOCPQ__PricePlan__c`);
       const priceListIds = await this.PushData(
         rootPath,
         'VELOCPQ__PricePlan__c.csv',
@@ -211,11 +211,7 @@ export default class Push extends SfdxCommand {
         this.flags.printids,
       );
 
-      this.ux.log(
-        `Pushing data ${
-          this.flags.sourcepath as string
-        }/VELOCPQ__PricePlanCharge__c.csv to VELOCPQ__PricePlanCharge__c`,
-      );
+      this.ux.log(`Pushing data ${rootPath}/VELOCPQ__PricePlanCharge__c.csv to VELOCPQ__PricePlanCharge__c`);
       await this.PushData(
         rootPath,
         'VELOCPQ__PricePlanCharge__c.csv',
@@ -233,9 +229,7 @@ export default class Push extends SfdxCommand {
         this.flags.printids,
       );
 
-      this.ux.log(
-        `Pushing data ${this.flags.sourcepath as string}/VELOCPQ__PlanChargeTier__c.csv to VELOCPQ__PlanChargeTier__c`,
-      );
+      this.ux.log(`Pushing data ${rootPath}/VELOCPQ__PlanChargeTier__c.csv to VELOCPQ__PlanChargeTier__c`);
       await this.PushData(
         rootPath,
         'VELOCPQ__PlanChargeTier__c.csv',
@@ -253,9 +247,7 @@ export default class Push extends SfdxCommand {
         this.flags.printids,
       );
 
-      this.ux.log(
-        `Pushing data ${this.flags.sourcepath as string}/VELOCPQ__PlanChargeRamp__c.csv to VELOCPQ__PlanChargeRamp__c`,
-      );
+      this.ux.log(`Pushing data ${rootPath}/VELOCPQ__PlanChargeRamp__c.csv to VELOCPQ__PlanChargeRamp__c`);
       await this.PushData(
         rootPath,
         'VELOCPQ__PlanChargeRamp__c.csv',
@@ -273,9 +265,7 @@ export default class Push extends SfdxCommand {
         this.flags.printids,
       );
 
-      this.ux.log(
-        `Pushing data ${this.flags.sourcepath as string}/VELOCPQ__RampChargeTier__c.csv to VELOCPQ__RampChargeTier__c`,
-      );
+      this.ux.log(`Pushing data ${rootPath}/VELOCPQ__RampChargeTier__c.csv to VELOCPQ__RampChargeTier__c`);
       await this.PushData(
         rootPath,
         'VELOCPQ__RampChargeTier__c.csv',
@@ -293,11 +283,7 @@ export default class Push extends SfdxCommand {
         this.flags.printids,
       );
 
-      this.ux.log(
-        `Pushing data ${
-          this.flags.sourcepath as string
-        }/VELOCPQ__RampRelatedPrice__c.csv to VELOCPQ__RampRelatedPrice__c`,
-      );
+      this.ux.log(`Pushing data ${rootPath}/VELOCPQ__RampRelatedPrice__c.csv to VELOCPQ__RampRelatedPrice__c`);
       await this.PushData(
         rootPath,
         'VELOCPQ__RampRelatedPrice__c.csv',
