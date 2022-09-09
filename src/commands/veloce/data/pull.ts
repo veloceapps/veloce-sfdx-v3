@@ -149,9 +149,6 @@ export default class Pull extends SfdxCommand {
 
     let filename = '';
     if (this.flags.members) {
-      if (!lstatSync(this.flags.sourcepath).isDirectory()) {
-        throw new SfdxError(`${this.flags.sourcepath as string} must be a dir if -m flag is used.`);
-      }
       filename = 'VELOCPQ__PriceList__c.csv';
       sobjecttype = 'VELOCPQ__PriceList__c';
       members = parseMembers(this.flags.members);
@@ -162,9 +159,7 @@ export default class Pull extends SfdxCommand {
     this.ux.log(`Pulling data for ${sobjecttype} into ${filename}`);
     const ids = await this.pullData(rootPath, filename, conn, ignoreFields, sobjecttype, where, idReplaceFields);
     if (this.flags.members) {
-      this.ux.log(
-        `Pulling data for VELOCPQ__PricePlan__c into ${this.flags.sourcepath as string}/VELOCPQ__PricePlan__c.csv`,
-      );
+      this.ux.log(`Pulling data for VELOCPQ__PricePlan__c into ${rootPath}/VELOCPQ__PricePlan__c.csv`);
       const pricePlanIds = await this.pullData(
         rootPath,
         'VELOCPQ__PricePlan__c.csv',
@@ -174,11 +169,7 @@ export default class Pull extends SfdxCommand {
         members[0].all ? '' : `VELOCPQ__PriceListId__c IN ('${ids.join("','")}')`,
         [],
       );
-      this.ux.log(
-        `Pulling data for VELOCPQ__PricePlanCharge__c into ${
-          this.flags.sourcepath as string
-        }/VELOCPQ__PricePlanCharge__c.csv`,
-      );
+      this.ux.log(`Pulling data for VELOCPQ__PricePlanCharge__c into ${rootPath}/VELOCPQ__PricePlanCharge__c.csv`);
       await this.pullData(
         rootPath,
         'VELOCPQ__PricePlanCharge__c.csv',
@@ -188,11 +179,7 @@ export default class Pull extends SfdxCommand {
         members[0].all ? '' : `VELOCPQ__PricePlanId__c IN ('${pricePlanIds.join("','")}')`,
         [],
       );
-      this.ux.log(
-        `Pulling data for VELOCPQ__PlanChargeTier__c into ${
-          this.flags.sourcepath as string
-        }/VELOCPQ__PlanChargeTier__c.csv`,
-      );
+      this.ux.log(`Pulling data for VELOCPQ__PlanChargeTier__c into ${rootPath}/VELOCPQ__PlanChargeTier__c.csv`);
       await this.pullData(
         rootPath,
         'VELOCPQ__PlanChargeTier__c.csv',
@@ -202,11 +189,7 @@ export default class Pull extends SfdxCommand {
         members[0].all ? '' : `VELOCPQ__PricePlanId__c IN ('${pricePlanIds.join("','")}')`,
         [],
       );
-      this.ux.log(
-        `Pulling data for VELOCPQ__PlanChargeRamp__c into ${
-          this.flags.sourcepath as string
-        }/VELOCPQ__PlanChargeRamp__c.csv`,
-      );
+      this.ux.log(`Pulling data for VELOCPQ__PlanChargeRamp__c into ${rootPath}/VELOCPQ__PlanChargeRamp__c.csv`);
       await this.pullData(
         rootPath,
         'VELOCPQ__PlanChargeRamp__c.csv',
@@ -216,11 +199,7 @@ export default class Pull extends SfdxCommand {
         members[0].all ? '' : `VELOCPQ__PricePlanId__c IN ('${pricePlanIds.join("','")}')`,
         [],
       );
-      this.ux.log(
-        `Pulling data for VELOCPQ__RampChargeTier__c into ${
-          this.flags.sourcepath as string
-        }/VELOCPQ__RampChargeTier__c.csv`,
-      );
+      this.ux.log(`Pulling data for VELOCPQ__RampChargeTier__c into ${rootPath}/VELOCPQ__RampChargeTier__c.csv`);
       await this.pullData(
         rootPath,
         'VELOCPQ__RampChargeTier__c.csv',
@@ -230,11 +209,7 @@ export default class Pull extends SfdxCommand {
         members[0].all ? '' : `VELOCPQ__PricePlanId__c IN ('${pricePlanIds.join("','")}')`,
         [],
       );
-      this.ux.log(
-        `Pulling data for VELOCPQ__RampRelatedPrice__c into ${
-          this.flags.sourcepath as string
-        }/VELOCPQ__RampRelatedPrice__c.csv`,
-      );
+      this.ux.log(`Pulling data for VELOCPQ__RampRelatedPrice__c into ${rootPath}/VELOCPQ__RampRelatedPrice__c.csv`);
       await this.pullData(
         rootPath,
         'VELOCPQ__RampRelatedPrice__c.csv',
