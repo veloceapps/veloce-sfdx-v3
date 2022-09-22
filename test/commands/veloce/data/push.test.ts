@@ -13,7 +13,7 @@ describe('veloce:data:push', () => {
     // `
     //    writeFileSync("/tmp/VELOCPQ__ProductModel__c.csv", dataCSV)
     const cmdResult = await exec(
-      `sfdx veloce:data:push -s VELOCPQ__ProductModel__c -u ${env} -p test-data/data/VELOCPQ__ProductModel__c.csv --upsert`,
+      `sfdx veloce:data:push -s VELOCPQ__ProductModel__c -u ${env} -p test-data/data --upsert`,
     );
     console.log(cmdResult.stdout);
     // var check = await exec(`sfdx force:data:soql:query  -u studio-dev -q "select fields(all) from VELOCPQ__ProductModel__c where Name = '${name}' limit 10" --json`)
