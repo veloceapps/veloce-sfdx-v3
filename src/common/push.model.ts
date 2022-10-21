@@ -90,7 +90,17 @@ async function uploadModel(idmap: IdMap, sourcepath: string, conn: Connection, m
     // update existing document
     console.log(`Updating existing PML document(${pmlDocName}) with ID: ${documentId}`);
     await updateDocument(conn, documentId, body);
-
+    // Update ID map
+    const newId = await getPm(conn, modelName);
+    const meta = JSON.parse(readFileSync(`${sourcepath}/model/${modelName}/${modelName}.json`).toString()) as {
+      [key: string]: string;
+    };
+    const oldId = meta['Id'];
+    // Update ID-map
+    if (oldId && newId && oldId !== newId) {
+      console.log(`IDMAP: ${oldId} => ${newId}`);
+      idmap[oldId] = newId;
+    }
     return documentId;
   } else {
     // upload new document and link it to ProductModel
@@ -160,7 +170,7 @@ async function uploadPM(idmap: IdMap, sourcepath: string, conn: Connection, pmNa
     if (result.success) {
       const oldId = meta['Id'];
       // Update ID-map
-      if (oldId && result.id && oldId != result.id) {
+      if (oldId && result.id && oldId !== result.id) {
         console.log(`IDMAP: ${oldId} => ${result.id}`);
         idmap[oldId] = result.id;
       }
@@ -172,6 +182,12 @@ async function uploadPM(idmap: IdMap, sourcepath: string, conn: Connection, pmNa
         throw new SfdxError(`Failed to update Product Model ${pmName}, error: ${err ? err.toString() : 'no-error'}`);
       }
     });
+    const oldId = meta['Id'];
+    // Update ID-map
+    if (oldId && pmId && oldId !== pmId) {
+      console.log(`IDMAP: ${oldId} => ${pmId}`);
+      idmap[oldId] = pmId;
+    }
   }
   // Update meta on filesystem
   writeFileSync(`${sourcepath}/model/${pmName}/${pmName}.json`, JSON.stringify(meta, null, '  '), { flag: 'w+' });
