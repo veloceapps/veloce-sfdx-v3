@@ -1,7 +1,7 @@
 import * as fs from 'fs';
 import * as path from 'path';
 import { Connection, SfdxError } from '@salesforce/core';
-import { SuccessResult } from 'jsforce/record-result';
+import { SuccessResult, RecordResult } from 'jsforce/record-result';
 import { camelCase, groupBy } from 'lodash';
 import {
   Rule,
@@ -373,6 +373,32 @@ export async function searchRuleConditions(
   return result?.records ?? [];
 }
 
+export async function deleteRuleConditions(
+  conn: Connection,
+  exceptTransformationsIds: string[],
+  fromRuleId: string,
+): Promise<RecordResult[]> {
+  const query =
+    `SELECT Id FROM VELOCPQ__RuleCondition__c WHERE VELOCPQ__RuleId__c ='${fromRuleId}'` +
+    (exceptTransformationsIds.length > 0 ? ` AND Id NOT IN (${"'" + exceptTransformationsIds.join("','") + "'"})` : '');
+
+  const { records = [] } = await conn.autoFetchQuery<SFProcedureRuleCondition>(query, {
+    autoFetch: true,
+    maxFetch: 100000,
+  });
+  const idsToBeDeleted = records.map(({ Id }) => Id);
+  const results = (await conn.sobject('VELOCPQ__RuleCondition__c').delete(idsToBeDeleted)) ?? [];
+  const successResults = results.filter(({ success }) => success).map((res) => (res as SuccessResult).id);
+  const errorResults = results.filter(({ success }) => !success);
+  if (successResults.length) {
+    console.log(`Deleted rule conditions with ids ${successResults.join(',')} from rule with id ${fromRuleId}`);
+  }
+  if (errorResults.length) {
+    console.log(`Errors occurred while deletion rule conditions: ${errorResults.join('\n')}`);
+  }
+  return results;
+}
+
 export async function createUpdateRuleCondition(
   conn: Connection,
   condition: RuleCondition,
@@ -417,6 +443,32 @@ export async function searchRuleTransformations(
   return result?.records ?? [];
 }
 
+export async function deleteRuleTransformations(
+  conn: Connection,
+  exceptTransformationsIds: string[],
+  fromRuleId: string,
+): Promise<RecordResult[]> {
+  const query =
+    `SELECT Id FROM VELOCPQ__TransformationRule__c WHERE VELOCPQ__RuleId__c ='${fromRuleId}'` +
+    (exceptTransformationsIds.length > 0 ? ` AND Id NOT IN (${"'" + exceptTransformationsIds.join("','") + "'"})` : '');
+
+  const { records = [] } = await conn.autoFetchQuery<SFProcedureRuleTransformation>(query, {
+    autoFetch: true,
+    maxFetch: 100000,
+  });
+  const idsToBeDeleted = records.map(({ Id }) => Id);
+  const results = (await conn.sobject('VELOCPQ__TransformationRule__c').delete(idsToBeDeleted)) ?? [];
+  const successResults = results.filter(({ success }) => success).map((res) => (res as SuccessResult).id);
+  const errorResults = results.filter(({ success }) => !success);
+  if (successResults.length) {
+    console.log(`Deleted rule transformations with ids ${successResults.join(',')} from rule with id ${fromRuleId}`);
+  }
+  if (errorResults.length) {
+    console.log(`Errors occurred while deletion rule transformations: ${errorResults.join('\n')}`);
+  }
+  return results;
+}
+
 export async function createUpdateRuleTransformation(
   conn: Connection,
   transformation: RuleTransformation,
@@ -459,7 +511,7 @@ export async function searchRuleActions(
   conn: Connection,
   action: RuleAction,
   ruleId: string,
-): Promise<SFProcedureRuleTransformation[]> {
+): Promise<SFProcedureRuleMapping[]> {
   const query = `SELECT Id FROM VELOCPQ__RuleMapper__c WHERE
 VELOCPQ__Value__c='${action.value}'
 AND VELOCPQ__Action__c='${action.action}'
@@ -471,8 +523,34 @@ AND VELOCPQ__VariableName__c=${action.variableName ? "'" + action.variableName +
 AND VELOCPQ__IsCalculateTotalMetric__c=${action.isCalculateTotalMetric ?? false}
 AND VELOCPQ__RuleId__c ='${ruleId}'`;
 
-  const result = await conn.autoFetchQuery<SFProcedureRuleTransformation>(query, { autoFetch: true, maxFetch: 100000 });
+  const result = await conn.autoFetchQuery<SFProcedureRuleMapping>(query, { autoFetch: true, maxFetch: 100000 });
   return result?.records ?? [];
+}
+
+export async function deleteRuleActions(
+  conn: Connection,
+  exceptActionIds: string[],
+  fromRuleId: string,
+): Promise<RecordResult[]> {
+  const query =
+    `SELECT Id FROM VELOCPQ__RuleMapper__c WHERE VELOCPQ__RuleId__c ='${fromRuleId}'` +
+    (exceptActionIds.length > 0 ? ` AND Id NOT IN (${"'" + exceptActionIds.join("','") + "'"})` : '');
+
+  const { records = [] } = await conn.autoFetchQuery<SFProcedureRuleMapping>(query, {
+    autoFetch: true,
+    maxFetch: 100000,
+  });
+  const idsToBeDeleted = records.map(({ Id }) => Id);
+  const results = (await conn.sobject('VELOCPQ__RuleMapper__c').delete(idsToBeDeleted)) ?? [];
+  const successResults = results.filter(({ success }) => success).map((res) => (res as SuccessResult).id);
+  const errorResults = results.filter(({ success }) => !success);
+  if (successResults.length) {
+    console.log(`Deleted rule actions with ids ${successResults.join(',')} from rule with id ${fromRuleId}`);
+  }
+  if (errorResults.length) {
+    console.log(`Errors occurred while deletion rule actions: ${errorResults.join('\n')}`);
+  }
+  return results;
 }
 
 export async function createUpdateRuleAction(
