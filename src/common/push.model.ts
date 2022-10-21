@@ -7,6 +7,7 @@ import { Folder } from '../types/folder.types';
 import { ProductModel } from '../types/productModel.types';
 import { CommandParams } from '../types/command.types';
 import { createDocument, updateDocument } from '../utils/document.utils';
+import { IdMap } from '../types/idmap';
 
 async function getPMLDocument(conn: Connection, modelName: string): Promise<string | null> {
   // TODO: optimize in single query?
@@ -65,7 +66,7 @@ async function getOrCreateModelFolderId(conn: Connection): Promise<string> {
   }
 }
 
-async function uploadModel(sourcepath: string, conn: Connection, modelName: string): Promise<string> {
+async function uploadModel(idmap: IdMap, sourcepath: string, conn: Connection, modelName: string): Promise<string> {
   const pml = readFileSync(`${sourcepath}/model/${modelName}/${modelName}.pml`);
   const gzipped = gzipSync(pml);
   // Encode to base64 TWICE!, first time is requirement of POST/PATCH, and it will be decoded on reads automatically by SF.
@@ -73,13 +74,13 @@ async function uploadModel(sourcepath: string, conn: Connection, modelName: stri
 
   const folderId = await getOrCreateModelFolderId(conn);
   const pmlDocName = `${modelName}_pml`;
-  
+
   const body: DocumentBody = {
     body: b64Data,
     name: pmlDocName,
     folderId,
     contentType: 'application/zip',
-    type: 'zip'
+    type: 'zip',
   };
 
   // attempt to update existing document first
@@ -95,7 +96,7 @@ async function uploadModel(sourcepath: string, conn: Connection, modelName: stri
     // upload new document and link it to ProductModel
     console.log(`Create new PML document(${pmlDocName})`);
 
-    const modelId = await uploadPM(sourcepath, conn, modelName);
+    const modelId = await uploadPM(idmap, sourcepath, conn, modelName);
     const newDocumentId = await createDocument(conn, body).then((res) => res.id);
 
     // link new document to product model
@@ -114,7 +115,7 @@ async function uploadModel(sourcepath: string, conn: Connection, modelName: stri
 }
 
 export async function pushModel(params: CommandParams): Promise<string[]> {
-  const { rootPath, conn, member } = params;
+  const { idmap, rootPath, conn, member } = params;
   if (!member) {
     return [];
   }
@@ -123,7 +124,7 @@ export async function pushModel(params: CommandParams): Promise<string[]> {
   for (const name of allModels) {
     // TODO: consider parallelizing if this will be slow?
     if (member.all || member.names.includes(name)) {
-      retIDs.push(await uploadModel(rootPath, conn, name));
+      retIDs.push(await uploadModel(idmap, rootPath, conn, name));
     }
   }
   return retIDs;
@@ -141,14 +142,13 @@ async function getPm(conn: Connection, pm: string): Promise<string | null> {
   return null;
 }
 
-async function uploadPM(sourcepath: string, conn: Connection, pmName: string): Promise<string> {
+async function uploadPM(idmap: IdMap, sourcepath: string, conn: Connection, pmName: string): Promise<string> {
   const meta = JSON.parse(readFileSync(`${sourcepath}/model/${pmName}/${pmName}.json`).toString()) as {
     [key: string]: string;
   };
   const pmId = await getPm(conn, pmName);
   if (pmId === null) {
     // inserting new product model from meta
-    delete meta['Id'];
     const result = await conn
       .sobject<{ [key: string]: string }>('VELOCPQ__ProductModel__c')
       .create(meta, {}, (err, ret) => {
@@ -156,10 +156,14 @@ async function uploadPM(sourcepath: string, conn: Connection, pmName: string): P
           throw new SfdxError(`Failed to insert Product Model ${pmName}, error: ${err ? err.toString() : 'no-error'}`);
         }
       });
-
     // update meta json with new id
     if (result.success) {
-      meta['Id'] = result.id;
+      const oldId = meta['Id'];
+      // Update ID-map
+      if (oldId && result.id && oldId != result.id) {
+        console.log(`IDMAP: ${oldId} => ${result.id}`);
+        idmap[oldId] = result.id;
+      }
     }
   } else {
     // updating existing product model from meta

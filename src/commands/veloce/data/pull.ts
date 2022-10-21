@@ -14,6 +14,7 @@ import { EntityDefinition } from '../../../types/entityDefinition';
 import { SalesforceEntity } from '../../../types/salesforceEntity';
 import { loadIdMap } from '../../../common/idmap';
 import { Member, parseMembers } from '../../../utils/members';
+import { IdMap } from '../../../types/idmap';
 //
 type CsvWriterPipeFunction = (stream: WriteStream) => void;
 type CsvWriterEndFunction = () => void;
@@ -233,7 +234,7 @@ export default class Pull extends SfdxCommand {
     where: string,
     idReplaceFields: string[],
   ): Promise<string[]> {
-    const reverseIdmap: { [key: string]: string } = {};
+    const reverseIdmap: IdMap = {};
     const idmap = await loadIdMap(conn);
     for (const [key, value] of Object.entries(idmap)) {
       reverseIdmap[value] = key;

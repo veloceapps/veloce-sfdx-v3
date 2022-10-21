@@ -16,6 +16,8 @@ import { pullDRL } from '../../../common/pull.drl';
 import { pullSettings } from '../../../common/pull.settings';
 import { pullRule } from '../../../common/pull.rule';
 import { pullDocTemplates } from '../../../common/pull.docTemplate';
+import { IdMap } from '../../../types/idmap';
+import { loadIdMap } from '../../../common/idmap';
 
 // Initialize Messages with the current plugin directory
 Messages.importMessagesDirectory(__dirname);
@@ -71,21 +73,44 @@ export default class Pull extends SfdxCommand {
     const members = (this.flags.members || '') as string;
     const rootPath = ((this.flags.sourcepath || 'source') as string).replace(/\/$/, ''); // trim last slash if present
 
+    const reverseIdmap: IdMap = {};
+    const idmap = await loadIdMap(conn);
+    for (const [key, value] of Object.entries(idmap)) {
+      reverseIdmap[value] = key;
+    }
+
     const memberMap = new MembersMap(members);
 
-    const modelRecords = await pullModel({ rootPath, conn, member: memberMap.get('model') });
+    const modelRecords = await pullModel({ idmap: reverseIdmap, rootPath, conn, member: memberMap.get('model') });
 
-    const uiRecords = await pullUI({ rootPath, conn, member: memberMap.get('config-ui') });
+    const uiRecords = await pullUI({ idmap: reverseIdmap, rootPath, conn, member: memberMap.get('config-ui') });
 
-    const drl = await pullDRL({ rootPath, conn, member: memberMap.get('drl') });
+    const drl = await pullDRL({ idmap: reverseIdmap, rootPath, conn, member: memberMap.get('drl') });
 
-    const rule = await pullRule({ rootPath, conn, member: memberMap.get('rule') });
+    const rule = await pullRule({ idmap: reverseIdmap, rootPath, conn, member: memberMap.get('rule') });
 
-    const configSettingRecords = await pullSettings({ rootPath, conn, member: memberMap.get('config-settings') });
+    const configSettingRecords = await pullSettings({
+      idmap: reverseIdmap,
+      rootPath,
+      conn,
+      member: memberMap.get('config-settings'),
+    });
 
-    const docTemplates = await pullDocTemplates({ rootPath, conn, member: memberMap.get('doc-template') });
+    const docTemplates = await pullDocTemplates({
+      idmap: reverseIdmap,
+      rootPath,
+      conn,
+      member: memberMap.get('doc-template'),
+    });
 
     // Return an object to be displayed with --json
-    return { model: modelRecords, 'config-ui': uiRecords, drl, rule, 'config-settings': configSettingRecords, 'doc-template': docTemplates };
+    return {
+      model: modelRecords,
+      'config-ui': uiRecords,
+      drl,
+      rule,
+      'config-settings': configSettingRecords,
+      'doc-template': docTemplates,
+    };
   }
 }

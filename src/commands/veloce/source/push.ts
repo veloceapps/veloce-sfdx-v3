@@ -16,6 +16,7 @@ import { MembersMap } from '../../../common/members.map';
 import { pushSettings } from '../../../common/push.settings';
 import { pushRule } from '../../../common/push.rule';
 import { pushDocTemplates } from '../../../common/push.docTemplate';
+import { loadIdMap, saveIdMap } from '../../../common/idmap';
 
 // Initialize Messages with the current plugin directory
 Messages.importMessagesDirectory(__dirname);
@@ -73,23 +74,41 @@ export default class Push extends SfdxCommand {
     }
 
     const conn = this.org.getConnection();
+
     const members = (this.flags.members || '') as string;
     const rootPath = ((this.flags.sourcepath || 'source') as string).replace(/\/$/, ''); // trim last slash if present
 
+    const idmap = await loadIdMap(conn);
     const memberMap = new MembersMap(members);
-    const drlRecords = await pushDRL({ rootPath, conn, member: memberMap.get('drl') });
 
-    const rule = await pushRule({ rootPath, conn, member: memberMap.get('rule') });
+    const drlRecords = await pushDRL({ idmap, rootPath, conn, member: memberMap.get('drl') });
 
-    const pmlRecords = await pushModel({ rootPath, conn, member: memberMap.get('model') });
+    const rule = await pushRule({ idmap, rootPath, conn, member: memberMap.get('rule') });
 
-    const uiRecords = await pushUI({ rootPath, conn, member: memberMap.get('config-ui') });
+    const pmlRecords = await pushModel({ idmap, rootPath, conn, member: memberMap.get('model') });
 
-    const configSettingRecords = await pushSettings({ rootPath, conn, member: memberMap.get('config-settings'), skipdelete: this.flags.skipdelete});
+    const uiRecords = await pushUI({ idmap, rootPath, conn, member: memberMap.get('config-ui') });
 
-    const docTemplateRecords = await pushDocTemplates({ rootPath, conn, member: memberMap.get('doc-template') });
+    const configSettingRecords = await pushSettings({
+      idmap,
+      rootPath,
+      conn,
+      member: memberMap.get('config-settings'),
+      skipdelete: this.flags.skipdelete,
+    });
+
+    const docTemplateRecords = await pushDocTemplates({ idmap, rootPath, conn, member: memberMap.get('doc-template') });
+
+    await saveIdMap(conn, idmap);
 
     // Return an object to be displayed with --json
-    return { pml: pmlRecords, ui: uiRecords, drl: drlRecords, rule, 'config-settings': configSettingRecords, 'doc-template': docTemplateRecords };
+    return {
+      pml: pmlRecords,
+      ui: uiRecords,
+      drl: drlRecords,
+      rule,
+      'config-settings': configSettingRecords,
+      'doc-template': docTemplateRecords,
+    };
   }
 }
