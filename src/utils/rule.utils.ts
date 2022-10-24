@@ -188,6 +188,7 @@ const conditionsToDSL = (conditions: SFProcedureRuleCondition[], type: string): 
   }
   return `\n    condition
         ${conditions
+          .sort((a, b) => a.VELOCPQ__Sequence__c - b.VELOCPQ__Sequence__c)
           .map(
             (condition) =>
               `${type === 'METRIC' ? 'chargeItem' : condition.VELOCPQ__VariableName__c}: ${
@@ -203,6 +204,7 @@ const transformationsToDSL = (transformations: SFProcedureRuleTransformation[]):
   }
   return `\n    transformation
         ${transformations
+          .sort((a, b) => a.VELOCPQ__Sequence__c - b.VELOCPQ__Sequence__c)
           .map(
             (transformation) =>
               `${transformation.VELOCPQ__ResultPath__c}: ${
@@ -220,6 +222,7 @@ const actionsToDSL = (actions: SFProcedureRuleMapping[], type: string): string =
   }
   return `\n    action
         ${actions
+          .sort((a, b) => a.VELOCPQ__Sequence__c - b.VELOCPQ__Sequence__c)
           .map((action) => {
             const argumentsOrder = [
               ['ADJUST_PRICE', 'ADJUST_LIST_PRICE', 'ADJUST_COST'].includes(action.VELOCPQ__Action__c)
@@ -268,14 +271,16 @@ function extractRuleGroup(file: string, directory: string, names: string[] | und
 
   return {
     ...ruleGroup,
-    rules: ruleGroup.rules?.map((rule) => {
-      const ruleDetails = visitor.rules.find(({ name }) => name === rule.name);
-      const combinedRule = { ...rule, ...ruleDetails };
-      if (ruleGroup.type === 'METRIC') {
-        return normalizeMetricRule(combinedRule);
-      }
-      return combinedRule;
-    }),
+    rules: ruleGroup.rules
+      .map((rule) => {
+        const ruleDetails = visitor.rules.find(({ name }) => name === rule.name);
+        const combinedRule = { ...rule, ...ruleDetails };
+        if (ruleGroup.type === 'METRIC') {
+          return normalizeMetricRule(combinedRule);
+        }
+        return combinedRule;
+      })
+      .map((rule) => setSequences(rule)),
   };
 }
 
@@ -380,6 +385,7 @@ export async function createUpdateRuleCondition(
 ): Promise<SuccessResult> {
   const body = {
     Id: '',
+    VELOCPQ__Sequence__c: condition.sequence,
     VELOCPQ__VariableName__c: condition.variableName,
     VELOCPQ__ExpressionsJsonString__c: condition.expression,
     VELOCPQ__RuleId__c: ruleId,
@@ -424,6 +430,7 @@ export async function createUpdateRuleTransformation(
 ): Promise<SuccessResult> {
   const body = {
     Id: '',
+    VELOCPQ__Sequence__c: transformation.sequence,
     VELOCPQ__RuleId__c: ruleId,
     VELOCPQ__ResultPath__c: transformation.resultPath,
     VELOCPQ__Expression__c: transformation.expression,
@@ -482,6 +489,7 @@ export async function createUpdateRuleAction(
 ): Promise<SuccessResult> {
   const body = {
     Id: '',
+    VELOCPQ__Sequence__c: action.sequence,
     VELOCPQ__Value__c: action.value,
     VELOCPQ__Explanation__c: action.explanation,
     VELOCPQ__Type__c: action.type,
@@ -546,6 +554,15 @@ const normalizeMetricRule = (rule: Rule): Rule => {
     ...rule,
     conditions: rule.conditions?.map((condition) => ({ ...condition, objectType: undefined, variableName: undefined })),
     mappers: rule.mappers?.map((action) => ({ ...action, variableName: undefined })),
+  };
+};
+
+const setSequences = (rule: Rule): Rule => {
+  return {
+    ...rule,
+    conditions: rule.conditions.map((condition, index) => ({ ...condition, sequence: index })),
+    transformations: rule.transformations.map((transformation, index) => ({ ...transformation, sequence: index })),
+    mappers: rule.mappers.map((mapper, index) => ({ ...mapper, sequence: index })),
   };
 };
 
