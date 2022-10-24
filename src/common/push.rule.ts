@@ -5,6 +5,9 @@ import {
   createUpdateRuleGroup,
   createUpdateRuleTransformation,
   getRuleGroups,
+  cleanupRuleActions,
+  cleanupRuleTransformations,
+  cleanupRuleConditions,
 } from '../utils/rule.utils';
 import { CommandParams } from '../types/command.types';
 
@@ -29,17 +32,38 @@ export async function pushRule(params: CommandParams): Promise<string[]> {
       const ruleResult = await createUpdateRule(conn, rule, ruleGroupResult.id, ruleGroup);
       result.push(ruleResult.id);
 
+      const conditionsResults = [];
       for (const condition of rule.conditions || []) {
-        await createUpdateRuleCondition(conn, condition, ruleResult.id);
+        const res = await createUpdateRuleCondition(conn, condition, ruleResult.id);
+        conditionsResults.push(res);
       }
+      await cleanupRuleConditions(
+        conn,
+        conditionsResults.map(({ id }) => id),
+        ruleResult.id,
+      );
 
+      const transformationsResults = [];
       for (const transformation of rule.transformations || []) {
-        await createUpdateRuleTransformation(conn, transformation, ruleResult.id);
+        const res = await createUpdateRuleTransformation(conn, transformation, ruleResult.id);
+        transformationsResults.push(res);
       }
+      await cleanupRuleTransformations(
+        conn,
+        transformationsResults.map(({ id }) => id),
+        ruleResult.id,
+      );
 
+      const actionsResults = [];
       for (const action of rule.mappers || []) {
-        await createUpdateRuleAction(conn, action, ruleResult.id);
+        const res = await createUpdateRuleAction(conn, action, ruleResult.id);
+        actionsResults.push(res);
       }
+      await cleanupRuleActions(
+        conn,
+        actionsResults.map(({ id }) => id),
+        ruleResult.id,
+      );
     }
   }
 
