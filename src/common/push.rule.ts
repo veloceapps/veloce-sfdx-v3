@@ -5,9 +5,9 @@ import {
   createUpdateRuleGroup,
   createUpdateRuleTransformation,
   getRuleGroups,
-  deleteRuleActions,
-  deleteRuleTransformations,
-  deleteRuleConditions,
+  cleanupRuleActions,
+  cleanupRuleTransformations,
+  cleanupRuleConditions,
 } from '../utils/rule.utils';
 import { CommandParams } from '../types/command.types';
 
@@ -37,7 +37,7 @@ export async function pushRule(params: CommandParams): Promise<string[]> {
         const res = await createUpdateRuleCondition(conn, condition, ruleResult.id);
         conditionsResults.push(res);
       }
-      await deleteRuleConditions(
+      await cleanupRuleConditions(
         conn,
         conditionsResults.map(({ id }) => id),
         ruleResult.id,
@@ -48,7 +48,7 @@ export async function pushRule(params: CommandParams): Promise<string[]> {
         const res = await createUpdateRuleTransformation(conn, transformation, ruleResult.id);
         transformationsResults.push(res);
       }
-      await deleteRuleTransformations(
+      await cleanupRuleTransformations(
         conn,
         transformationsResults.map(({ id }) => id),
         ruleResult.id,
@@ -59,7 +59,7 @@ export async function pushRule(params: CommandParams): Promise<string[]> {
         const res = await createUpdateRuleAction(conn, action, ruleResult.id);
         actionsResults.push(res);
       }
-      await deleteRuleActions(
+      await cleanupRuleActions(
         conn,
         actionsResults.map(({ id }) => id),
         ruleResult.id,

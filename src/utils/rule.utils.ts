@@ -373,14 +373,14 @@ export async function searchRuleConditions(
   return result?.records ?? [];
 }
 
-export async function deleteRuleConditions(
+export async function cleanupRuleConditions(
   conn: Connection,
-  exceptTransformationsIds: string[],
+  conditionIdsToKeep: string[],
   fromRuleId: string,
 ): Promise<RecordResult[]> {
   const query =
     `SELECT Id FROM VELOCPQ__RuleCondition__c WHERE VELOCPQ__RuleId__c ='${fromRuleId}'` +
-    (exceptTransformationsIds.length > 0 ? ` AND Id NOT IN (${"'" + exceptTransformationsIds.join("','") + "'"})` : '');
+    (conditionIdsToKeep.length > 0 ? ` AND Id NOT IN (${"'" + conditionIdsToKeep.join("','") + "'"})` : '');
 
   const { records = [] } = await conn.autoFetchQuery<SFProcedureRuleCondition>(query, {
     autoFetch: true,
@@ -443,14 +443,14 @@ export async function searchRuleTransformations(
   return result?.records ?? [];
 }
 
-export async function deleteRuleTransformations(
+export async function cleanupRuleTransformations(
   conn: Connection,
-  exceptTransformationsIds: string[],
+  transformationIdsToKeep: string[],
   fromRuleId: string,
 ): Promise<RecordResult[]> {
   const query =
     `SELECT Id FROM VELOCPQ__TransformationRule__c WHERE VELOCPQ__RuleId__c ='${fromRuleId}'` +
-    (exceptTransformationsIds.length > 0 ? ` AND Id NOT IN (${"'" + exceptTransformationsIds.join("','") + "'"})` : '');
+    (transformationIdsToKeep.length > 0 ? ` AND Id NOT IN (${"'" + transformationIdsToKeep.join("','") + "'"})` : '');
 
   const { records = [] } = await conn.autoFetchQuery<SFProcedureRuleTransformation>(query, {
     autoFetch: true,
@@ -527,14 +527,14 @@ AND VELOCPQ__RuleId__c ='${ruleId}'`;
   return result?.records ?? [];
 }
 
-export async function deleteRuleActions(
+export async function cleanupRuleActions(
   conn: Connection,
-  exceptActionIds: string[],
+  actionIdsToKeep: string[],
   fromRuleId: string,
 ): Promise<RecordResult[]> {
   const query =
     `SELECT Id FROM VELOCPQ__RuleMapper__c WHERE VELOCPQ__RuleId__c ='${fromRuleId}'` +
-    (exceptActionIds.length > 0 ? ` AND Id NOT IN (${"'" + exceptActionIds.join("','") + "'"})` : '');
+    (actionIdsToKeep.length > 0 ? ` AND Id NOT IN (${"'" + actionIdsToKeep.join("','") + "'"})` : '');
 
   const { records = [] } = await conn.autoFetchQuery<SFProcedureRuleMapping>(query, {
     autoFetch: true,
