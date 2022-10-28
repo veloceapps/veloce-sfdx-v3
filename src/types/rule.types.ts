@@ -23,6 +23,7 @@ export interface SFProcedureRuleGroup {
 
 export interface SFProcedureRuleCondition {
   Id: string;
+  VELOCPQ__Sequence__c: number;
   VELOCPQ__VariableName__c: string;
   VELOCPQ__ExpressionsJsonString__c: string;
   VELOCPQ__RuleId__c: string;
@@ -39,6 +40,7 @@ export interface SFProcedureRuleTransformation {
 
 export interface SFProcedureRuleMapping {
   Id: string;
+  VELOCPQ__Sequence__c: number;
   VELOCPQ__Value__c: string;
   VELOCPQ__Explanation__c: string;
   VELOCPQ__Type__c: string;
@@ -95,18 +97,21 @@ export interface Rule {
 }
 
 export interface RuleCondition {
+  sequence?: number;
   expression?: string;
   objectType?: string;
   variableName?: string;
 }
 
 export interface RuleTransformation {
+  sequence?: number;
   expression?: string;
   javaScript?: string;
   resultPath?: string;
 }
 
 export interface RuleAction {
+  sequence?: number;
   action?: string;
   value?: string;
   targetFieldName?: string;
