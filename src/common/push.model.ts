@@ -191,7 +191,9 @@ async function uploadPM(idmap: IdMap, sourcepath: string, conn: Connection, pmNa
   }
   // Update meta on filesystem
   writeFileSync(`${sourcepath}/model/${pmName}/${pmName}.json`, JSON.stringify(meta, null, '  '), { flag: 'w+' });
-
+  if (idmap[meta.Id]) {
+    return idmap[meta.Id];
+  }
   return meta.Id;
 }
 
