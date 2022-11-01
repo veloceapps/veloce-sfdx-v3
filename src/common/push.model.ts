@@ -177,7 +177,11 @@ async function uploadPM(idmap: IdMap, sourcepath: string, conn: Connection, pmNa
     }
   } else {
     // updating existing product model from meta
-    await conn.sobject<{ [key: string]: string }>('VELOCPQ__ProductModel__c').update(meta, (err, ret) => {
+    const clone = Object.assign({}, meta);
+    if (idmap[meta.Id]) {
+      clone['Id'] = idmap[meta.Id];
+    }
+    await conn.sobject<{ [key: string]: string }>('VELOCPQ__ProductModel__c').update(clone, (err, ret) => {
       if (err || !ret.success) {
         throw new SfdxError(`Failed to update Product Model ${pmName}, error: ${err ? err.toString() : 'no-error'}`);
       }
