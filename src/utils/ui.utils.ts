@@ -2,7 +2,7 @@ import { existsSync, readFileSync } from 'fs';
 import { LegacyUiDefinition, UiDef, UiDefinition, UiElement, UiElementMetadata, UiMetadata } from '../types/ui.types';
 import { getDirectoryNames, readFileSafe } from './common.utils';
 
-const METADATA_DECORATOR_REGEX = /@ElementDefinition\(([\s\S]+)\)(\n|.)*export class/g;
+const METADATA_DECORATOR_REGEX = /@ElementDefinition\(([\s\S]+)\)(\n|\r\n|.)*export class/g;
 
 export const isLegacyDefinition = (uiDefinition: UiDef): uiDefinition is LegacyUiDefinition => {
   return !(uiDefinition as UiDefinition).version;
