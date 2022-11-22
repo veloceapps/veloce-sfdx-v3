@@ -2,7 +2,7 @@
   "active": true,
   "description": "Surcharge Rules",
   "name": "Surcharge Rules",
-  "priceListReferenceId": "a0V8D000000Ecg8UAC",
+  "priceListReferenceId": "e089a7de7d52034db6",
   "referenceId": "tsttst0000ymVwBQAU",
   "sequence": 110,
   "type": "Calculate",

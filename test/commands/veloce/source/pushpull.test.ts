@@ -71,7 +71,7 @@ describe('veloce:source:push|pull', () => {
     const octaModelPMLTemplate = 'test-data/source/model/OCTA/OCTA.pml';
     const octaModel = require(octaModelTemplate);
     octaModel.Name = octaModelName;
-    octaModel.VELOCPQ__ReferenceId__c = `ttest${testId}`;
+    octaModel.Id = `ttest${testId}`;
 
     fs.mkdirSync(`${pushDir}/model/${octaModelName}`);
     fs.writeFileSync(octaModelFile, JSON.stringify(octaModel));
