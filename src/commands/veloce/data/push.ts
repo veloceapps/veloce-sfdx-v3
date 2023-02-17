@@ -460,7 +460,7 @@ export default class Push extends SfdxCommand {
     // retrieve types of args
     const fieldsResult = await conn.autoFetchQuery<SalesforceEntity>(
       `
-      SELECT EntityDefinition.QualifiedApiName, QualifiedApiName, DataType
+      SELECT EntityDefinition.QualifiedApiName, QualifiedApiName, ValueTypeId, IsCalculated
       FROM FieldDefinition
       WHERE EntityDefinition.QualifiedApiName IN ('${sType}')
       ORDER BY QualifiedApiName
@@ -470,14 +470,17 @@ export default class Push extends SfdxCommand {
 
     for (const f of fieldsResult.records) {
       const apiName = f['QualifiedApiName'].toLowerCase();
-      const datatype = f['DataType'];
-      if (datatype.includes('Formula')) {
+
+      const valueTypeId = f['ValueTypeId'];
+      const isCalculated = f['IsCalculated'];
+
+      if (isCalculated === 'true') {
         ignoreFields.push(apiName);
-      } else if (datatype.includes('Checkbox')) {
+      } else if (valueTypeId === 'boolean') {
         boolfields.push(apiName);
-      } else if (datatype.includes('Number') || datatype.includes('Percent') || datatype.includes('Currency')) {
+      } else if (valueTypeId === 'double' || valueTypeId === 'integer') {
         numericfields.push(apiName);
-      } else if (datatype.includes('Date')) {
+      } else if (valueTypeId === 'datetime' || valueTypeId === 'date') {
         datefields.push(apiName);
       }
     }

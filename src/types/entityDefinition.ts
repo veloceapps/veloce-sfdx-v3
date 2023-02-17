@@ -1,4 +1,5 @@
 export type EntityDefinition = {
-  DataType: string;
+  ValueTypeId: string;
+  IsCalculated: string;
   QualifiedApiName: string;
 };
