@@ -331,6 +331,32 @@ export async function searchRules(conn: Connection, rule: Rule, ruleGroup: RuleG
   return result?.records ?? [];
 }
 
+export async function cleanupRules(
+  conn: Connection,
+  ruleIdsToKeep: string[],
+  fromRuleGroupId: string,
+): Promise<RecordResult[]> {
+  const query =
+    `SELECT Id FROM VELOCPQ__ProcedureRule__c WHERE VELOCPQ__RuleGroupId__c ='${fromRuleGroupId}'` +
+    (ruleIdsToKeep.length > 0 ? ` AND Id NOT IN (${"'" + ruleIdsToKeep.join("','") + "'"})` : '');
+
+  const { records = [] } = await conn.autoFetchQuery<SFProcedureRule>(query, {
+    autoFetch: true,
+    maxFetch: 100000,
+  });
+  const idsToBeDeleted = records.map(({ Id }) => Id);
+  const results = (await conn.sobject('VELOCPQ__ProcedureRule__c').delete(idsToBeDeleted)) ?? [];
+  const successResults = results.filter(({ success }) => success).map((res) => (res as SuccessResult).id);
+  const errorResults = results.filter(({ success }) => !success);
+  if (successResults.length) {
+    console.log(`Deleted rules with ids ${successResults.join(',')} from rule group with id ${fromRuleGroupId}`);
+  }
+  if (errorResults.length) {
+    console.log(`Errors occurred while deletion rules: ${errorResults.join('\n')}`);
+  }
+  return results;
+}
+
 export async function createUpdateRule(
   conn: Connection,
   rule: Rule,

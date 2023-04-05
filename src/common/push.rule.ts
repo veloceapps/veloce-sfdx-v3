@@ -1,15 +1,16 @@
+import { CommandParams } from '../types/command.types';
 import {
+  cleanupRuleActions,
+  cleanupRuleConditions,
+  cleanupRuleTransformations,
+  cleanupRules,
   createUpdateRule,
   createUpdateRuleAction,
   createUpdateRuleCondition,
   createUpdateRuleGroup,
   createUpdateRuleTransformation,
   getRuleGroups,
-  cleanupRuleActions,
-  cleanupRuleTransformations,
-  cleanupRuleConditions,
 } from '../utils/rule.utils';
-import { CommandParams } from '../types/command.types';
 
 export async function pushRule(params: CommandParams): Promise<string[]> {
   const { rootPath, conn, member } = params;
@@ -64,6 +65,17 @@ export async function pushRule(params: CommandParams): Promise<string[]> {
         actionsResults.map(({ id }) => id),
         ruleResult.id,
       );
+    }
+
+    const rulesCleanupResult = await cleanupRules(conn, result, ruleGroup.id);
+    const removedRules = rulesCleanupResult.reduce(
+      (ids: string[], item) => (item.success ? [...ids, item.id] : ids),
+      [],
+    );
+    for (const ruleId of removedRules) {
+      await cleanupRuleConditions(conn, [], ruleId);
+      await cleanupRuleTransformations(conn, [], ruleId);
+      await cleanupRuleActions(conn, [], ruleId);
     }
   }
 
