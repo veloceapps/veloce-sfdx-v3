@@ -511,7 +511,7 @@ export async function createUpdateRuleTransformation(
     VELOCPQ__Sequence__c: transformation.sequence,
     VELOCPQ__RuleId__c: ruleId,
     VELOCPQ__ResultPath__c: transformation.resultPath,
-    VELOCPQ__Expression__c: transformation.expression,
+    VELOCPQ__Expression__c: transformation.expression ?? null,
   };
   const existingRuleTransformation = (await searchRuleTransformations(conn, transformation, ruleId))[0];
   let result;
@@ -532,6 +532,8 @@ export async function createUpdateRuleTransformation(
 
     if (transformation.javaScript) {
       await createJavaScript(conn, transformation.javaScript, result.id);
+    } else {
+      await deleteJavaScript(conn, result.id);
     }
   } else {
     throw new SfdxError(`Failed to create document: ${JSON.stringify(result)}`);
@@ -651,6 +653,15 @@ export async function createJavaScript(conn: Connection, javaScript: string, tra
   }
 
   return contentVersionResult;
+}
+
+export async function deleteJavaScript(conn: Connection, transformationId: string): Promise<any> {
+  const query = `select Id, ContentDocumentId from ContentDocumentLink where LinkedEntityId = '${transformationId}'`;
+  const queryResults = await conn.query<SFContent>(query);
+
+  for (const record of queryResults.records) {
+    await conn.sobject('ContentDocument').delete(record.ContentDocumentId);
+  }
 }
 
 const normalizeMetricRule = (rule: Rule): Rule => {
