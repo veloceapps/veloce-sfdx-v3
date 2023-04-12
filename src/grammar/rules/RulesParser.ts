@@ -15,25 +15,20 @@
  */
 
 /* eslint-disable */
-import { ATN } from 'antlr4ts/atn/ATN';
-import { ATNDeserializer } from 'antlr4ts/atn/ATNDeserializer';
 import { FailedPredicateException } from 'antlr4ts/FailedPredicateException';
-import { NotNull } from 'antlr4ts/Decorators';
 import { NoViableAltException } from 'antlr4ts/NoViableAltException';
-import { Override } from 'antlr4ts/Decorators';
 import { Parser } from 'antlr4ts/Parser';
 import { ParserRuleContext } from 'antlr4ts/ParserRuleContext';
-import { ParserATNSimulator } from 'antlr4ts/atn/ParserATNSimulator';
-import { ParseTreeListener } from 'antlr4ts/tree/ParseTreeListener';
-import { ParseTreeVisitor } from 'antlr4ts/tree/ParseTreeVisitor';
 import { RecognitionException } from 'antlr4ts/RecognitionException';
 import { RuleContext } from 'antlr4ts/RuleContext';
-//import { RuleVersion } from "antlr4ts/RuleVersion";
-import { TerminalNode } from 'antlr4ts/tree/TerminalNode';
+import { ATN } from 'antlr4ts/atn/ATN';
+import { ATNDeserializer } from 'antlr4ts/atn/ATNDeserializer';
+import { ParserATNSimulator } from 'antlr4ts/atn/ParserATNSimulator';
 import { Token } from 'antlr4ts/Token';
 import { TokenStream } from 'antlr4ts/TokenStream';
 import { Vocabulary } from 'antlr4ts/Vocabulary';
 import { VocabularyImpl } from 'antlr4ts/VocabularyImpl';
+import { TerminalNode } from 'antlr4ts/tree/TerminalNode';
 
 import * as Utils from 'antlr4ts/misc/Utils';
 
@@ -1987,7 +1982,6 @@ export class RulesParser extends Parser {
     let _parentctx: ParserRuleContext = this._ctx;
     let _parentState: number = this.state;
     let _localctx: ExpressionContext = new ExpressionContext(this._ctx, _parentState);
-    let _prevctx: ExpressionContext = _localctx;
     let _startState: number = 66;
     this.enterRecursionRule(_localctx, 66, RulesParser.RULE_expression, _p);
     let _la: number;
@@ -2008,7 +2002,6 @@ export class RulesParser extends Parser {
             if (this._parseListeners != null) {
               this.triggerExitRuleEvent();
             }
-            _prevctx = _localctx;
             {
               this.state = 369;
               this._errHandler.sync(this);

@@ -14,16 +14,15 @@
  *
  */
 
-import { ATN } from 'antlr4ts/atn/ATN';
-import { ATNDeserializer } from 'antlr4ts/atn/ATNDeserializer';
+/* eslint-disable */
 import { CharStream } from 'antlr4ts/CharStream';
 import { Lexer } from 'antlr4ts/Lexer';
-import { LexerATNSimulator } from 'antlr4ts/atn/LexerATNSimulator';
-import { NotNull } from 'antlr4ts/Decorators';
-import { Override } from 'antlr4ts/Decorators';
 import { RuleContext } from 'antlr4ts/RuleContext';
 import { Vocabulary } from 'antlr4ts/Vocabulary';
 import { VocabularyImpl } from 'antlr4ts/VocabularyImpl';
+import { ATN } from 'antlr4ts/atn/ATN';
+import { ATNDeserializer } from 'antlr4ts/atn/ATNDeserializer';
+import { LexerATNSimulator } from 'antlr4ts/atn/LexerATNSimulator';
 
 import * as Utils from 'antlr4ts/misc/Utils';
 
@@ -564,7 +563,6 @@ export class RulesLexer extends Lexer {
     }
   }
 
-  private static readonly _serializedATNSegments: number = 3;
   private static readonly _serializedATNSegment0: string =
     '\x03\uC91D\uCABA\u058D\uAFBA\u4F53\u0607\uEA8B\uC241\x02p\u050C\b\x01' +
     '\x04\x02\t\x02\x04\x03\t\x03\x04\x04\t\x04\x04\x05\t\x05\x04\x06\t\x06' +
@@ -1293,4 +1291,8 @@ export class RulesLexer extends Lexer {
 
     return RulesLexer.__ATN;
   }
+}
+
+function setChannel(arg0: number) {
+  throw new Error('Function not implemented.');
 }
