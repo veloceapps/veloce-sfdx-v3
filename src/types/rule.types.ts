@@ -50,6 +50,8 @@ export interface SFProcedureRuleMapping {
   VELOCPQ__VariableName__c: string;
   VELOCPQ__RuleId__c: string;
   VELOCPQ__Action__c: string;
+  VELOCPQ__Message__c: string;
+  VELOCPQ__MessageValueType__c: string;
 }
 
 interface SOQLResult<T> {
@@ -121,4 +123,6 @@ export interface RuleAction {
   valueType?: string;
   isCalculateTotalMetric?: boolean;
   totalMetricName?: string;
+  message?: string;
+  messageValueType?: string;
 }

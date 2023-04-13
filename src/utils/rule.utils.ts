@@ -60,7 +60,9 @@ export async function fetchProcedureRules(
                 VELOCPQ__TotalMetricName__c,
                 VELOCPQ__VariableName__c,
                 VELOCPQ__RuleId__c,
-                VELOCPQ__Action__c
+                VELOCPQ__Action__c,
+                VELOCPQ__Message__c,
+                VELOCPQ__MessageValueType__c
         FROM    VELOCPQ__ProcedureRules_RuleMappings__r
         )
         FROM
@@ -231,6 +233,9 @@ const actionsToDSL = (actions: SFProcedureRuleMapping[], type: string): string =
               action.VELOCPQ__Type__c,
               action.VELOCPQ__ValueType__c === 'VALUE' ? `"${action.VELOCPQ__Value__c}"` : action.VELOCPQ__Value__c,
               action.VELOCPQ__Explanation__c ? `"${action.VELOCPQ__Explanation__c}"` : '',
+              action.VELOCPQ__MessageValueType__c === 'VALUE'
+                ? `"${action.VELOCPQ__Message__c}"`
+                : action.VELOCPQ__Message__c,
               action.VELOCPQ__TotalMetricName__c,
             ];
             return `${type === 'METRIC' ? 'chargeItem' : action.VELOCPQ__VariableName__c}.${camelCase(
@@ -606,6 +611,8 @@ export async function createUpdateRuleAction(
     VELOCPQ__IsCalculateTotalMetric__c: action.isCalculateTotalMetric,
     VELOCPQ__RuleId__c: ruleId,
     VELOCPQ__Action__c: action.action,
+    VELOCPQ__Message__c: action.message,
+    VELOCPQ__MessageValueType__c: action.messageValueType,
   };
 
   const existingRuleAction = (await searchRuleActions(conn, action, ruleId))[0];

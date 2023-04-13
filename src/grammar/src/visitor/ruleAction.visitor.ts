@@ -69,6 +69,17 @@ export class RuleActionVisitor extends ParseTreeVisitor {
         super.visit(ctx);
         break;
       }
+      case RulesParser.RULE_addApprovalDataAction: {
+        this.setProperty('variableName', ctx.children?.[0]?.text);
+        this.action.action = this.getActionName(ctx.children?.[2]?.text);
+        this.setValue(ctx.children?.[4]?.text);
+        if (ctx.children?.[5].text === ',') {
+          this.setMessage(ctx.children?.[6].text);
+        }
+
+        super.visit(ctx);
+        break;
+      }
       default:
         super.visit(ctx);
     }
@@ -99,5 +110,18 @@ export class RuleActionVisitor extends ParseTreeVisitor {
       parsedValue = getStringContent(value);
     }
     this.action.value = parsedValue;
+  }
+
+  private setMessage(message: string | undefined): void {
+    if (!message) {
+      return;
+    }
+
+    let parsedMessage = message;
+    this.action.messageValueType = this.variables.includes(message) ? 'VARIABLE' : 'VALUE';
+    if (this.action.messageValueType === 'VALUE') {
+      parsedMessage = getStringContent(message);
+    }
+    this.action.message = parsedMessage;
   }
 }
