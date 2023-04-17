@@ -11,6 +11,7 @@
     "@salesforce/apex-node": "^0.11.0",
     "@salesforce/command": "^4",
     "@salesforce/core": "^2",
+    "antlr4ts": "^0.5.0-alpha.4",
     "axios": "^0.27.1",
     "chokidar": "^3.5.3",
     "csv-parse": "^4.15.3",
@@ -19,8 +20,7 @@
     "open": "^8.2.1",
     "ts-replace-all": "^1.0.0",
     "tslib": "^2",
-    "uuid": "^8.3.2",
-    "antlr4ts": "^0.5.0-alpha.4"
+    "uuid": "^8.3.2"
   },
   "devDependencies": {
     "@oclif/dev-cli": "^1",
@@ -31,12 +31,14 @@
     "@salesforce/prettier-config": "^0",
     "@salesforce/ts-sinon": "^1",
     "@types/chai": "^4",
+    "@types/folder-hash": "^4.0.2",
     "@types/jsforce": "^1.9.29",
     "@types/mocha": "^8",
     "@types/node": "^18.0.4",
     "@types/uuid": "^8.3.4",
     "@typescript-eslint/eslint-plugin": "^4",
     "@typescript-eslint/parser": "^4",
+    "antlr4ts-cli": "^0.5.0-alpha.4",
     "chai": "^4",
     "eslint": "^7",
     "eslint-config-oclif": "^3.1",
@@ -48,7 +50,6 @@
     "eslint-plugin-jsdoc": "^35",
     "eslint-plugin-prettier": "^3",
     "eslint-plugin-typescript": "^0",
-    "@types/folder-hash": "^4.0.2",
     "folder-hash": "^4.0.2",
     "globby": "^11",
     "husky": "^4",
@@ -96,7 +97,8 @@
     "prepack": "rm -rf lib && tsc -b && oclif-dev manifest && oclif-dev readme",
     "test": "mocha -r ts-node/register --timeout 60000 --forbid-only \"test/**/*.test.ts\"",
     "version": "oclif-dev readme && git add README.md",
-    "pretty-quick": "pretty-quick --staged"
+    "pretty-quick": "pretty-quick --staged",
+    "grammar:rules": "antlr4ts src/grammar/rules/Rules.g4"
   },
   "husky": {
     "hooks": {

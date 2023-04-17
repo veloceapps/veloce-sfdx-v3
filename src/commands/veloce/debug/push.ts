@@ -162,7 +162,7 @@ export default class Push extends DebugSfdxCommand {
           ...result,
           ...group.rules.map((rule) => ({
             ...rule,
-            ruleGroupId: group.id,
+            ruleGroupId: group.referenceId,
             ruleGroupName: group.name,
             ruleGroupType: group.type,
           })),

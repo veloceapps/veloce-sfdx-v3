@@ -1,10 +1,4 @@
-// Generated from libs/grammar/antlr/Rules.g4 by ANTLR 4.9.0-SNAPSHOT
-
-/*
-  Veloce configuration and pricing engine
-
-  @2017-2021 Veloce Inc. All rights reserved
-*/
+// Generated from src/grammar/rules/Rules.g4 by ANTLR 4.9.0-SNAPSHOT
 
 /*
  *
@@ -15,14 +9,17 @@
  */
 
 /* eslint-disable */
+
+import { ATN } from 'antlr4ts/atn/ATN';
+import { ATNDeserializer } from 'antlr4ts/atn/ATNDeserializer';
 import { CharStream } from 'antlr4ts/CharStream';
 import { Lexer } from 'antlr4ts/Lexer';
+import { LexerATNSimulator } from 'antlr4ts/atn/LexerATNSimulator';
+// import { NotNull } from "antlr4ts/Decorators";
+// import { Override } from "antlr4ts/Decorators";
 import { RuleContext } from 'antlr4ts/RuleContext';
 import { Vocabulary } from 'antlr4ts/Vocabulary';
 import { VocabularyImpl } from 'antlr4ts/VocabularyImpl';
-import { ATN } from 'antlr4ts/atn/ATN';
-import { ATNDeserializer } from 'antlr4ts/atn/ATNDeserializer';
-import { LexerATNSimulator } from 'antlr4ts/atn/LexerATNSimulator';
 
 import * as Utils from 'antlr4ts/misc/Utils';
 

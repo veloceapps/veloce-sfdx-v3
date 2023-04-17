@@ -1,6 +1,7 @@
 export interface SFProcedureRule {
   Id: string;
   Name: string;
+  VELOCPQ__ReferenceId__c: string;
   VELOCPQ__RuleGroupId__r: SFProcedureRuleGroup;
   VELOCPQ__Description__c: string;
   VELOCPQ__Sequence__c: number;
@@ -15,6 +16,7 @@ export interface SFProcedureRule {
 export interface SFProcedureRuleGroup {
   Id: string;
   Name: string;
+  VELOCPQ__ReferenceId__c: string;
   VELOCPQ__Type__c: 'GENERAL' | 'APPROVAL' | 'METRIC';
   VELOCPQ__Sequence__c: string;
   VELOCPQ__Description__c: string;
@@ -23,6 +25,7 @@ export interface SFProcedureRuleGroup {
 
 export interface SFProcedureRuleCondition {
   Id: string;
+  VELOCPQ__ReferenceId__c: string;
   VELOCPQ__Sequence__c: number;
   VELOCPQ__VariableName__c: string;
   VELOCPQ__ExpressionsJsonString__c: string;
@@ -32,6 +35,7 @@ export interface SFProcedureRuleCondition {
 
 export interface SFProcedureRuleTransformation {
   Id: string;
+  VELOCPQ__ReferenceId__c: string;
   VELOCPQ__Sequence__c: number;
   VELOCPQ__ResultPath__c: string;
   VELOCPQ__JavaScript__c: string;
@@ -40,6 +44,7 @@ export interface SFProcedureRuleTransformation {
 
 export interface SFProcedureRuleMapping {
   Id: string;
+  VELOCPQ__ReferenceId__c: string;
   VELOCPQ__Sequence__c: number;
   VELOCPQ__Value__c: string;
   VELOCPQ__Explanation__c: string;
@@ -52,6 +57,7 @@ export interface SFProcedureRuleMapping {
   VELOCPQ__Action__c: string;
   VELOCPQ__Message__c: string;
   VELOCPQ__MessageValueType__c: string;
+  VELOCPQ__AllowOverride__c: boolean;
 }
 
 interface SOQLResult<T> {
@@ -74,7 +80,7 @@ export const RuleObjectTypes: { [key: string]: string } = {
 };
 
 export interface RuleGroup {
-  id: string;
+  referenceId: string;
   name: string;
   type: string;
   sequence: number;
@@ -84,7 +90,7 @@ export interface RuleGroup {
 }
 
 export interface Rule {
-  id?: string;
+  referenceId?: string;
   name?: string;
   sequence?: number;
   description?: string;
@@ -99,6 +105,7 @@ export interface Rule {
 }
 
 export interface RuleCondition {
+  referenceId?: string;
   sequence?: number;
   expression?: string;
   objectType?: string;
@@ -106,6 +113,7 @@ export interface RuleCondition {
 }
 
 export interface RuleTransformation {
+  referenceId?: string;
   sequence?: number;
   expression?: string;
   javaScript?: string;
@@ -113,6 +121,7 @@ export interface RuleTransformation {
 }
 
 export interface RuleAction {
+  referenceId?: string;
   sequence?: number;
   action?: string;
   value?: string;
@@ -125,4 +134,5 @@ export interface RuleAction {
   totalMetricName?: string;
   message?: string;
   messageValueType?: string;
+  allowOverride?: boolean;
 }
