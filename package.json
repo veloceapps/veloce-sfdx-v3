@@ -59,6 +59,7 @@
     "pretty-quick": "^3",
     "sinon": "10.0.0",
     "ts-node": "^10",
+    "tsup": "^6.7.0",
     "typescript": "4"
   },
   "engines": {
@@ -89,7 +90,7 @@
   },
   "repository": "veloceapps/veloce-sfdx-v3",
   "scripts": {
-    "build": "tsc -p .",
+    "build": "tsup",
     "lint": "eslint src/**/*.ts src/commands/veloce/**/*.ts test/**/*.ts",
     "fix": "eslint src/**/*.ts src/commands/veloce/**/*.ts test/**/*.ts --fix",
     "postpack": "rm -f oclif.manifest.json",
