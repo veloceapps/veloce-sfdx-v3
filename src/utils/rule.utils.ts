@@ -13,7 +13,6 @@ import {
   SFContent,
   SFProcedureRule,
   SFProcedureRuleCondition,
-  SFProcedureRuleGroup,
   SFProcedureRuleMapping,
   SFProcedureRuleTransformation,
 } from '../types/rule.types';
@@ -25,48 +24,52 @@ export async function fetchProcedureRules(
   dumpAll: boolean,
   ruleNames?: string[],
 ): Promise<SFProcedureRule[]> {
-  let query = `SELECT  Id,
-        Name,
-        VELOCPQ__RuleGroupId__r.Name,
-        VELOCPQ__RuleGroupId__r.VELOCPQ__Type__c,
-        VELOCPQ__RuleGroupId__r.VELOCPQ__Sequence__c,
-        VELOCPQ__RuleGroupId__r.VELOCPQ__Description__c,
-        VELOCPQ__RuleGroupId__r.VELOCPQ__Active__c,
-        VELOCPQ__Description__c,
-        VELOCPQ__Sequence__c,
-        VELOCPQ__Active__c,
-        VELOCPQ__Default__c,
-        VELOCPQ__RuleGroupId__c,
-        (SELECT  Id,
-        VELOCPQ__VariableName__c,
-        VELOCPQ__ExpressionsJsonString__c,
-        VELOCPQ__RuleId__c,
-        VELOCPQ__ObjectType__c
-        FROM    VELOCPQ__ProcedureRules_RuleConditions__r
-        ),
-                (SELECT  Id,
-                VELOCPQ__RuleId__c,
-                VELOCPQ__Sequence__c,
-                VELOCPQ__ResultPath__c,
-                VELOCPQ__Expression__c
-        FROM    VELOCPQ__ProcedureRules_TransformationRules__r
-        ),
-                (SELECT  Id,
-                VELOCPQ__Value__c,
-                VELOCPQ__Explanation__c,
-                VELOCPQ__Type__c,
-                VELOCPQ__ValueType__c,
-                VELOCPQ__TargetFieldName__c,
-                VELOCPQ__TotalMetricName__c,
-                VELOCPQ__VariableName__c,
-                VELOCPQ__RuleId__c,
-                VELOCPQ__Action__c,
-                VELOCPQ__Message__c,
-                VELOCPQ__MessageValueType__c
-        FROM    VELOCPQ__ProcedureRules_RuleMappings__r
-        )
-        FROM
-        VELOCPQ__ProcedureRule__c`;
+  let query = `SELECT Id,
+                      Name,
+                      VELOCPQ__RuleGroupId__r.Name,
+                      VELOCPQ__RuleGroupId__r.VELOCPQ__Type__c,
+                      VELOCPQ__RuleGroupId__r.VELOCPQ__Sequence__c,
+                      VELOCPQ__RuleGroupId__r.VELOCPQ__Description__c,
+                      VELOCPQ__RuleGroupId__r.VELOCPQ__Active__c,
+                      VELOCPQ__RuleGroupId__r.VELOCPQ__ReferenceId__c,
+                      VELOCPQ__Description__c,
+                      VELOCPQ__Sequence__c,
+                      VELOCPQ__Active__c,
+                      VELOCPQ__Default__c,
+                      VELOCPQ__RuleGroupId__c,
+                      VELOCPQ__ReferenceId__c,
+                      (SELECT Id,
+                              VELOCPQ__VariableName__c,
+                              VELOCPQ__ExpressionsJsonString__c,
+                              VELOCPQ__RuleId__c,
+                              VELOCPQ__ObjectType__c,
+                              VELOCPQ__ReferenceId__c,
+                              VELOCPQ__Sequence__c
+                       FROM VELOCPQ__ProcedureRules_RuleConditions__r),
+                      (SELECT Id,
+                              VELOCPQ__RuleId__c,
+                              VELOCPQ__Sequence__c,
+                              VELOCPQ__ResultPath__c,
+                              VELOCPQ__Expression__c,
+                              VELOCPQ__ReferenceId__c
+                       FROM VELOCPQ__ProcedureRules_TransformationRules__r),
+                      (SELECT Id,
+                              VELOCPQ__Value__c,
+                              VELOCPQ__Explanation__c,
+                              VELOCPQ__Type__c,
+                              VELOCPQ__ValueType__c,
+                              VELOCPQ__TargetFieldName__c,
+                              VELOCPQ__TotalMetricName__c,
+                              VELOCPQ__VariableName__c,
+                              VELOCPQ__RuleId__c,
+                              VELOCPQ__Action__c,
+                              VELOCPQ__Message__c,
+                              VELOCPQ__MessageValueType__c,
+                              VELOCPQ__AllowOverride__c,
+                              VELOCPQ__ReferenceId__c,
+                              VELOCPQ__Sequence__c
+                       FROM VELOCPQ__ProcedureRules_RuleMappings__r)
+               FROM VELOCPQ__ProcedureRule__c`;
   if (!dumpAll) {
     query += ` WHERE VELOCPQ__RuleGroupId__r.Name IN ('${ruleNames?.join("','")}')`;
   }
@@ -79,9 +82,9 @@ export async function fetchProcedureRules(
     return [...acc, ...(rule?.VELOCPQ__ProcedureRules_TransformationRules__r?.records || []).map(({ Id }) => Id)];
   }, [] as string[]);
 
-  const contentLinksQuery = `Select Id, ContentDocumentId, LinkedEntityId From ContentDocumentLink Where LinkedEntityId IN ('${transformationIds.join(
-    "','",
-  )}')`;
+  const contentLinksQuery = `Select Id, ContentDocumentId, LinkedEntityId
+                             From ContentDocumentLink
+                             Where LinkedEntityId IN ('${transformationIds.join("','")}')`;
   const contentLinks = await conn.query<SFContent>(contentLinksQuery);
   const contentLinksRecords = contentLinks?.records || [];
   const javaScripts: { id: string; javaScript: string }[] = [];
@@ -92,8 +95,12 @@ export async function fetchProcedureRules(
   return rules.map((rule) => {
     return {
       ...rule,
+      VELOCPQ__ProcedureRules_RuleConditions__r: {
+        ...(rule.VELOCPQ__ProcedureRules_RuleConditions__r ?? {}),
+        records: [...(rule.VELOCPQ__ProcedureRules_RuleConditions__r?.records ?? [])],
+      },
       VELOCPQ__ProcedureRules_TransformationRules__r: {
-        ...rule.VELOCPQ__ProcedureRules_TransformationRules__r,
+        ...(rule.VELOCPQ__ProcedureRules_TransformationRules__r ?? {}),
         records: (rule?.VELOCPQ__ProcedureRules_TransformationRules__r?.records || []).map((transformation) => {
           const javaScript = javaScripts.find((o) => o.id === transformation.Id);
           if (javaScript) {
@@ -124,13 +131,36 @@ const saveToJSON = (procedureRules: SFProcedureRule[], pathToSave: string): void
     sequence: VELOCPQ__RuleGroupId__r.VELOCPQ__Sequence__c,
     description: VELOCPQ__RuleGroupId__r.VELOCPQ__Description__c,
     active: VELOCPQ__RuleGroupId__r.VELOCPQ__Active__c,
-    rules: procedureRules.map(({ Id, Name, VELOCPQ__Description__c, VELOCPQ__Active__c, VELOCPQ__Default__c }) => ({
-      id: Id,
-      name: Name,
-      description: VELOCPQ__Description__c,
-      active: VELOCPQ__Active__c,
-      isDefault: VELOCPQ__Default__c,
-    })),
+    referenceId: VELOCPQ__RuleGroupId__r.VELOCPQ__ReferenceId__c,
+    rules: procedureRules.map(
+      ({
+        Id,
+        Name,
+        VELOCPQ__Description__c,
+        VELOCPQ__Active__c,
+        VELOCPQ__Default__c,
+        VELOCPQ__ReferenceId__c,
+        VELOCPQ__ProcedureRules_RuleConditions__r,
+        VELOCPQ__ProcedureRules_TransformationRules__r,
+      }) => ({
+        id: Id,
+        name: Name,
+        description: VELOCPQ__Description__c,
+        active: VELOCPQ__Active__c,
+        isDefault: VELOCPQ__Default__c,
+        referenceId: VELOCPQ__ReferenceId__c,
+        conditions: VELOCPQ__ProcedureRules_RuleConditions__r.records.map((c) => ({
+          id: c.Id,
+          variableName: c.VELOCPQ__VariableName__c,
+          referenceId: c.VELOCPQ__ReferenceId__c,
+        })),
+        transformations: VELOCPQ__ProcedureRules_TransformationRules__r.records.map((t) => ({
+          id: t.Id,
+          resultPath: t.VELOCPQ__ResultPath__c,
+          referenceId: t.VELOCPQ__ReferenceId__c,
+        })),
+      }),
+    ),
   };
 
   writeFileSafe(
@@ -226,10 +256,11 @@ const actionsToDSL = (actions: SFProcedureRuleMapping[], type: string): string =
         ${actions
           .sort((a, b) => a.VELOCPQ__Sequence__c - b.VELOCPQ__Sequence__c)
           .map((action) => {
+            const isAdjustPriceAction = ['ADJUST_PRICE', 'ADJUST_LIST_PRICE', 'ADJUST_COST'].includes(
+              action.VELOCPQ__Action__c,
+            );
             const argumentsOrder = [
-              ['ADJUST_PRICE', 'ADJUST_LIST_PRICE', 'ADJUST_COST'].includes(action.VELOCPQ__Action__c)
-                ? ''
-                : action.VELOCPQ__TargetFieldName__c,
+              isAdjustPriceAction ? '' : action.VELOCPQ__TargetFieldName__c,
               action.VELOCPQ__Type__c,
               action.VELOCPQ__ValueType__c === 'VALUE' ? `"${action.VELOCPQ__Value__c}"` : action.VELOCPQ__Value__c,
               action.VELOCPQ__Explanation__c ? `"${action.VELOCPQ__Explanation__c}"` : '',
@@ -237,6 +268,7 @@ const actionsToDSL = (actions: SFProcedureRuleMapping[], type: string): string =
                 ? `"${action.VELOCPQ__Message__c}"`
                 : action.VELOCPQ__Message__c,
               action.VELOCPQ__TotalMetricName__c,
+              isAdjustPriceAction ? `${action.VELOCPQ__AllowOverride__c}` : null,
             ];
             return `${type === 'METRIC' ? 'chargeItem' : action.VELOCPQ__VariableName__c}.${camelCase(
               action.VELOCPQ__Action__c,
@@ -279,7 +311,18 @@ function extractRuleGroup(file: string, directory: string, names: string[] | und
     rules: ruleGroup.rules
       .map((rule) => {
         const ruleDetails = visitor.rules.find(({ name }) => name === rule.name);
-        const combinedRule = { ...rule, ...ruleDetails };
+        const combinedRule = {
+          ...rule,
+          ...ruleDetails,
+          conditions: rule.conditions?.map((c) => ({
+            ...c,
+            ...ruleDetails?.conditions?.find(({ variableName }) => variableName === c.variableName),
+          })),
+          transformations: rule.transformations?.map((tr) => ({
+            ...tr,
+            ...ruleDetails?.transformations?.find(({ resultPath }) => resultPath === tr.resultPath),
+          })),
+        };
         if (ruleGroup.type === 'METRIC') {
           return normalizeMetricRule(combinedRule);
         }
@@ -289,51 +332,24 @@ function extractRuleGroup(file: string, directory: string, names: string[] | und
   };
 }
 
-export async function searchRuleGroups(conn: Connection, ruleGroup: RuleGroup): Promise<SFProcedureRuleGroup[]> {
-  const query = `SELECT Id,Name,VELOCPQ__Type__c, VELOCPQ__Sequence__c, VELOCPQ__Description__c, VELOCPQ__Active__c FROM VELOCPQ__RuleGroup__c WHERE Name='${ruleGroup.name}' AND VELOCPQ__Type__c ='${ruleGroup.type}'`;
-
-  const result = await conn.autoFetchQuery<SFProcedureRuleGroup>(query, { autoFetch: true, maxFetch: 100000 });
-  return result?.records ?? [];
-}
-
-export async function createUpdateRuleGroup(conn: Connection, ruleGroup: RuleGroup): Promise<SuccessResult> {
+export async function upsertRuleGroup(conn: Connection, ruleGroup: RuleGroup): Promise<SuccessResult> {
   const body = {
-    Id: ruleGroup.id,
     Name: ruleGroup.name,
+    VELOCPQ__ReferenceId__c: ruleGroup.referenceId,
     VELOCPQ__Type__c: ruleGroup.type,
     VELOCPQ__Sequence__c: ruleGroup.sequence,
     VELOCPQ__Description__c: ruleGroup.description,
     VELOCPQ__Active__c: ruleGroup.active,
   };
-  const existingRuleGroup = (await searchRuleGroups(conn, ruleGroup))[0];
-  let result;
-  if (existingRuleGroup) {
-    result = await conn.sobject('VELOCPQ__RuleGroup__c').update({ ...body, Id: existingRuleGroup.Id });
-  } else {
-    result = await conn.sobject('VELOCPQ__RuleGroup__c').create(body);
-  }
+  const result = await conn.sobject('VELOCPQ__RuleGroup__c').upsert(body, 'VELOCPQ__ReferenceId__c');
 
   if (result.success) {
-    if (existingRuleGroup) {
-      console.log(`Rule Group ${body.Name} updated`);
-    } else {
-      console.log(`New Rule Group ${body.Name} created with id ${result.id}`);
-    }
+    console.log(`Rule Group ${body.Name} upserted`);
   } else {
     throw new SfdxError(`Failed to create document: ${JSON.stringify(result)}`);
   }
 
   return result;
-}
-
-export async function searchRules(conn: Connection, rule: Rule, ruleGroup: RuleGroup): Promise<SFProcedureRule[]> {
-  const query = `SELECT Id FROM VELOCPQ__ProcedureRule__c WHERE Name='${rule.name?.replace(
-    "'",
-    "\\'",
-  )}' AND VELOCPQ__RuleGroupId__r.Name ='${ruleGroup.name}'`;
-
-  const result = await conn.autoFetchQuery<SFProcedureRule>(query, { autoFetch: true, maxFetch: 100000 });
-  return result?.records ?? [];
 }
 
 export async function cleanupRules(
@@ -342,7 +358,9 @@ export async function cleanupRules(
   fromRuleGroupId: string,
 ): Promise<RecordResult[]> {
   const query =
-    `SELECT Id FROM VELOCPQ__ProcedureRule__c WHERE VELOCPQ__RuleGroupId__c ='${fromRuleGroupId}'` +
+    `SELECT Id
+     FROM VELOCPQ__ProcedureRule__c
+     WHERE VELOCPQ__RuleGroupId__r.VELOCPQ__ReferenceId__c = '${fromRuleGroupId}'` +
     (ruleIdsToKeep.length > 0 ? ` AND Id NOT IN (${"'" + ruleIdsToKeep.join("','") + "'"})` : '');
 
   const { records = [] } = await conn.autoFetchQuery<SFProcedureRule>(query, {
@@ -362,51 +380,25 @@ export async function cleanupRules(
   return results;
 }
 
-export async function createUpdateRule(
-  conn: Connection,
-  rule: Rule,
-  ruleGroupId: string,
-  ruleGroup: RuleGroup,
-): Promise<SuccessResult> {
+export async function upsertRule(conn: Connection, rule: Rule, ruleGroupId: string): Promise<SuccessResult> {
   const body = {
-    Id: '',
     Name: rule.name,
+    VELOCPQ__ReferenceId__c: rule.referenceId,
     VELOCPQ__Description__c: rule.description,
     VELOCPQ__Sequence__c: rule.sequence,
     VELOCPQ__Active__c: rule.active,
     VELOCPQ__Default__c: rule.isDefault,
     VELOCPQ__RuleGroupId__c: ruleGroupId,
   };
-  const existingRule = (await searchRules(conn, rule, ruleGroup))[0];
-  let result;
-  if (existingRule) {
-    result = await conn.sobject('VELOCPQ__ProcedureRule__c').update({ ...body, Id: existingRule.Id });
-  } else {
-    result = await conn.sobject('VELOCPQ__ProcedureRule__c').create(body);
-  }
+  const result = await conn.sobject('VELOCPQ__ProcedureRule__c').upsert(body, 'VELOCPQ__ReferenceId__c');
 
   if (result.success) {
-    if (existingRule) {
-      console.log(`Procedure Rule ${body.Name} updated`);
-    } else {
-      console.log(`New Procedure Rule ${body.Name} created with id ${result.id}`);
-    }
+    console.log(`Procedure Rule ${body.Name} upserted`);
   } else {
     throw new SfdxError(`Failed to create document: ${JSON.stringify(result)}`);
   }
 
   return result;
-}
-
-export async function searchRuleConditions(
-  conn: Connection,
-  condition: RuleCondition,
-  ruleId: string,
-): Promise<SFProcedureRuleCondition[]> {
-  const query = `SELECT Id FROM VELOCPQ__RuleCondition__c WHERE VELOCPQ__VariableName__c='${condition.variableName}' AND VELOCPQ__RuleId__c ='${ruleId}'`;
-
-  const result = await conn.autoFetchQuery<SFProcedureRuleCondition>(query, { autoFetch: true, maxFetch: 100000 });
-  return result?.records ?? [];
 }
 
 export async function cleanupRuleConditions(
@@ -415,7 +407,9 @@ export async function cleanupRuleConditions(
   fromRuleId: string,
 ): Promise<RecordResult[]> {
   const query =
-    `SELECT Id FROM VELOCPQ__RuleCondition__c WHERE VELOCPQ__RuleId__c ='${fromRuleId}'` +
+    `SELECT Id
+     FROM VELOCPQ__RuleCondition__c
+     WHERE VELOCPQ__RuleId__c = '${fromRuleId}'` +
     (conditionIdsToKeep.length > 0 ? ` AND Id NOT IN (${"'" + conditionIdsToKeep.join("','") + "'"})` : '');
 
   const { records = [] } = await conn.autoFetchQuery<SFProcedureRuleCondition>(query, {
@@ -435,49 +429,28 @@ export async function cleanupRuleConditions(
   return results;
 }
 
-export async function createUpdateRuleCondition(
+export async function upsertRuleCondition(
   conn: Connection,
   condition: RuleCondition,
   ruleId: string,
 ): Promise<SuccessResult> {
   const body = {
-    Id: '',
+    VELOCPQ__ReferenceId__c: condition.referenceId,
     VELOCPQ__Sequence__c: condition.sequence,
     VELOCPQ__VariableName__c: condition.variableName,
     VELOCPQ__ExpressionsJsonString__c: condition.expression,
     VELOCPQ__RuleId__c: ruleId,
     VELOCPQ__ObjectType__c: condition.objectType,
   };
-  const existingRuleCondition = (await searchRuleConditions(conn, condition, ruleId))[0];
-  let result;
-  if (existingRuleCondition) {
-    result = await conn.sobject('VELOCPQ__RuleCondition__c').update({ ...body, Id: existingRuleCondition.Id });
-  } else {
-    result = await conn.sobject('VELOCPQ__RuleCondition__c').create(body);
-  }
+  const result = await conn.sobject('VELOCPQ__RuleCondition__c').upsert(body, 'VELOCPQ__ReferenceId__c');
 
   if (result.success) {
-    if (existingRuleCondition) {
-      console.log(`Procedure Rule Condition ${body.VELOCPQ__VariableName__c} updated`);
-    } else {
-      console.log(`New Procedure Rule Condition ${body.VELOCPQ__VariableName__c} created with id ${result.id}`);
-    }
+    console.log(`Procedure Rule Condition ${body.VELOCPQ__VariableName__c} upserted`);
   } else {
     throw new SfdxError(`Failed to create document: ${JSON.stringify(result)}`);
   }
 
   return result;
-}
-
-export async function searchRuleTransformations(
-  conn: Connection,
-  transformation: RuleTransformation,
-  ruleId: string,
-): Promise<SFProcedureRuleTransformation[]> {
-  const query = `SELECT Id FROM VELOCPQ__TransformationRule__c WHERE VELOCPQ__ResultPath__c='${transformation.resultPath}' AND VELOCPQ__RuleId__c ='${ruleId}'`;
-
-  const result = await conn.autoFetchQuery<SFProcedureRuleTransformation>(query, { autoFetch: true, maxFetch: 100000 });
-  return result?.records ?? [];
 }
 
 export async function cleanupRuleTransformations(
@@ -486,7 +459,9 @@ export async function cleanupRuleTransformations(
   fromRuleId: string,
 ): Promise<RecordResult[]> {
   const query =
-    `SELECT Id FROM VELOCPQ__TransformationRule__c WHERE VELOCPQ__RuleId__c ='${fromRuleId}'` +
+    `SELECT Id
+     FROM VELOCPQ__TransformationRule__c
+     WHERE VELOCPQ__RuleId__c = '${fromRuleId}'` +
     (transformationIdsToKeep.length > 0 ? ` AND Id NOT IN (${"'" + transformationIdsToKeep.join("','") + "'"})` : '');
 
   const { records = [] } = await conn.autoFetchQuery<SFProcedureRuleTransformation>(query, {
@@ -506,34 +481,22 @@ export async function cleanupRuleTransformations(
   return results;
 }
 
-export async function createUpdateRuleTransformation(
+export async function upsertRuleTransformation(
   conn: Connection,
   transformation: RuleTransformation,
   ruleId: string,
 ): Promise<SuccessResult> {
   const body = {
-    Id: '',
+    VELOCPQ__ReferenceId__c: transformation.referenceId,
     VELOCPQ__Sequence__c: transformation.sequence,
     VELOCPQ__RuleId__c: ruleId,
     VELOCPQ__ResultPath__c: transformation.resultPath,
     VELOCPQ__Expression__c: transformation.expression ?? null,
   };
-  const existingRuleTransformation = (await searchRuleTransformations(conn, transformation, ruleId))[0];
-  let result;
-  if (existingRuleTransformation) {
-    result = await conn
-      .sobject('VELOCPQ__TransformationRule__c')
-      .update({ ...body, Id: existingRuleTransformation.Id });
-  } else {
-    result = await conn.sobject('VELOCPQ__TransformationRule__c').create(body);
-  }
+  const result = await conn.sobject('VELOCPQ__TransformationRule__c').upsert(body, 'VELOCPQ__ReferenceId__c');
 
   if (result.success) {
-    if (existingRuleTransformation) {
-      console.log(`Procedure Rule Transformation ${body.VELOCPQ__ResultPath__c} updated`);
-    } else {
-      console.log(`New Procedure Rule Transformation ${body.VELOCPQ__ResultPath__c} created with id ${result.id}`);
-    }
+    console.log(`Procedure Rule Transformation ${body.VELOCPQ__ResultPath__c} upserted`);
 
     if (transformation.javaScript) {
       await createJavaScript(conn, transformation.javaScript, result.id);
@@ -547,33 +510,15 @@ export async function createUpdateRuleTransformation(
   return result;
 }
 
-export async function searchRuleActions(
-  conn: Connection,
-  action: RuleAction,
-  ruleId: string,
-): Promise<SFProcedureRuleMapping[]> {
-  const query = `SELECT Id FROM VELOCPQ__RuleMapper__c WHERE
-VELOCPQ__Value__c='${action.value}'
-AND VELOCPQ__Action__c='${action.action}'
-AND VELOCPQ__Type__c=${action.type ? "'" + action.type + "'" : null}
-AND VELOCPQ__ValueType__c=${action.valueType ? "'" + action.valueType + "'" : null}
-AND VELOCPQ__TargetFieldName__c=${action.targetFieldName ? "'" + action.targetFieldName + "'" : null}
-AND VELOCPQ__TotalMetricName__c=${action.totalMetricName ? "'" + action.totalMetricName + "'" : null}
-AND VELOCPQ__VariableName__c=${action.variableName ? "'" + action.variableName + "'" : null}
-AND VELOCPQ__IsCalculateTotalMetric__c=${action.isCalculateTotalMetric ?? false}
-AND VELOCPQ__RuleId__c ='${ruleId}'`;
-
-  const result = await conn.autoFetchQuery<SFProcedureRuleMapping>(query, { autoFetch: true, maxFetch: 100000 });
-  return result?.records ?? [];
-}
-
 export async function cleanupRuleActions(
   conn: Connection,
   actionIdsToKeep: string[],
   fromRuleId: string,
 ): Promise<RecordResult[]> {
   const query =
-    `SELECT Id FROM VELOCPQ__RuleMapper__c WHERE VELOCPQ__RuleId__c ='${fromRuleId}'` +
+    `SELECT Id
+     FROM VELOCPQ__RuleMapper__c
+     WHERE VELOCPQ__RuleId__c = '${fromRuleId}'` +
     (actionIdsToKeep.length > 0 ? ` AND Id NOT IN (${"'" + actionIdsToKeep.join("','") + "'"})` : '');
 
   const { records = [] } = await conn.autoFetchQuery<SFProcedureRuleMapping>(query, {
@@ -593,11 +538,29 @@ export async function cleanupRuleActions(
   return results;
 }
 
-export async function createUpdateRuleAction(
-  conn: Connection,
-  action: RuleAction,
-  ruleId: string,
-): Promise<SuccessResult> {
+export async function deleteRuleActions(conn: Connection, fromRuleId: string): Promise<RecordResult[]> {
+  const query = `SELECT Id
+     FROM VELOCPQ__RuleMapper__c
+     WHERE VELOCPQ__RuleId__c = '${fromRuleId}'`;
+
+  const { records = [] } = await conn.autoFetchQuery<SFProcedureRuleMapping>(query, {
+    autoFetch: true,
+    maxFetch: 100000,
+  });
+  const idsToBeDeleted = records.map(({ Id }) => Id);
+  const results = (await conn.sobject('VELOCPQ__RuleMapper__c').delete(idsToBeDeleted)) ?? [];
+  const successResults = results.filter(({ success }) => success).map((res) => (res as SuccessResult).id);
+  const errorResults = results.filter(({ success }) => !success);
+  if (successResults.length) {
+    console.log(`Deleted rule actions with ids ${successResults.join(',')} from rule with id ${fromRuleId}`);
+  }
+  if (errorResults.length) {
+    console.log(`Errors occurred while deletion rule actions: ${errorResults.join('\n')}`);
+  }
+  return results;
+}
+
+export async function upsertRuleAction(conn: Connection, action: RuleAction, ruleId: string): Promise<SuccessResult> {
   const body = {
     Id: '',
     VELOCPQ__Sequence__c: action.sequence,
@@ -613,22 +576,12 @@ export async function createUpdateRuleAction(
     VELOCPQ__Action__c: action.action,
     VELOCPQ__Message__c: action.message,
     VELOCPQ__MessageValueType__c: action.messageValueType,
+    VELOCPQ__AllowOverride__c: action.allowOverride,
   };
-
-  const existingRuleAction = (await searchRuleActions(conn, action, ruleId))[0];
-  let result;
-  if (existingRuleAction) {
-    result = await conn.sobject('VELOCPQ__RuleMapper__c').update({ ...body, Id: existingRuleAction.Id });
-  } else {
-    result = await conn.sobject('VELOCPQ__RuleMapper__c').create(body);
-  }
+  const result = await conn.sobject('VELOCPQ__RuleMapper__c').create(body);
 
   if (result.success) {
-    if (existingRuleAction) {
-      console.log(`Procedure Rule Action ${body.VELOCPQ__Action__c} already created`);
-    } else {
-      console.log(`New Procedure Rule Action ${body.VELOCPQ__Action__c} created with id ${result.id}`);
-    }
+    console.log(`Procedure Rule Action ${body.VELOCPQ__Action__c} upserted`);
   } else {
     throw new SfdxError(`Failed to create document: ${JSON.stringify(result)}`);
   }
@@ -647,7 +600,9 @@ export async function createJavaScript(conn: Connection, javaScript: string, tra
 
   if (contentVersionResult.success) {
     const contentVersionId = contentVersionResult.id;
-    const contentVersionsQuery = `Select Id, ContentDocumentId From ContentVersion Where Id='${contentVersionId}'`;
+    const contentVersionsQuery = `Select Id, ContentDocumentId
+                                  From ContentVersion
+                                  Where Id = '${contentVersionId}'`;
     const contentResults = await conn.query<SFContent>(contentVersionsQuery);
     const contentDocumentId = contentResults.records[0]?.ContentDocumentId;
     if (contentDocumentId) {
@@ -663,7 +618,9 @@ export async function createJavaScript(conn: Connection, javaScript: string, tra
 }
 
 export async function deleteJavaScript(conn: Connection, transformationId: string): Promise<any> {
-  const query = `select Id, ContentDocumentId from ContentDocumentLink where LinkedEntityId = '${transformationId}'`;
+  const query = `select Id, ContentDocumentId
+                 from ContentDocumentLink
+                 where LinkedEntityId = '${transformationId}'`;
   const queryResults = await conn.query<SFContent>(query);
 
   for (const record of queryResults.records) {
@@ -682,9 +639,9 @@ const normalizeMetricRule = (rule: Rule): Rule => {
 const setSequences = (rule: Rule): Rule => {
   return {
     ...rule,
-    conditions: rule.conditions.map((condition, index) => ({ ...condition, sequence: index })),
-    transformations: rule.transformations.map((transformation, index) => ({ ...transformation, sequence: index })),
-    mappers: rule.mappers.map((mapper, index) => ({ ...mapper, sequence: index })),
+    conditions: rule.conditions?.map((condition, index) => ({ ...condition, sequence: index })),
+    transformations: rule.transformations?.map((transformation, index) => ({ ...transformation, sequence: index })),
+    mappers: rule.mappers?.map((mapper, index) => ({ ...mapper, sequence: index })),
   };
 };
 

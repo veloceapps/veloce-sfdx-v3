@@ -57,6 +57,7 @@ export class RuleActionVisitor extends ParseTreeVisitor {
         );
         this.setValue(ctx.children?.[6]?.text);
         this.setProperty('explanation', getStringContent(ctx.children?.[8]?.text || ''));
+        this.action.allowOverride = ['true', 'TRUE'].includes(ctx.children?.[10]?.text || '');
         super.visit(ctx);
         break;
       }

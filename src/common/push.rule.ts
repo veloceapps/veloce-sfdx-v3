@@ -4,12 +4,13 @@ import {
   cleanupRuleConditions,
   cleanupRuleTransformations,
   cleanupRules,
-  createUpdateRule,
-  createUpdateRuleAction,
-  createUpdateRuleCondition,
-  createUpdateRuleGroup,
-  createUpdateRuleTransformation,
+  upsertRule,
+  upsertRuleAction,
+  upsertRuleCondition,
+  upsertRuleGroup,
+  upsertRuleTransformation,
   getRuleGroups,
+  deleteRuleActions,
 } from '../utils/rule.utils';
 
 export async function pushRule(params: CommandParams): Promise<string[]> {
@@ -24,18 +25,18 @@ export async function pushRule(params: CommandParams): Promise<string[]> {
   const result = [];
 
   for (const ruleGroup of ruleGroups) {
-    const ruleGroupResult = await createUpdateRuleGroup(conn, ruleGroup);
+    const ruleGroupResult = await upsertRuleGroup(conn, ruleGroup);
 
     for (const rule of ruleGroup.rules) {
       if (!rule.name) {
         continue;
       }
-      const ruleResult = await createUpdateRule(conn, rule, ruleGroupResult.id, ruleGroup);
+      const ruleResult = await upsertRule(conn, rule, ruleGroupResult.id);
       result.push(ruleResult.id);
 
       const conditionsResults = [];
       for (const condition of rule.conditions || []) {
-        const res = await createUpdateRuleCondition(conn, condition, ruleResult.id);
+        const res = await upsertRuleCondition(conn, condition, ruleResult.id);
         conditionsResults.push(res);
       }
       await cleanupRuleConditions(
@@ -46,7 +47,7 @@ export async function pushRule(params: CommandParams): Promise<string[]> {
 
       const transformationsResults = [];
       for (const transformation of rule.transformations || []) {
-        const res = await createUpdateRuleTransformation(conn, transformation, ruleResult.id);
+        const res = await upsertRuleTransformation(conn, transformation, ruleResult.id);
         transformationsResults.push(res);
       }
       await cleanupRuleTransformations(
@@ -55,19 +56,15 @@ export async function pushRule(params: CommandParams): Promise<string[]> {
         ruleResult.id,
       );
 
+      await deleteRuleActions(conn, ruleResult.id);
       const actionsResults = [];
       for (const action of rule.mappers || []) {
-        const res = await createUpdateRuleAction(conn, action, ruleResult.id);
+        const res = await upsertRuleAction(conn, action, ruleResult.id);
         actionsResults.push(res);
       }
-      await cleanupRuleActions(
-        conn,
-        actionsResults.map(({ id }) => id),
-        ruleResult.id,
-      );
     }
 
-    const rulesCleanupResult = await cleanupRules(conn, result, ruleGroup.id);
+    const rulesCleanupResult = await cleanupRules(conn, result, ruleGroup.referenceId);
     const removedRules = rulesCleanupResult.reduce(
       (ids: string[], item) => (item.success ? [...ids, item.id] : ids),
       [],

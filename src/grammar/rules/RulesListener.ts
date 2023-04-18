@@ -1,10 +1,4 @@
-// Generated from libs/grammar/antlr/Rules.g4 by ANTLR 4.9.0-SNAPSHOT
-
-/*
-  Veloce configuration and pricing engine
-
-  @2017-2021 Veloce Inc. All rights reserved
-*/
+// Generated from src/grammar/rules/Rules.g4 by ANTLR 4.9.0-SNAPSHOT
 
 /*
  *
@@ -14,59 +8,60 @@
  *
  */
 
+/* eslint-disable */
+
 import { ParseTreeListener } from 'antlr4ts/tree/ParseTreeListener';
 
-import {
-  ActionDeclarationContext,
-  AddApprovalDataActionContext,
-  AddMessageActionContext,
-  AdjustCostActionContext,
-  AdjustListPriceActionContext,
-  AdjustPriceActionContext,
-  CompilationUnitContext,
-  DoubleConstantContext,
-  ExplanationContext,
-  ExpressionContext,
-  ExpressionListContext,
-  ExpressionRootContext,
-  FilterDeclarationContext,
-  FilterExpressionContext,
-  FunctionExpressionContext,
-  FunctionNameContext,
-  HeaderContext,
-  IdentifierExpressionContext,
-  IntConstantContext,
-  LambdaBodyContext,
-  LambdaCaptureContext,
-  LambdaCaptureListContext,
-  LambdaExpressionContext,
-  LambdaParamContext,
-  LambdaParamListContext,
-  LiteralExpressionContext,
-  MetricNameContext,
-  OptionalExpressionContext,
-  PrimaryExpressionContext,
-  QualifiedIdentifierContext,
-  RuleDeclarationContext,
-  ScriptContext,
-  ScriptDeclarationContext,
-  SequenceContext,
-  SetEffectiveDateActionContext,
-  SetEndDateActionContext,
-  SetFieldValueActionContext,
-  SetMetricActionContext,
-  SetPropertyActionContext,
-  SetScoreContext,
-  SetStartDateActionContext,
-  TargetFieldNameContext,
-  TotalMetricNameContext,
-  TransformationDeclarationContext,
-  TransformationStatementContext,
-  TransformationVariableContext,
-  TupleExpressionContext,
-  ValueContext,
-  VariableNameContext,
-} from './RulesParser';
+import { CompilationUnitContext } from './RulesParser';
+import { HeaderContext } from './RulesParser';
+import { RuleDeclarationContext } from './RulesParser';
+import { SequenceContext } from './RulesParser';
+import { FilterDeclarationContext } from './RulesParser';
+import { FilterExpressionContext } from './RulesParser';
+import { TransformationDeclarationContext } from './RulesParser';
+import { TransformationStatementContext } from './RulesParser';
+import { ScriptContext } from './RulesParser';
+import { ScriptDeclarationContext } from './RulesParser';
+import { ActionDeclarationContext } from './RulesParser';
+import { SetPropertyActionContext } from './RulesParser';
+import { SetFieldValueActionContext } from './RulesParser';
+import { SetScoreContext } from './RulesParser';
+import { AddMessageActionContext } from './RulesParser';
+import { SetStartDateActionContext } from './RulesParser';
+import { SetEndDateActionContext } from './RulesParser';
+import { SetEffectiveDateActionContext } from './RulesParser';
+import { AdjustCostActionContext } from './RulesParser';
+import { AdjustPriceActionContext } from './RulesParser';
+import { AdjustListPriceActionContext } from './RulesParser';
+import { SetMetricActionContext } from './RulesParser';
+import { AddApprovalDataActionContext } from './RulesParser';
+import { MetricNameContext } from './RulesParser';
+import { TotalMetricNameContext } from './RulesParser';
+import { TransformationVariableContext } from './RulesParser';
+import { VariableNameContext } from './RulesParser';
+import { TargetFieldNameContext } from './RulesParser';
+import { ExplanationContext } from './RulesParser';
+import { ValueContext } from './RulesParser';
+import { AllowOverrideContext } from './RulesParser';
+import { ExpressionRootContext } from './RulesParser';
+import { QualifiedIdentifierContext } from './RulesParser';
+import { ExpressionListContext } from './RulesParser';
+import { OptionalExpressionContext } from './RulesParser';
+import { ExpressionContext } from './RulesParser';
+import { IntConstantContext } from './RulesParser';
+import { DoubleConstantContext } from './RulesParser';
+import { LiteralExpressionContext } from './RulesParser';
+import { IdentifierExpressionContext } from './RulesParser';
+import { FunctionExpressionContext } from './RulesParser';
+import { TupleExpressionContext } from './RulesParser';
+import { LambdaCaptureContext } from './RulesParser';
+import { LambdaCaptureListContext } from './RulesParser';
+import { LambdaParamContext } from './RulesParser';
+import { LambdaParamListContext } from './RulesParser';
+import { LambdaBodyContext } from './RulesParser';
+import { LambdaExpressionContext } from './RulesParser';
+import { PrimaryExpressionContext } from './RulesParser';
+import { FunctionNameContext } from './RulesParser';
 
 /**
  * This interface defines a complete listener for a parse tree produced by
@@ -402,6 +397,17 @@ export interface RulesListener extends ParseTreeListener {
    * @param ctx the parse tree
    */
   exitValue?: (ctx: ValueContext) => void;
+
+  /**
+   * Enter a parse tree produced by `RulesParser.allowOverride`.
+   * @param ctx the parse tree
+   */
+  enterAllowOverride?: (ctx: AllowOverrideContext) => void;
+  /**
+   * Exit a parse tree produced by `RulesParser.allowOverride`.
+   * @param ctx the parse tree
+   */
+  exitAllowOverride?: (ctx: AllowOverrideContext) => void;
 
   /**
    * Enter a parse tree produced by `RulesParser.expressionRoot`.
