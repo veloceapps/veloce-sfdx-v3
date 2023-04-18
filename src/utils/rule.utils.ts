@@ -576,7 +576,7 @@ export async function upsertRuleAction(conn: Connection, action: RuleAction, rul
     VELOCPQ__Action__c: action.action,
     VELOCPQ__Message__c: action.message,
     VELOCPQ__MessageValueType__c: action.messageValueType,
-    VELOCPQ__AllowOverride__c: action.allowOverride,
+    VELOCPQ__AllowOverride__c: action.allowOverride === true,
   };
   const result = await conn.sobject('VELOCPQ__RuleMapper__c').create(body);
 
