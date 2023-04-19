@@ -4,8 +4,8 @@ import {
   cleanupRuleConditions,
   cleanupRuleTransformations,
   cleanupRules,
+  createRuleAction,
   upsertRule,
-  upsertRuleAction,
   upsertRuleCondition,
   upsertRuleGroup,
   upsertRuleTransformation,
@@ -59,7 +59,7 @@ export async function pushRule(params: CommandParams): Promise<string[]> {
       await deleteRuleActions(conn, ruleResult.id);
       const actionsResults = [];
       for (const action of rule.mappers || []) {
-        const res = await upsertRuleAction(conn, action, ruleResult.id);
+        const res = await createRuleAction(conn, action, ruleResult.id);
         actionsResults.push(res);
       }
     }
