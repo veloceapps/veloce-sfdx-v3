@@ -42,7 +42,10 @@ sequence
     : INTLITERAL
     ;
 filterDeclaration
-    : variableName ':' filterExpression
+    : variableName('|' property)? ':' filterExpression
+    ;
+property:
+    IDENTIFIER
     ;
 filterExpression
     : OBJECT_TYPE LPAREN expression? RPAREN
@@ -57,9 +60,6 @@ transformationStatement
 script
     : SCRIPT_TEXT
     ;
-scriptDeclaration
-    : (.)*?
-    ;
 actionDeclaration
     :
     setPropertyAction |
@@ -73,7 +73,10 @@ actionDeclaration
     adjustPriceAction |
     adjustListPriceAction |
     setMetricAction |
-    setScore
+    setScore |
+    eligibilityCondition |
+    eligibilityAll |
+    eligibilityMessage
     ;
 
 setPropertyAction
@@ -128,6 +131,18 @@ addApprovalDataAction
     : variableName DOT 'addApprovalData' LPAREN value (COMMA value)? RPAREN
     ;
 
+eligibilityCondition
+    : variableName DOT 'eligibilityCondition' LPAREN value RPAREN
+    ;
+
+eligibilityAll
+    : variableName DOT 'eligibilityAll' LPAREN value COMMA value COMMA value RPAREN
+    ;
+
+eligibilityMessage
+    : variableName DOT 'eligibilityMessage' LPAREN value COMMA value COMMA value RPAREN
+    ;
+
 
 metricName:
     IDENTIFIER
@@ -176,7 +191,7 @@ ACTION_TYPE:
     'OVERRIDE_PERCENT'
     ;
 
-OBJECT_TYPE: ('Header' | 'ChargeItem' | 'PriceItem');
+OBJECT_TYPE: ('Header' | 'ChargeItem' | 'PriceItem' | 'ProcedureContext' | 'CatalogProduct');
 
 SCRIPT_TEXT:
     '```' (.)*? '```'

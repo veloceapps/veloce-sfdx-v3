@@ -8,8 +8,6 @@
  *
  */
 
-/* eslint-disable */
-
 import { ParseTreeListener } from 'antlr4ts/tree/ParseTreeListener';
 
 import { CompilationUnitContext } from './RulesParser';
@@ -17,11 +15,11 @@ import { HeaderContext } from './RulesParser';
 import { RuleDeclarationContext } from './RulesParser';
 import { SequenceContext } from './RulesParser';
 import { FilterDeclarationContext } from './RulesParser';
+import { PropertyContext } from './RulesParser';
 import { FilterExpressionContext } from './RulesParser';
 import { TransformationDeclarationContext } from './RulesParser';
 import { TransformationStatementContext } from './RulesParser';
 import { ScriptContext } from './RulesParser';
-import { ScriptDeclarationContext } from './RulesParser';
 import { ActionDeclarationContext } from './RulesParser';
 import { SetPropertyActionContext } from './RulesParser';
 import { SetFieldValueActionContext } from './RulesParser';
@@ -35,6 +33,9 @@ import { AdjustPriceActionContext } from './RulesParser';
 import { AdjustListPriceActionContext } from './RulesParser';
 import { SetMetricActionContext } from './RulesParser';
 import { AddApprovalDataActionContext } from './RulesParser';
+import { EligibilityConditionContext } from './RulesParser';
+import { EligibilityAllContext } from './RulesParser';
+import { EligibilityMessageContext } from './RulesParser';
 import { MetricNameContext } from './RulesParser';
 import { TotalMetricNameContext } from './RulesParser';
 import { TransformationVariableContext } from './RulesParser';
@@ -124,6 +125,17 @@ export interface RulesListener extends ParseTreeListener {
   exitFilterDeclaration?: (ctx: FilterDeclarationContext) => void;
 
   /**
+   * Enter a parse tree produced by `RulesParser.property`.
+   * @param ctx the parse tree
+   */
+  enterProperty?: (ctx: PropertyContext) => void;
+  /**
+   * Exit a parse tree produced by `RulesParser.property`.
+   * @param ctx the parse tree
+   */
+  exitProperty?: (ctx: PropertyContext) => void;
+
+  /**
    * Enter a parse tree produced by `RulesParser.filterExpression`.
    * @param ctx the parse tree
    */
@@ -166,17 +178,6 @@ export interface RulesListener extends ParseTreeListener {
    * @param ctx the parse tree
    */
   exitScript?: (ctx: ScriptContext) => void;
-
-  /**
-   * Enter a parse tree produced by `RulesParser.scriptDeclaration`.
-   * @param ctx the parse tree
-   */
-  enterScriptDeclaration?: (ctx: ScriptDeclarationContext) => void;
-  /**
-   * Exit a parse tree produced by `RulesParser.scriptDeclaration`.
-   * @param ctx the parse tree
-   */
-  exitScriptDeclaration?: (ctx: ScriptDeclarationContext) => void;
 
   /**
    * Enter a parse tree produced by `RulesParser.actionDeclaration`.
@@ -320,6 +321,39 @@ export interface RulesListener extends ParseTreeListener {
    * @param ctx the parse tree
    */
   exitAddApprovalDataAction?: (ctx: AddApprovalDataActionContext) => void;
+
+  /**
+   * Enter a parse tree produced by `RulesParser.eligibilityCondition`.
+   * @param ctx the parse tree
+   */
+  enterEligibilityCondition?: (ctx: EligibilityConditionContext) => void;
+  /**
+   * Exit a parse tree produced by `RulesParser.eligibilityCondition`.
+   * @param ctx the parse tree
+   */
+  exitEligibilityCondition?: (ctx: EligibilityConditionContext) => void;
+
+  /**
+   * Enter a parse tree produced by `RulesParser.eligibilityAll`.
+   * @param ctx the parse tree
+   */
+  enterEligibilityAll?: (ctx: EligibilityAllContext) => void;
+  /**
+   * Exit a parse tree produced by `RulesParser.eligibilityAll`.
+   * @param ctx the parse tree
+   */
+  exitEligibilityAll?: (ctx: EligibilityAllContext) => void;
+
+  /**
+   * Enter a parse tree produced by `RulesParser.eligibilityMessage`.
+   * @param ctx the parse tree
+   */
+  enterEligibilityMessage?: (ctx: EligibilityMessageContext) => void;
+  /**
+   * Exit a parse tree produced by `RulesParser.eligibilityMessage`.
+   * @param ctx the parse tree
+   */
+  exitEligibilityMessage?: (ctx: EligibilityMessageContext) => void;
 
   /**
    * Enter a parse tree produced by `RulesParser.metricName`.

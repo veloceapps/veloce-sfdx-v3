@@ -81,6 +81,20 @@ export class RuleActionVisitor extends ParseTreeVisitor {
         super.visit(ctx);
         break;
       }
+      case RulesParser.RULE_eligibilityCondition: {
+        this.setProperty('variableName', ctx.children?.[0]?.text);
+        this.action.action = this.getActionName(ctx.children?.[2]?.text);
+        this.setEligible(ctx.children?.[4]?.text);
+        break;
+      }
+      case RulesParser.RULE_eligibilityAll:
+      case RulesParser.RULE_eligibilityMessage: {
+        this.setProperty('variableName', ctx.children?.[0]?.text);
+        this.action.action = this.getActionName(ctx.children?.[2]?.text);
+        this.setEligible(ctx.children?.[4]?.text);
+        this.setValue(ctx.children?.[6]?.text);
+        break;
+      }
       default:
         super.visit(ctx);
     }
@@ -99,6 +113,13 @@ export class RuleActionVisitor extends ParseTreeVisitor {
       return;
     }
     (this.action[property] as any) = value;
+  }
+
+  private setEligible(value: string | undefined): void {
+    if (!value) {
+      return;
+    }
+    this.action.eligible = Boolean(value);
   }
 
   private setValue(value: string | undefined): void {

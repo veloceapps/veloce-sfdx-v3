@@ -13,6 +13,11 @@ export class RuleConditionVisitor extends ParseTreeVisitor {
         super.visit(ctx);
         break;
       }
+      case RulesParser.RULE_property: {
+        this.condition.property = ctx.text;
+        super.visit(ctx);
+        break;
+      }
       case RulesParser.RULE_filterExpression: {
         if (ctx.children?.[0]?.text) {
           this.condition.objectType = RuleObjectTypes[ctx.children[0].text];

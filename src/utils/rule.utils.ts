@@ -2,7 +2,7 @@ import * as fs from 'fs';
 import * as path from 'path';
 import { Connection, SfdxError } from '@salesforce/core';
 import { SuccessResult, RecordResult } from 'jsforce/record-result';
-import { camelCase, groupBy } from 'lodash';
+import { camelCase, groupBy, isBoolean } from 'lodash';
 import {
   Rule,
   RuleAction,
@@ -40,6 +40,7 @@ export async function fetchProcedureRules(
                       VELOCPQ__ReferenceId__c,
                       (SELECT Id,
                               VELOCPQ__VariableName__c,
+                              VELOCPQ__Property__c,
                               VELOCPQ__ExpressionsJsonString__c,
                               VELOCPQ__RuleId__c,
                               VELOCPQ__ObjectType__c,
@@ -67,7 +68,8 @@ export async function fetchProcedureRules(
                               VELOCPQ__MessageValueType__c,
                               VELOCPQ__AllowOverride__c,
                               VELOCPQ__ReferenceId__c,
-                              VELOCPQ__Sequence__c
+                              VELOCPQ__Sequence__c,
+                              VELOCPQ__Eligible__c
                        FROM VELOCPQ__ProcedureRules_RuleMappings__r)
                FROM VELOCPQ__ProcedureRule__c`;
   if (!dumpAll) {
@@ -209,9 +211,11 @@ const conditionsToDSL = (conditions: SFProcedureRuleCondition[], type: string): 
           .sort((a, b) => a.VELOCPQ__Sequence__c - b.VELOCPQ__Sequence__c)
           .map(
             (condition) =>
-              `${type === 'METRIC' ? 'chargeItem' : condition.VELOCPQ__VariableName__c}: ${
-                type === 'METRIC' ? 'ChargeItem' : RuleObjectTypes[condition.VELOCPQ__ObjectType__c]
-              }(${condition.VELOCPQ__ExpressionsJsonString__c ?? ''})`,
+              `${type === 'METRIC' ? 'chargeItem' : condition.VELOCPQ__VariableName__c}${
+                condition.VELOCPQ__Property__c ? '|' + condition.VELOCPQ__Property__c + ':' : ':'
+              } ${type === 'METRIC' ? 'ChargeItem' : RuleObjectTypes[condition.VELOCPQ__ObjectType__c]}(${
+                condition.VELOCPQ__ExpressionsJsonString__c ?? ''
+              })`,
           )
           .join('\n        ')}`;
 };
@@ -245,10 +249,15 @@ const actionsToDSL = (actions: SFProcedureRuleMapping[], type: string): string =
             const isAdjustPriceAction = ['ADJUST_PRICE', 'ADJUST_LIST_PRICE', 'ADJUST_COST'].includes(
               action.VELOCPQ__Action__c,
             );
+            const isEligibilityAction = ['ELIGIBILITY_CONDITION', 'ELIGIBILITY_ALL', 'ELIGIBILITY_MESSAGE'].includes(
+              action.VELOCPQ__Action__c,
+            );
             const argumentsOrder = [
               isAdjustPriceAction ? '' : action.VELOCPQ__TargetFieldName__c,
+              isEligibilityAction ? action.VELOCPQ__Eligible__c : '',
               action.VELOCPQ__Type__c,
               action.VELOCPQ__ValueType__c === 'VALUE' ? `"${action.VELOCPQ__Value__c}"` : action.VELOCPQ__Value__c,
+              isEligibilityAction ? action.VELOCPQ__ValueType__c : '',
               action.VELOCPQ__Explanation__c ? `"${action.VELOCPQ__Explanation__c}"` : '',
               action.VELOCPQ__MessageValueType__c === 'VALUE'
                 ? `"${action.VELOCPQ__Message__c}"`
@@ -258,7 +267,7 @@ const actionsToDSL = (actions: SFProcedureRuleMapping[], type: string): string =
             ];
             return `${type === 'METRIC' ? 'chargeItem' : action.VELOCPQ__VariableName__c}.${camelCase(
               action.VELOCPQ__Action__c,
-            )}(${argumentsOrder.filter((arg) => !!arg).join(',')})`;
+            )}(${argumentsOrder.filter((arg) => !!arg || isBoolean(arg)).join(',')})`;
           })
           .join('\n        ')}`;
 };
@@ -427,6 +436,7 @@ export async function upsertRuleCondition(
     VELOCPQ__ExpressionsJsonString__c: condition.expression,
     VELOCPQ__RuleId__c: ruleId,
     VELOCPQ__ObjectType__c: condition.objectType,
+    VELOCPQ__Property__c: condition.objectType,
   };
   const existingRuleCondition = await findRuleCondition(conn, condition, ruleId);
   let result;
@@ -595,6 +605,7 @@ export async function createRuleAction(conn: Connection, action: RuleAction, rul
     VELOCPQ__Message__c: action.message,
     VELOCPQ__MessageValueType__c: action.messageValueType,
     VELOCPQ__AllowOverride__c: action.allowOverride === true,
+    VELOCPQ__Eligible__c: action.eligible,
   };
   const result = await conn.sobject('VELOCPQ__RuleMapper__c').create(body);
 

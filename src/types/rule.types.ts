@@ -28,6 +28,7 @@ export interface SFProcedureRuleCondition {
   VELOCPQ__ReferenceId__c: string;
   VELOCPQ__Sequence__c: number;
   VELOCPQ__VariableName__c: string;
+  VELOCPQ__Property__c?: string;
   VELOCPQ__ExpressionsJsonString__c: string;
   VELOCPQ__RuleId__c: string;
   VELOCPQ__ObjectType__c: string;
@@ -58,6 +59,7 @@ export interface SFProcedureRuleMapping {
   VELOCPQ__Message__c: string;
   VELOCPQ__MessageValueType__c: string;
   VELOCPQ__AllowOverride__c: boolean;
+  VELOCPQ__Eligible__c: boolean;
 }
 
 interface SOQLResult<T> {
@@ -74,9 +76,13 @@ export const RuleObjectTypes: { [key: string]: string } = {
   LINE_ITEM: 'PriceItem',
   CHARGE_ITEM: 'ChargeItem',
   CONTEXT: 'Header',
+  PROCEDURE_CONTEXT_OBJECT: 'ProcedureContext',
+  CATALOG_PRODUCT: 'CatalogProduct',
   PriceItem: 'LINE_ITEM',
   ChargeItem: 'CHARGE_ITEM',
   Header: 'CONTEXT',
+  ProcedureContext: 'PROCEDURE_CONTEXT_OBJECT',
+  CatalogProduct: 'CATALOG_PRODUCT',
 };
 
 export interface RuleGroup {
@@ -110,6 +116,7 @@ export interface RuleCondition {
   expression?: string;
   objectType?: string;
   variableName?: string;
+  property?: string;
 }
 
 export interface RuleTransformation {
@@ -135,4 +142,5 @@ export interface RuleAction {
   message?: string;
   messageValueType?: string;
   allowOverride?: boolean;
+  eligible?: boolean;
 }
