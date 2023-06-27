@@ -1,7 +1,7 @@
 import { existsSync, mkdirSync } from 'fs';
 import { writeFileSafe } from '../utils/common.utils';
 import { LegacySection, LegacyUiDefinition, UiDef, UiDefinition, UiElement, UiMetadata } from '../types/ui.types';
-import { extractElementMetadata, fromBase64, isLegacyDefinition } from '../utils/ui.utils';
+import { extractElementMetadata, fetchUiDefinitions, fromBase64, isLegacyDefinition } from '../utils/ui.utils';
 import { ProductModel } from '../types/productModel.types';
 import { fetchProductModels } from '../utils/productModel.utils';
 import { fetchDocumentContent } from '../utils/document.utils';
@@ -14,7 +14,11 @@ export async function pullUI(params: CommandParams): Promise<string[]> {
   }
   const modelNames = member.all ? undefined : Array.from(member.names).map((ui) => ui.split(':')[0]);
 
-  console.log(`Pulling All Uis for ${member.all ? 'All Product models' : 'Product models with names: ' + (modelNames?.join() ?? '')}`);
+  console.log(
+    `Pulling All Uis for ${
+      member.all ? 'All Product models' : 'Product models with names: ' + (modelNames?.join() ?? '')
+    }`,
+  );
   const uiDefProductModels: ProductModel[] = await fetchProductModels(conn, member.all, modelNames);
 
   Array.from(member.names).forEach((ui) => {
@@ -26,26 +30,34 @@ export async function pullUI(params: CommandParams): Promise<string[]> {
     }
   });
 
-  const contents: { productModel: ProductModel; content: string | undefined }[] = await Promise.all(
+  const modelsWithContents: { productModel: ProductModel; uiDefs: UiDef[] }[] = await Promise.all(
     uiDefProductModels.map((productModel) =>
-      fetchDocumentContent(conn, productModel.VELOCPQ__UiDefinitionsId__c).then((content) => ({
-        content,
-        productModel,
-      })),
+      fetchUiDefinitions(conn, productModel.Id, productModel.VELOCPQ__Version__c)
+        .then((uiDefinitions) => {
+          return uiDefinitions;
+        })
+        .then(async (uiDefinitions) => ({
+          uiDefs: await Promise.all(
+            uiDefinitions
+              .map(async (sfUiDef) => {
+                const content = await fetchDocumentContent(conn, sfUiDef.VELOCPQ__SourceDocumentId__c);
+                try {
+                  return { ...JSON.parse(content ?? ''), referenceId: sfUiDef.VELOCPQ__ReferenceId__c } as UiDef;
+                } catch (err) {
+                  console.log(`Failed to parse document content: ${productModel.Name}`);
+                  return;
+                }
+              })
+              .filter(async (uiDef) => (await uiDef) !== undefined)
+              .map(async (uiDef) => (await uiDef) as UiDef),
+          ),
+          productModel,
+        })),
     ),
   );
 
-  contents.forEach(({ productModel, content }) => {
+  modelsWithContents.forEach(({ productModel, uiDefs }) => {
     const { Name } = productModel;
-
-    let uiDefs: UiDef[] = [];
-    try {
-      uiDefs = JSON.parse(content ?? '') as UiDef[];
-    } catch (err) {
-      console.log(`Failed to parse document content: ${Name}`);
-      return;
-    }
-
     const path = `${rootPath}/config-ui/${Name}`;
 
     // legacy ui definitions metadata is stored in global metadata.json as array
@@ -55,15 +67,17 @@ export async function pullUI(params: CommandParams): Promise<string[]> {
       console.log(`Pulling Uis result: ${uiDefs.length} UI Definition(s) for ${Name} model`);
     }
 
-    uiDefs?.forEach((ui) => {
-      const uiDir = `${path}/${ui.name}`;
+    uiDefs
+      ?.filter((ui) => ui !== undefined)
+      ?.forEach((ui) => {
+        const uiDir = `${path}/${ui.name}`;
 
-      if (isLegacyDefinition(ui)) {
-        saveLegacyUiDefinition(ui, path, ui.name, legacyMetadataArray);
-      } else {
-        saveUiDefinition(ui, uiDir);
-      }
-    });
+        if (isLegacyDefinition(ui)) {
+          saveLegacyUiDefinition(ui, path, ui.name, legacyMetadataArray);
+        } else {
+          saveUiDefinition(ui, uiDir);
+        }
+      });
 
     if (legacyMetadataArray.length) {
       writeFileSafe(path, 'metadata.json', JSON.stringify(legacyMetadataArray, null, 2));
