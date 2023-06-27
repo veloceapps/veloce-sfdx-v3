@@ -76,8 +76,7 @@ export async function pushUI(params: CommandParams): Promise<string[]> {
             return {
               Id: existingUiDef?.Id,
               VELOCPQ__ModelId__c: Id,
-              VELOCPQ__Default__c:
-                ('default' in uiDef && uiDef.default) ?? ('primary' in uiDef && uiDef.primary) ?? false,
+              VELOCPQ__Default__c: false,
               VELOCPQ__SourceDocumentId__c: documentId,
               VELOCPQ__ModelVersion__c: VELOCPQ__Version__c,
               VELOCPQ__ReferenceId__c: uiDef.referenceId,
