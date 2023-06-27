@@ -1,7 +1,16 @@
 import { existsSync, mkdirSync } from 'fs';
 import { writeFileSafe } from '../utils/common.utils';
-import { LegacySection, LegacyUiDefinition, UiDef, UiDefinition, UiElement, UiMetadata } from '../types/ui.types';
-import { extractElementMetadata, fromBase64, isLegacyDefinition } from '../utils/ui.utils';
+import {
+  LegacySection,
+  LegacyUiDefinition,
+  SfUIDefinition,
+  UiDefinitionContainerDto,
+  UiDef,
+  UiDefinition,
+  UiElement,
+  UiMetadata,
+} from '../types/ui.types';
+import { extractElementMetadata, fetchUiDefinitions, fromBase64, isLegacyDefinition } from '../utils/ui.utils';
 import { ProductModel } from '../types/productModel.types';
 import { fetchProductModels } from '../utils/productModel.utils';
 import { fetchDocumentContent } from '../utils/document.utils';
@@ -14,7 +23,11 @@ export async function pullUI(params: CommandParams): Promise<string[]> {
   }
   const modelNames = member.all ? undefined : Array.from(member.names).map((ui) => ui.split(':')[0]);
 
-  console.log(`Pulling All Uis for ${member.all ? 'All Product models' : 'Product models with names: ' + (modelNames?.join() ?? '')}`);
+  console.log(
+    `Pulling All Uis for ${
+      member.all ? 'All Product models' : 'Product models with names: ' + (modelNames?.join() ?? '')
+    }`,
+  );
   const uiDefProductModels: ProductModel[] = await fetchProductModels(conn, member.all, modelNames);
 
   Array.from(member.names).forEach((ui) => {
@@ -26,51 +39,68 @@ export async function pullUI(params: CommandParams): Promise<string[]> {
     }
   });
 
-  const contents: { productModel: ProductModel; content: string | undefined }[] = await Promise.all(
+  const modelsWithContents: { productModel: ProductModel; uiDefs: UiDefinitionContainerDto[] }[] = await Promise.all(
     uiDefProductModels.map((productModel) =>
-      fetchDocumentContent(conn, productModel.VELOCPQ__UiDefinitionsId__c).then((content) => ({
-        content,
+      fetchUiDefinitions(conn, productModel.Id, productModel.VELOCPQ__Version__c).then(async (uiDefinitions) => ({
+        uiDefs: await Promise.all(
+          uiDefinitions
+            .map(async (sfUiDef) => {
+              const content = await fetchDocumentContent(conn, sfUiDef.VELOCPQ__SourceDocumentId__c);
+              try {
+                return {
+                  uiDef: { ...JSON.parse(content ?? '') } as UiDef,
+                  sfMetadata: sfUiDef,
+                } as UiDefinitionContainerDto;
+              } catch (err) {
+                console.log(`Failed to parse document content: ${productModel.Name}`);
+                return;
+              }
+            })
+            .filter(async (uiDef) => (await uiDef) !== undefined)
+            .map(async (uiDef) => (await uiDef) as UiDefinitionContainerDto),
+        ),
         productModel,
       })),
     ),
   );
 
-  contents.forEach(({ productModel, content }) => {
+  modelsWithContents.forEach(({ productModel, uiDefs }) => {
     const { Name } = productModel;
-
-    let uiDefs: UiDef[] = [];
-    try {
-      uiDefs = JSON.parse(content ?? '') as UiDef[];
-    } catch (err) {
-      console.log(`Failed to parse document content: ${Name}`);
-      return;
-    }
-
     const path = `${rootPath}/config-ui/${Name}`;
 
     // legacy ui definitions metadata is stored in global metadata.json as array
     const legacyMetadataArray: LegacyUiDefinition[] = [];
+    const legacySfMetadataArray: SfUIDefinition[] = [];
 
     if (uiDefs.length) {
       console.log(`Pulling Uis result: ${uiDefs.length} UI Definition(s) for ${Name} model`);
     }
 
-    uiDefs?.forEach((ui) => {
-      const uiDir = `${path}/${ui.name}`;
-
-      if (isLegacyDefinition(ui)) {
-        saveLegacyUiDefinition(ui, path, ui.name, legacyMetadataArray);
+    uiDefs?.forEach((container) => {
+      if (isLegacyDefinition(container.uiDef)) {
+        saveLegacyUiDefinition(container.uiDef, path, container.uiDef.name, legacyMetadataArray);
+        legacySfMetadataArray.push(container.sfMetadata);
       } else {
-        saveUiDefinition(ui, uiDir);
+        const uiDir = `${path}/${container.uiDef.name}`;
+        saveUiDefinition(container.sfMetadata, container.uiDef, uiDir);
       }
     });
 
     if (legacyMetadataArray.length) {
       writeFileSafe(path, 'metadata.json', JSON.stringify(legacyMetadataArray, null, 2));
+      writeFileSafe(path, 'sfMetadata.json', JSON.stringify(legacySfMetadataArray, null, 2));
     }
   });
 
-  return uiDefProductModels.map(({ Id }) => Id);
+  return modelsWithContents.flatMap(({ productModel, uiDefs }) => {
+    return uiDefs.map((container) => {
+      if (isLegacyDefinition(container.uiDef)) {
+        return productModel.Id;
+      } else {
+        return container.sfMetadata.Id as string;
+      }
+    });
+  });
 }
 
 function saveLegacySections(
@@ -148,7 +178,7 @@ function saveLegacySectionFiles(
   metadata.sections.push(sectionMeta);
 }
 
-function saveUiDefinition(ui: UiDefinition, path: string): void {
+function saveUiDefinition(sfUiDef: SfUIDefinition, ui: UiDefinition, path: string): void {
   const { children, ...rest } = ui;
 
   // save elements recursively
@@ -163,6 +193,7 @@ function saveUiDefinition(ui: UiDefinition, path: string): void {
     children: childrenNames,
   };
   writeFileSafe(path, 'metadata.json', JSON.stringify(metadata, null, 2) + '\n');
+  writeFileSafe(path, 'sfMetadata.json', JSON.stringify(sfUiDef, null, 2) + '\n');
 }
 
 function saveElement(el: UiElement, path: string): string | undefined {

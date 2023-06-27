@@ -1,12 +1,14 @@
 import { gzipSync } from 'node:zlib';
-import { Connection, SfdxError } from '@salesforce/core';
+import { SfdxError } from '@salesforce/core';
+import { RecordResult, SuccessResult } from 'jsforce/record-result';
 import { CommandParams } from '../types/command.types';
 import { DocumentBody } from '../types/document.types';
 import { ProductModel } from '../types/productModel.types';
-import { createDocument, fetchDocument, updateDocument } from '../utils/document.utils';
+import { SfUIDefinition } from '../types/ui.types';
+import { createDocument, updateDocument } from '../utils/document.utils';
 import { createFolder, fetchFolder } from '../utils/folder.utils';
 import { fetchProductModels } from '../utils/productModel.utils';
-import { UiDefinitionsBuilder } from '../utils/ui.utils';
+import { fetchUiDefinitions, UiDefinitionsBuilder } from '../utils/ui.utils';
 
 const FOLDER_NAME = 'velo_product_models';
 
@@ -33,44 +35,80 @@ export async function pushUI(params: CommandParams): Promise<string[]> {
   // Check if veloce folder exists:
   const folderId: string = (await fetchFolder(conn, FOLDER_NAME))?.Id ?? (await createFolder(conn, FOLDER_NAME)).id;
 
-  const result: string[] = await Promise.all(
-    productModels.map(({ Id, VELOCPQ__UiDefinitionsId__c, Name }) => {
-      // pack all Ui Definitions
-      const uiBuilder = new UiDefinitionsBuilder(sourcepath, Name);
-      const uiDefinitions = uiBuilder.pack();
-      const output = JSON.stringify(uiDefinitions, null, 2);
-      const gzipped = gzipSync(output);
-      // Encode to base64 TWICE!, first time is requirement of POST/PATCH, and it will be decoded on reads automatically by SF.
-      const b64Data = Buffer.from(gzipped.toString('base64')).toString('base64');
+  const results: string[] = (
+    await Promise.all(
+      productModels.map(async ({ Id: modelId, VELOCPQ__Version__c: modelVersion, Name: modelName }) => {
+        const existingUiDefs = await fetchUiDefinitions(conn, modelId, modelVersion);
+        // pack all Ui Definitions
+        const uiBuilder = new UiDefinitionsBuilder(sourcepath, modelName);
+        const uiDefinitions = uiBuilder.pack();
+        const sfUiDefinitions = uiBuilder.getSfUiDefinitions();
+        const toDelete = existingUiDefs
+          .filter(
+            ({ VELOCPQ__ReferenceId__c }) =>
+              !sfUiDefinitions.some((sfUiDef) => VELOCPQ__ReferenceId__c === sfUiDef.VELOCPQ__ReferenceId__c),
+          )
+          .map(({ Id: exUiDefId }) => exUiDefId as string);
+        const toUpsert = await Promise.all(
+          uiDefinitions.map(async (uiDef) => {
+            const uiDocName = `${modelName}_uiDefinition`;
+            const output = JSON.stringify(uiDef, null, 2);
+            const gzipped = gzipSync(output);
+            // Encode to base64 TWICE!, first time is requirement of POST/PATCH, and it will be decoded on reads automatically by SF.
+            const b64Data = Buffer.from(gzipped.toString('base64')).toString('base64');
 
-      const uiDocName = `${Name}_uiDefinition`;
-      const documentBody: DocumentBody = { folderId, body: b64Data, name: uiDocName, contentType: 'application/zip', type: 'zip' };
+            const documentBody: DocumentBody = {
+              folderId,
+              body: b64Data,
+              name: uiDocName,
+              contentType: 'application/zip',
+              type: 'zip',
+            };
 
-      return fetchDocument(conn, VELOCPQ__UiDefinitionsId__c).then((document) =>
-        document?.Id
-          ? updateDocument(conn, document.Id, documentBody).then(() => document.Id)
-          : createAndLinkDocument(conn, documentBody, Id),
-      );
-    }),
-  );
+            const sfUiDef = sfUiDefinitions.find(({ Name }) => uiDef.name === Name);
+            const existingUiDef = existingUiDefs.find(
+              ({ Name, VELOCPQ__ReferenceId__c }) =>
+                VELOCPQ__ReferenceId__c === sfUiDef?.VELOCPQ__ReferenceId__c || Name === uiDef.name,
+            );
+            const documentId = existingUiDef
+              ? await updateDocument(conn, existingUiDef.VELOCPQ__SourceDocumentId__c, documentBody).then(
+                  () => existingUiDef.VELOCPQ__SourceDocumentId__c,
+                )
+              : await createDocument(conn, documentBody).then((r) => r.id);
+
+            return {
+              Id: existingUiDef?.Id,
+              Name: uiDef.name,
+              VELOCPQ__ModelId__c: modelId,
+              VELOCPQ__Default__c: false,
+              VELOCPQ__SourceDocumentId__c: documentId,
+              VELOCPQ__ModelVersion__c: modelVersion,
+              VELOCPQ__ReferenceId__c: existingUiDef?.VELOCPQ__ReferenceId__c ?? sfUiDef?.VELOCPQ__ReferenceId__c,
+            } as SfUIDefinition;
+          }),
+        );
+
+        await conn.delete('VELOCPQ__UiDefinition__c', toDelete);
+        const result = [
+          ...((await conn.create(
+            'VELOCPQ__UiDefinition__c',
+            toUpsert.filter(({ Id: uiDefId }) => !uiDefId),
+          )) as RecordResult[]),
+          ...((await conn.update(
+            'VELOCPQ__UiDefinition__c',
+            toUpsert.filter(({ Id: uiDefId }) => uiDefId),
+          )) as RecordResult[]),
+        ];
+        for (const r of result) {
+          if (!r.success) {
+            throw new SfdxError(`Failed to upsert ui definition:\n ${JSON.stringify(r.errors, null, '  ')}`);
+          }
+        }
+        return result.map((r) => (r as SuccessResult).id);
+      }),
+    )
+  ).flat();
 
   // Return an object to be displayed with --json
-  return result;
-}
-
-async function createAndLinkDocument(conn: Connection, body: DocumentBody, modelId: string): Promise<string> {
-  const documentId = await createDocument(conn, body).then((res) => res.id);
-
-  // link new document to product model
-  const result = await conn
-    .sobject('VELOCPQ__ProductModel__c')
-    .update({ Id: modelId, VELOCPQ__UiDefinitionsId__c: documentId });
-
-  if (result.success) {
-    console.log(`New UI Definition document attached to model with Id='${modelId}'`);
-  } else {
-    throw new SfdxError(`Failed to create document: ${JSON.stringify(result)}`);
-  }
-
-  return documentId;
+  return results;
 }

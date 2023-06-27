@@ -1,5 +1,14 @@
 import { existsSync, readFileSync } from 'fs';
-import { LegacyUiDefinition, UiDef, UiDefinition, UiElement, UiElementMetadata, UiMetadata } from '../types/ui.types';
+import { Connection } from '@salesforce/core';
+import {
+  LegacyUiDefinition,
+  SfUIDefinition,
+  UiDef,
+  UiDefinition,
+  UiElement,
+  UiElementMetadata,
+  UiMetadata,
+} from '../types/ui.types';
 import { getDirectoryNames, readFileSafe } from './common.utils';
 
 const METADATA_DECORATOR_REGEX = /@ElementDefinition\(([\s\S]+)\)(\n|\r\n|.)*export class/g;
@@ -25,8 +34,24 @@ export const extractElementMetadata = (script: string): UiElementMetadata => {
   return eval(`(${metadataString})`) as UiElementMetadata;
 };
 
+export async function fetchUiDefinitions(
+  conn: Connection,
+  modelId: string,
+  modelVersion: string | undefined,
+): Promise<SfUIDefinition[]> {
+  const query = `SELECT Id, Name, VELOCPQ__ModelId__c, VELOCPQ__Default__c, VELOCPQ__SourceBlob__c, VELOCPQ__SourceDocumentId__c, VELOCPQ__ModelVersion__c, VELOCPQ__ReferenceId__c FROM VELOCPQ__UiDefinition__c WHERE VELOCPQ__ModelId__c='${modelId}' AND VELOCPQ__ModelVersion__c=${modelVersion}`;
+  const result = await conn.autoFetchQuery<SfUIDefinition>(query, { autoFetch: true, maxFetch: 100000 });
+  return result?.records ?? [];
+}
+
 export class UiDefinitionsBuilder {
+  private sfUiDefinitions: SfUIDefinition[] = [];
+
   public constructor(private dir: string, private modelName: string) {}
+
+  public getSfUiDefinitions(): SfUIDefinition[] {
+    return this.sfUiDefinitions;
+  }
 
   public pack(): UiDef[] {
     const dir = `${this.dir}/${this.modelName}`;
@@ -39,11 +64,24 @@ export class UiDefinitionsBuilder {
     const uiDefinitions: UiDefinition[] = folders.reduce((acc, folder) => {
       const uiDir = `${dir}/${folder}`;
       const metadataString = readFileSafe(`${uiDir}/metadata.json`);
+      const sfMetadataString = readFileSafe(`${uiDir}/sfMetadata.json`);
 
       if (!metadataString) {
         return acc;
       }
 
+      if (sfMetadataString) {
+        try {
+          const sfMetadata = JSON.parse(sfMetadataString ?? {}) as SfUIDefinition | SfUIDefinition[];
+          if (sfMetadata instanceof Array) {
+            this.sfUiDefinitions.push(...sfMetadata);
+          } else {
+            this.sfUiDefinitions.push(sfMetadata);
+          }
+        } catch (e) {
+          console.log(`Failed to parse sfMetadata.json file for UI ${folder}`, e);
+        }
+      }
       const metadata: UiMetadata = JSON.parse(metadataString);
       const { children, ...rest } = metadata;
 
