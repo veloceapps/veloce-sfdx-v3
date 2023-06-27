@@ -41,30 +41,26 @@ export async function pullUI(params: CommandParams): Promise<string[]> {
 
   const modelsWithContents: { productModel: ProductModel; uiDefs: UiDefinitionContainerDto[] }[] = await Promise.all(
     uiDefProductModels.map((productModel) =>
-      fetchUiDefinitions(conn, productModel.Id, productModel.VELOCPQ__Version__c)
-        .then((uiDefinitions) => {
-          return uiDefinitions;
-        })
-        .then(async (uiDefinitions) => ({
-          uiDefs: await Promise.all(
-            uiDefinitions
-              .map(async (sfUiDef) => {
-                const content = await fetchDocumentContent(conn, sfUiDef.VELOCPQ__SourceDocumentId__c);
-                try {
-                  return {
-                    uiDef: { ...JSON.parse(content ?? '') } as UiDef,
-                    sfMetadata: sfUiDef,
-                  } as UiDefinitionContainerDto;
-                } catch (err) {
-                  console.log(`Failed to parse document content: ${productModel.Name}`);
-                  return;
-                }
-              })
-              .filter(async (uiDef) => (await uiDef) !== undefined)
-              .map(async (uiDef) => (await uiDef) as UiDefinitionContainerDto),
-          ),
-          productModel,
-        })),
+      fetchUiDefinitions(conn, productModel.Id, productModel.VELOCPQ__Version__c).then(async (uiDefinitions) => ({
+        uiDefs: await Promise.all(
+          uiDefinitions
+            .map(async (sfUiDef) => {
+              const content = await fetchDocumentContent(conn, sfUiDef.VELOCPQ__SourceDocumentId__c);
+              try {
+                return {
+                  uiDef: { ...JSON.parse(content ?? '') } as UiDef,
+                  sfMetadata: sfUiDef,
+                } as UiDefinitionContainerDto;
+              } catch (err) {
+                console.log(`Failed to parse document content: ${productModel.Name}`);
+                return;
+              }
+            })
+            .filter(async (uiDef) => (await uiDef) !== undefined)
+            .map(async (uiDef) => (await uiDef) as UiDefinitionContainerDto),
+        ),
+        productModel,
+      })),
     ),
   );
 
