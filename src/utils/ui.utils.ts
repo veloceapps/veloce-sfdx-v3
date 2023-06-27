@@ -39,7 +39,7 @@ export async function fetchUiDefinitions(
   modelId: string,
   modelVersion: string | undefined,
 ): Promise<SfUIDefinition[]> {
-  const query = `SELECT Id,VELOCPQ__ModelId__c, VELOCPQ__Default__c, VELOCPQ__SourceBlob__c, VELOCPQ__SourceDocumentId__c, VELOCPQ__ModelVersion__c, VELOCPQ__ReferenceId__c FROM VELOCPQ__UiDefinition__c WHERE VELOCPQ__ModelId__c='${modelId}' AND VELOCPQ__ModelVersion__c=${modelVersion}`;
+  const query = `SELECT Id, Name, VELOCPQ__ModelId__c, VELOCPQ__Default__c, VELOCPQ__SourceBlob__c, VELOCPQ__SourceDocumentId__c, VELOCPQ__ModelVersion__c, VELOCPQ__ReferenceId__c FROM VELOCPQ__UiDefinition__c WHERE VELOCPQ__ModelId__c='${modelId}' AND VELOCPQ__ModelVersion__c=${modelVersion}`;
   const result = await conn.autoFetchQuery<SfUIDefinition>(query, { autoFetch: true, maxFetch: 100000 });
   return result?.records ?? [];
 }
@@ -72,7 +72,12 @@ export class UiDefinitionsBuilder {
 
       if (sfMetadataString) {
         try {
-          this.sfUiDefinitions.push(JSON.parse(sfMetadataString ?? {}) as SfUIDefinition);
+          const sfMetadata = JSON.parse(sfMetadataString ?? {}) as SfUIDefinition | SfUIDefinition[];
+          if (sfMetadata instanceof Array) {
+            this.sfUiDefinitions.push(...sfMetadata);
+          } else {
+            this.sfUiDefinitions.push(sfMetadata);
+          }
         } catch (e) {
           console.log(`Failed to parse sfMetadata.json file for UI ${folder}`, e);
         }

@@ -4,6 +4,7 @@ import {
   LegacySection,
   LegacyUiDefinition,
   SfUIDefinition,
+  UiDefinitionContainerDto,
   UiDef,
   UiDefinition,
   UiElement,
@@ -38,10 +39,7 @@ export async function pullUI(params: CommandParams): Promise<string[]> {
     }
   });
 
-  const modelsWithContents: {
-    productModel: ProductModel;
-    uiDefs: (LegacyUiDefinition | { ui: UiDefinition; sf: SfUIDefinition })[];
-  }[] = await Promise.all(
+  const modelsWithContents: { productModel: ProductModel; uiDefs: UiDefinitionContainerDto[] }[] = await Promise.all(
     uiDefProductModels.map((productModel) =>
       fetchUiDefinitions(conn, productModel.Id, productModel.VELOCPQ__Version__c)
         .then((uiDefinitions) => {
@@ -53,22 +51,17 @@ export async function pullUI(params: CommandParams): Promise<string[]> {
               .map(async (sfUiDef) => {
                 const content = await fetchDocumentContent(conn, sfUiDef.VELOCPQ__SourceDocumentId__c);
                 try {
-                  const uiDef = { ...JSON.parse(content ?? '') } as UiDef;
-                  if (isLegacyDefinition(uiDef)) {
-                    return uiDef;
-                  } else {
-                    return {
-                      ui: uiDef,
-                      sf: sfUiDef,
-                    };
-                  }
+                  return {
+                    uiDef: { ...JSON.parse(content ?? '') } as UiDef,
+                    sfMetadata: sfUiDef,
+                  } as UiDefinitionContainerDto;
                 } catch (err) {
                   console.log(`Failed to parse document content: ${productModel.Name}`);
                   return;
                 }
               })
               .filter(async (uiDef) => (await uiDef) !== undefined)
-              .map(async (uiDef) => (await uiDef) as LegacyUiDefinition | { ui: UiDefinition; sf: SfUIDefinition }),
+              .map(async (uiDef) => (await uiDef) as UiDefinitionContainerDto),
           ),
           productModel,
         })),
@@ -81,31 +74,34 @@ export async function pullUI(params: CommandParams): Promise<string[]> {
 
     // legacy ui definitions metadata is stored in global metadata.json as array
     const legacyMetadataArray: LegacyUiDefinition[] = [];
+    const legacySfMetadataArray: SfUIDefinition[] = [];
 
     if (uiDefs.length) {
       console.log(`Pulling Uis result: ${uiDefs.length} UI Definition(s) for ${Name} model`);
     }
 
-    uiDefs?.forEach((ui) => {
-      if (!('sf' in ui)) {
-        saveLegacyUiDefinition(ui, path, ui.name, legacyMetadataArray);
+    uiDefs?.forEach((container) => {
+      if (isLegacyDefinition(container.uiDef)) {
+        saveLegacyUiDefinition(container.uiDef, path, container.uiDef.name, legacyMetadataArray);
+        legacySfMetadataArray.push(container.sfMetadata);
       } else {
-        const uiDir = `${path}/${ui.ui.name}`;
-        saveUiDefinition(ui.sf, ui.ui, uiDir);
+        const uiDir = `${path}/${container.uiDef.name}`;
+        saveUiDefinition(container.sfMetadata, container.uiDef, uiDir);
       }
     });
 
     if (legacyMetadataArray.length) {
       writeFileSafe(path, 'metadata.json', JSON.stringify(legacyMetadataArray, null, 2));
+      writeFileSafe(path, 'sfMetadata.json', JSON.stringify(legacySfMetadataArray, null, 2));
     }
   });
 
   return modelsWithContents.flatMap(({ productModel, uiDefs }) => {
-    return uiDefs.map((uiDef) => {
-      if ('sf' in uiDef) {
-        return uiDef.sf.Id as string;
-      } else {
+    return uiDefs.map((container) => {
+      if (isLegacyDefinition(container.uiDef)) {
         return productModel.Id;
+      } else {
+        return container.sfMetadata.Id as string;
       }
     });
   });

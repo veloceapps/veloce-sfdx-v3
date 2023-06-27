@@ -66,8 +66,9 @@ export async function pushUI(params: CommandParams): Promise<string[]> {
             };
 
             const sfUiDef = sfUiDefinitions.find(({ Name }) => uiDef.name === Name);
-            const existingUiDef = existingUiDefs.find(({ Name, VELOCPQ__ReferenceId__c }) =>
-              sfUiDef ? VELOCPQ__ReferenceId__c === sfUiDef.VELOCPQ__ReferenceId__c : Name === uiDef.name,
+            const existingUiDef = existingUiDefs.find(
+              ({ Name, VELOCPQ__ReferenceId__c }) =>
+                VELOCPQ__ReferenceId__c === sfUiDef?.VELOCPQ__ReferenceId__c || Name === uiDef.name,
             );
             const documentId = existingUiDef
               ? await updateDocument(conn, existingUiDef.VELOCPQ__SourceDocumentId__c, documentBody).then(

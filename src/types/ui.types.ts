@@ -11,6 +11,11 @@ export interface SfUIDefinition {
   VELOCPQ__ReferenceId__c?: string;
 }
 
+export interface UiDefinitionContainerDto {
+  uiDef: UiDef;
+  sfMetadata: SfUIDefinition;
+}
+
 export type UiMetadata = Omit<UiDefinition, 'children'> & {
   children: string[];
 };
