@@ -100,7 +100,15 @@ export async function pullUI(params: CommandParams): Promise<string[]> {
     }
   });
 
-  return uiDefProductModels.map(({ Id }) => Id);
+  return modelsWithContents.flatMap(({ productModel, uiDefs }) => {
+    return uiDefs.map((uiDef) => {
+      if ('sf' in uiDef) {
+        return uiDef.sf.Id as string;
+      } else {
+        return productModel.Id;
+      }
+    });
+  });
 }
 
 function saveLegacySections(
