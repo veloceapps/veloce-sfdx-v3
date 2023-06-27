@@ -37,20 +37,21 @@ export async function pushUI(params: CommandParams): Promise<string[]> {
 
   const results: string[] = (
     await Promise.all(
-      productModels.map(async ({ Id, VELOCPQ__Version__c, Name }) => {
-        const existingUiDefs = await fetchUiDefinitions(conn, Id, VELOCPQ__Version__c);
+      productModels.map(async ({ Id: modelId, VELOCPQ__Version__c: modelVersion, Name: modelName }) => {
+        const existingUiDefs = await fetchUiDefinitions(conn, modelId, modelVersion);
         // pack all Ui Definitions
-        const uiBuilder = new UiDefinitionsBuilder(sourcepath, Name);
+        const uiBuilder = new UiDefinitionsBuilder(sourcepath, modelName);
         const uiDefinitions = uiBuilder.pack();
+        const sfUiDefinitions = uiBuilder.getSfUiDefinitions();
         const toDelete = existingUiDefs
           .filter(
             ({ VELOCPQ__ReferenceId__c }) =>
-              !uiDefinitions.some(({ referenceId }) => VELOCPQ__ReferenceId__c === referenceId),
+              !sfUiDefinitions.some((sfUiDef) => VELOCPQ__ReferenceId__c === sfUiDef.VELOCPQ__ReferenceId__c),
           )
           .map(({ Id: exUiDefId }) => exUiDefId as string);
         const toUpsert = await Promise.all(
           uiDefinitions.map(async (uiDef) => {
-            const uiDocName = `${Name}_uiDefinition`;
+            const uiDocName = `${modelName}_uiDefinition`;
             const output = JSON.stringify(uiDef, null, 2);
             const gzipped = gzipSync(output);
             // Encode to base64 TWICE!, first time is requirement of POST/PATCH, and it will be decoded on reads automatically by SF.
@@ -64,8 +65,9 @@ export async function pushUI(params: CommandParams): Promise<string[]> {
               type: 'zip',
             };
 
-            const existingUiDef = existingUiDefs.find(
-              ({ VELOCPQ__ReferenceId__c }) => VELOCPQ__ReferenceId__c === uiDef.referenceId,
+            const sfUiDef = sfUiDefinitions.find(({ Name }) => uiDef.name === Name);
+            const existingUiDef = existingUiDefs.find(({ Name, VELOCPQ__ReferenceId__c }) =>
+              sfUiDef ? VELOCPQ__ReferenceId__c === sfUiDef.VELOCPQ__ReferenceId__c : Name === uiDef.name,
             );
             const documentId = existingUiDef
               ? await updateDocument(conn, existingUiDef.VELOCPQ__SourceDocumentId__c, documentBody).then(
@@ -75,11 +77,12 @@ export async function pushUI(params: CommandParams): Promise<string[]> {
 
             return {
               Id: existingUiDef?.Id,
-              VELOCPQ__ModelId__c: Id,
+              Name: uiDef.name,
+              VELOCPQ__ModelId__c: modelId,
               VELOCPQ__Default__c: false,
               VELOCPQ__SourceDocumentId__c: documentId,
-              VELOCPQ__ModelVersion__c: VELOCPQ__Version__c,
-              VELOCPQ__ReferenceId__c: uiDef.referenceId,
+              VELOCPQ__ModelVersion__c: modelVersion,
+              VELOCPQ__ReferenceId__c: existingUiDef?.VELOCPQ__ReferenceId__c ?? sfUiDef?.VELOCPQ__ReferenceId__c,
             } as SfUIDefinition;
           }),
         );

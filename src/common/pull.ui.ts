@@ -1,6 +1,14 @@
 import { existsSync, mkdirSync } from 'fs';
 import { writeFileSafe } from '../utils/common.utils';
-import { LegacySection, LegacyUiDefinition, UiDef, UiDefinition, UiElement, UiMetadata } from '../types/ui.types';
+import {
+  LegacySection,
+  LegacyUiDefinition,
+  SfUIDefinition,
+  UiDef,
+  UiDefinition,
+  UiElement,
+  UiMetadata,
+} from '../types/ui.types';
 import { extractElementMetadata, fetchUiDefinitions, fromBase64, isLegacyDefinition } from '../utils/ui.utils';
 import { ProductModel } from '../types/productModel.types';
 import { fetchProductModels } from '../utils/productModel.utils';
@@ -30,7 +38,10 @@ export async function pullUI(params: CommandParams): Promise<string[]> {
     }
   });
 
-  const modelsWithContents: { productModel: ProductModel; uiDefs: UiDef[] }[] = await Promise.all(
+  const modelsWithContents: {
+    productModel: ProductModel;
+    uiDefs: (LegacyUiDefinition | { ui: UiDefinition; sf: SfUIDefinition })[];
+  }[] = await Promise.all(
     uiDefProductModels.map((productModel) =>
       fetchUiDefinitions(conn, productModel.Id, productModel.VELOCPQ__Version__c)
         .then((uiDefinitions) => {
@@ -42,14 +53,22 @@ export async function pullUI(params: CommandParams): Promise<string[]> {
               .map(async (sfUiDef) => {
                 const content = await fetchDocumentContent(conn, sfUiDef.VELOCPQ__SourceDocumentId__c);
                 try {
-                  return { ...JSON.parse(content ?? ''), referenceId: sfUiDef.VELOCPQ__ReferenceId__c } as UiDef;
+                  const uiDef = { ...JSON.parse(content ?? '') } as UiDef;
+                  if (isLegacyDefinition(uiDef)) {
+                    return uiDef;
+                  } else {
+                    return {
+                      ui: uiDef,
+                      sf: sfUiDef,
+                    };
+                  }
                 } catch (err) {
                   console.log(`Failed to parse document content: ${productModel.Name}`);
                   return;
                 }
               })
               .filter(async (uiDef) => (await uiDef) !== undefined)
-              .map(async (uiDef) => (await uiDef) as UiDef),
+              .map(async (uiDef) => (await uiDef) as LegacyUiDefinition | { ui: UiDefinition; sf: SfUIDefinition }),
           ),
           productModel,
         })),
@@ -67,17 +86,14 @@ export async function pullUI(params: CommandParams): Promise<string[]> {
       console.log(`Pulling Uis result: ${uiDefs.length} UI Definition(s) for ${Name} model`);
     }
 
-    uiDefs
-      ?.filter((ui) => ui !== undefined)
-      ?.forEach((ui) => {
-        const uiDir = `${path}/${ui.name}`;
-
-        if (isLegacyDefinition(ui)) {
-          saveLegacyUiDefinition(ui, path, ui.name, legacyMetadataArray);
-        } else {
-          saveUiDefinition(ui, uiDir);
-        }
-      });
+    uiDefs?.forEach((ui) => {
+      if (!('sf' in ui)) {
+        saveLegacyUiDefinition(ui, path, ui.name, legacyMetadataArray);
+      } else {
+        const uiDir = `${path}/${ui.ui.name}`;
+        saveUiDefinition(ui.sf, ui.ui, uiDir);
+      }
+    });
 
     if (legacyMetadataArray.length) {
       writeFileSafe(path, 'metadata.json', JSON.stringify(legacyMetadataArray, null, 2));
@@ -162,7 +178,7 @@ function saveLegacySectionFiles(
   metadata.sections.push(sectionMeta);
 }
 
-function saveUiDefinition(ui: UiDefinition, path: string): void {
+function saveUiDefinition(sfUiDef: SfUIDefinition, ui: UiDefinition, path: string): void {
   const { children, ...rest } = ui;
 
   // save elements recursively
@@ -177,6 +193,7 @@ function saveUiDefinition(ui: UiDefinition, path: string): void {
     children: childrenNames,
   };
   writeFileSafe(path, 'metadata.json', JSON.stringify(metadata, null, 2) + '\n');
+  writeFileSafe(path, 'sfMetadata.json', JSON.stringify(sfUiDef, null, 2) + '\n');
 }
 
 function saveElement(el: UiElement, path: string): string | undefined {

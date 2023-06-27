@@ -2,12 +2,13 @@ export type UiDef = UiDefinition | LegacyUiDefinition;
 
 export interface SfUIDefinition {
   Id?: string;
+  Name: string;
   VELOCPQ__ModelId__c: string;
   VELOCPQ__Default__c: boolean;
   VELOCPQ__SourceBlob__c?: string;
   VELOCPQ__SourceDocumentId__c: string;
   VELOCPQ__ModelVersion__c: string;
-  VELOCPQ__ReferenceId__c: string;
+  VELOCPQ__ReferenceId__c?: string;
 }
 
 export type UiMetadata = Omit<UiDefinition, 'children'> & {
@@ -17,9 +18,7 @@ export type UiMetadata = Omit<UiDefinition, 'children'> & {
 export interface UiDefinition {
   name: string;
   version: number;
-  default?: boolean;
   primary?: boolean;
-  referenceId: string;
   children: UiElement[];
   properties?: {
     priceList?: string;
@@ -43,7 +42,6 @@ export interface LegacyUiDefinition {
   tabs: LegacyTab[];
   sections: LegacySection[];
   priceList?: string;
-  referenceId: string;
 }
 
 export interface LegacyTab {

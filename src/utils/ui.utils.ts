@@ -45,7 +45,13 @@ export async function fetchUiDefinitions(
 }
 
 export class UiDefinitionsBuilder {
+  private sfUiDefinitions: SfUIDefinition[] = [];
+
   public constructor(private dir: string, private modelName: string) {}
+
+  public getSfUiDefinitions(): SfUIDefinition[] {
+    return this.sfUiDefinitions;
+  }
 
   public pack(): UiDef[] {
     const dir = `${this.dir}/${this.modelName}`;
@@ -58,11 +64,19 @@ export class UiDefinitionsBuilder {
     const uiDefinitions: UiDefinition[] = folders.reduce((acc, folder) => {
       const uiDir = `${dir}/${folder}`;
       const metadataString = readFileSafe(`${uiDir}/metadata.json`);
+      const sfMetadataString = readFileSafe(`${uiDir}/sfMetadata.json`);
 
       if (!metadataString) {
         return acc;
       }
 
+      if (sfMetadataString) {
+        try {
+          this.sfUiDefinitions.push(JSON.parse(sfMetadataString ?? {}) as SfUIDefinition);
+        } catch (e) {
+          console.log(`Failed to parse sfMetadata.json file for UI ${folder}`, e);
+        }
+      }
       const metadata: UiMetadata = JSON.parse(metadataString);
       const { children, ...rest } = metadata;
 
