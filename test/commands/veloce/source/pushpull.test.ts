@@ -18,6 +18,8 @@ const octaModelName = `OCTA_${testId}`;
 const octaModelFolder = `${pushDir}/model/${octaModelName}`;
 const octaModelFile = `${octaModelFolder}/${octaModelName}.json`;
 const octaModelPMLFile = `${octaModelFolder}/${octaModelName}.pml`;
+let priceListId;
+let priceListReferenceId;
 
 const filesOptions = {
   include: ['**/*'],
@@ -60,18 +62,48 @@ async function calculateFolderHash(directory: string, options: any): Promise<str
 
 describe('veloce:source:push|pull', () => {
   before(async () => {
+    const priceListName = 'droolsPriceList';
+
     if (!fs.existsSync(dir)) {
       fs.mkdirSync(dir);
       fs.mkdirSync(pushDir, { recursive: true });
-      await exec(`cp -a test-data/source/* ${pushDir}`);
+      await exec(`rsync --exclude OCTA -a test-data/source/* ${pushDir}`);
       fs.mkdirSync(pullDir);
     }
+
+    let cmdResult = await exec(
+      `sfdx data record get -o ${env} -s VELOCPQ__PriceList__c -w "Name=${priceListName}" --json || true`,
+    );
+    let record = JSON.parse(cmdResult.stdout);
+    if (record.status === 1) {
+      cmdResult = await exec(
+        `sfdx force data record create -o ${env} -s VELOCPQ__PriceList__c -v "Name=${priceListName}"`,
+      );
+      cmdResult = await exec(
+        `sfdx force data record get -o ${env} -s VELOCPQ__PriceList__c -w "Name=${priceListName}" --json`,
+      );
+      record = JSON.parse(cmdResult.stdout);
+    }
+    priceListId = record.result.Id;
+    priceListReferenceId = record.result.VELOCPQ__ReferenceId__c;
+    let drlTemplate = `${pushDir}/drl/Calculate_110_SimpleRules.json`;
+    let drl = require(drlTemplate);
+    drl.priceListId = priceListId;
+    drl.priceListReferenceId = priceListReferenceId;
+    fs.writeFileSync(drlTemplate, JSON.stringify(drl));
+
+    drlTemplate = `${pushDir}/drl/Calculate_110_Surcharge_Rules.json`;
+    drl = require(drlTemplate);
+    drl.priceListId = priceListId;
+    drl.priceListReferenceId = priceListReferenceId;
+    fs.writeFileSync(drlTemplate, JSON.stringify(drl));
+
     fs.writeFileSync(`${pushDir}/settings/test.json`, JSON.stringify({ testId: 'testid value' }));
     const octaModelTemplate = `${curDir}/test-data/source/model/OCTA/OCTA.json`;
     const octaModelPMLTemplate = 'test-data/source/model/OCTA/OCTA.pml';
     const octaModel = require(octaModelTemplate);
     octaModel.Name = octaModelName;
-    octaModel.VELOCPQ__ReferenceId__c = `ttest${testId}`;
+    octaModel.Id = `ttest${testId}`;
 
     fs.mkdirSync(`${pushDir}/model/${octaModelName}`);
     fs.writeFileSync(octaModelFile, JSON.stringify(octaModel));
