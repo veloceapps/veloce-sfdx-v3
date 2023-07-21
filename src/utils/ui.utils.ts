@@ -59,12 +59,13 @@ export class UiDefinitionsBuilder {
   }
 
   private packUiDefinitions(dir: string): UiDefinition[] {
-    const folders = getDirectoryNames(dir);
+    const folders = getDirectoryNames(`${dir}`);
 
     const uiDefinitions: UiDefinition[] = folders.reduce((acc, folder) => {
-      const uiDir = `${dir}/${folder}`;
-      const metadataString = readFileSafe(`${uiDir}/metadata.json`);
-      const sfMetadataString = readFileSafe(`${uiDir}/sfMetadata.json`);
+      const mainDir = `${dir}/${folder}`;
+      const sourceDir = `${mainDir}/src`;
+      const metadataString = readFileSafe(`${mainDir}/metadata.json`);
+      const sfMetadataString = readFileSafe(`${mainDir}/sfMetadata.json`);
 
       if (!metadataString) {
         return acc;
@@ -87,7 +88,7 @@ export class UiDefinitionsBuilder {
 
       const uiDefinition: UiDefinition = {
         ...rest,
-        children: children.map((childName) => this.packUiElement(`${uiDir}/${childName}`)),
+        children: children.map((childName) => this.packUiElement(`${sourceDir}/${childName}`)),
       };
 
       return [...acc, uiDefinition];
