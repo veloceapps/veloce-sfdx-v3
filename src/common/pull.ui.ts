@@ -183,7 +183,7 @@ function saveUiDefinition(sfUiDef: SfUIDefinition, ui: UiDefinition, path: strin
 
   // save elements recursively
   const childrenNames = children.reduce((acc, child) => {
-    const elName = saveElement(child, path);
+    const elName = saveElement(child, `${path}/src`);
     return elName ? [...acc, elName] : acc;
   }, [] as string[]);
 
