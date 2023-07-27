@@ -69,7 +69,7 @@ export default class Pack extends SfdxCommand {
       if (outputPath) {
         for (const uiDef of uiDefs) {
           if (!isLegacyDefinition(uiDef)) {
-            writeFileSafe(outputPath, `${uiDef.name}.json`, JSON.stringify(uiDef, null, 2) + '\n');
+            writeFileSafe(`${outputPath}/${modelName}`, `${uiDef.name}.json`, JSON.stringify(uiDef, null, 2) + '\n');
           }
         }
       }
