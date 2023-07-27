@@ -183,7 +183,7 @@ function saveUiDefinition(sfUiDef: SfUIDefinition, ui: UiDefinition, path: strin
 
   // save elements recursively
   const childrenNames = children.reduce((acc, child) => {
-    const elName = saveUIElement(child, `${path}/src`);
+    const elName = saveElement(child, `${path}/src`);
     return elName ? [...acc, elName] : acc;
   }, [] as string[]);
 
@@ -196,7 +196,7 @@ function saveUiDefinition(sfUiDef: SfUIDefinition, ui: UiDefinition, path: strin
   writeFileSafe(path, 'sfMetadata.json', JSON.stringify(sfUiDef, null, 2) + '\n');
 }
 
-export function saveUIElement(el: UiElement, path: string): string | undefined {
+function saveElement(el: UiElement, path: string): string | undefined {
   // name is located in the Angular decorator which is the part of the element script
   const script = el.script && fromBase64(el.script);
   if (!script) {
@@ -219,7 +219,7 @@ export function saveUIElement(el: UiElement, path: string): string | undefined {
     writeFileSafe(elDir, 'template.html', fromBase64(el.template));
   }
 
-  el.children.forEach((c) => saveUIElement(c, elDir));
+  el.children.forEach((c) => saveElement(c, elDir));
 
   return elName;
 }

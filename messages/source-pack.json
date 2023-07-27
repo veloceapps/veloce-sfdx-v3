@@ -2,7 +2,8 @@
   "commandDescription": "Builds and returns sources",
   "membersFlagDescription": "Pack specific type of data",
   "sourcepathFlagDescription": "Path where to get sources",
+  "outputpathFlagDescription": "Path where to put compiled sources",
   "examples": [
-    "sfdx veloce:source:pack --targetusername myOrg@example.com --targetdevhubusername devhub@org.com --members config-ui:OCTA --sourcepath ./source/config-ui"
+    "sfdx veloce:source:pack --targetusername myOrg@example.com --targetdevhubusername devhub@org.com --members config-ui:OCTA --sourcepath ./source/config-ui --outputpath ./out/"
   ]
 }
