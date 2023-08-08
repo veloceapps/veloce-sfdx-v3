@@ -4,11 +4,13 @@
   "type": "APPROVAL",
   "sequence": null,
   "description": null,
+  "referenceId": "approval00jfgzkQgC",
   "active": false,
   "rules": [
     {
       "id": "a1163000002fq76AAA",
       "name": "MARY_APPROVAL_REGRESSION",
+      "referenceId": "maryapprovalgzkQgC",
       "description": "TEST",
       "active": true,
       "isDefault": false

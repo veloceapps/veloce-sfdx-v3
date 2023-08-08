@@ -4,10 +4,12 @@
   "sequence": null,
   "description": null,
   "active": true,
+  "referenceId": "metric0000jfgzkQgC",
   "rules": [
     {
       "name": "test",
       "description": "test",
+      "referenceId": "testmetricjfgzkQgC",
       "active": false,
       "isDefault": false
     }

@@ -67,7 +67,9 @@ describe('veloce:source:push|pull', () => {
     if (!fs.existsSync(dir)) {
       fs.mkdirSync(dir);
       fs.mkdirSync(pushDir, { recursive: true });
-      await exec(`rsync --exclude OCTA -a test-data/source/* ${pushDir}`);
+      await exec(
+        `rsync --exclude model/OCTA -a test-data/source/* ${pushDir} && mv ${pushDir}/config-ui/OCTA ${pushDir}/config-ui/${octaModelName}`,
+      );
       fs.mkdirSync(pullDir);
     }
 
@@ -126,7 +128,7 @@ describe('veloce:source:push|pull', () => {
 
   it('should pull UI sources from org', async () => {
     const testPullDir = `${pullDir}/should_pull_ui/source`;
-    const cmdResult = await exec(`sfdx veloce:source:pull -u ${env} -m config-ui:OCTA -p ${testPullDir}`);
+    const cmdResult = await exec(`sfdx veloce:source:pull -u ${env} -m config-ui:${octaModelName} -p ${testPullDir}`);
     console.log(cmdResult.stdout);
     const pushHash = await calculateFolderHash(pushDir, configUiOptions); // eslint-disable-line no-unused-expressions
     const pullHash = await calculateFolderHash(testPullDir, configUiOptions); // eslint-disable-line no-unused-expressions
@@ -139,7 +141,9 @@ describe('veloce:source:push|pull', () => {
 
   it('should pull UI+PML sources from org', async () => {
     const testPullDir = `${pullDir}/should_pull_ui_pml/source`;
-    const cmdResult = await exec(`sfdx veloce:source:pull -u ${env} -m model:OCTA,config-ui:OCTA -p ${testPullDir}`);
+    const cmdResult = await exec(
+      `sfdx veloce:source:pull -u ${env} -m model:${octaModelName},config-ui:${octaModelName} -p ${testPullDir}`,
+    );
     console.log(cmdResult.stdout);
     const pushHash = await calculateFolderHash(pushDir, configUiAndPmlOptions); // eslint-disable-line no-unused-expressions
     const pullHash = await calculateFolderHash(testPullDir, configUiAndPmlOptions); // eslint-disable-line no-unused-expressions
