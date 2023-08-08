@@ -1,0 +1,14 @@
+{
+  "attributes": {
+    "type": "VELOCPQ__UIDefinition__c",
+    "url": "/services/data/v58.0/sobjects/VELOCPQ__UIDefinition__c/a1PN0000003U4b3MAC"
+  },
+  "Id": "a1PN0000003U4b3MAC",
+  "Name": "c",
+  "VELOCPQ__ModelId__c": "a0iN000000kvvxQIAQ",
+  "VELOCPQ__Default__c": false,
+  "VELOCPQ__SourceBlob__c": null,
+  "VELOCPQ__SourceDocumentId__c": "015N0000002w7vZIAQ",
+  "VELOCPQ__ModelVersion__c": null,
+  "VELOCPQ__ReferenceId__c": "366ed3ee5eee7bd68b"
+}
