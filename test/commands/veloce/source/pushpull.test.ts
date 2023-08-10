@@ -76,7 +76,14 @@ describe('veloce:source:push|pull', () => {
     let cmdResult = await exec(
       `sfdx data record get -o ${env} -s VELOCPQ__PriceList__c -w "Name=${priceListName}" --json || true`,
     );
-    let record = JSON.parse(cmdResult.stdout);
+    let record;
+    const stdout = cmdResult.stdout;
+    try {
+      record = JSON.parse(stdout);
+    } catch (err) {
+      console.error(`Unable to parse to json: ${stdout}`);
+      throw err;
+    }
     if (record.status === 1) {
       cmdResult = await exec(
         `sfdx force data record create -o ${env} -s VELOCPQ__PriceList__c -v "Name=${priceListName}"`,
