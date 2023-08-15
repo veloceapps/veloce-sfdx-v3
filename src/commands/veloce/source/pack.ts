@@ -12,6 +12,7 @@ import { getPath } from '../../../utils/path.utils';
 import { isLegacyDefinition, UiDefinitionsBuilder } from '../../../utils/ui.utils';
 import { MembersMap } from '../../../common/members.map';
 import { writeFileSafe } from '../../../utils/common.utils';
+import { IdMapJson } from '../../../common/idmap.json';
 
 // Initialize Messages with the current plugin directory
 Messages.importMessagesDirectory(__dirname);
@@ -41,6 +42,10 @@ export default class Pack extends SfdxCommand {
       char: 'o',
       description: messages.getMessage('outputpathFlagDescription'),
     }),
+    idmap: flags.string({
+      char: 'I',
+      description: messages.getMessage('idmapFlagDescription'),
+    }),
   };
 
   // Comment this out if your command does not require an org username
@@ -56,6 +61,7 @@ export default class Pack extends SfdxCommand {
     const memberMap = new MembersMap(this.flags.members ?? '');
     const rootPath = getPath(this.flags.sourcepath) ?? 'source';
     const outputPath = getPath(this.flags.outputpath);
+    const idmapPath = getPath(this.flags.idmap);
 
     if (memberMap.get('config-ui')) {
       const modelName = memberMap.get('config-ui')?.names[0];
@@ -63,7 +69,8 @@ export default class Pack extends SfdxCommand {
         return [];
       }
 
-      const uiBuilder = new UiDefinitionsBuilder(`${rootPath}/config-ui`, modelName);
+      const idmap = idmapPath ? new IdMapJson(idmapPath) : undefined;
+      const uiBuilder = new UiDefinitionsBuilder(`${rootPath}/config-ui`, modelName, idmap);
       const uiDefs = uiBuilder.pack();
 
       if (outputPath) {

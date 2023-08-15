@@ -1,5 +1,6 @@
 import { existsSync, readFileSync } from 'fs';
 import { Connection } from '@salesforce/core';
+import { IdMapJson } from '../common/idmap.json';
 import {
   LegacyUiDefinition,
   SfUIDefinition,
@@ -47,7 +48,7 @@ export async function fetchUiDefinitions(
 export class UiDefinitionsBuilder {
   private sfUiDefinitions: SfUIDefinition[] = [];
 
-  public constructor(private dir: string, private modelName: string) {}
+  public constructor(private dir: string, private modelName: string, private idmap?: IdMapJson) {}
 
   public getSfUiDefinitions(): SfUIDefinition[] {
     return this.sfUiDefinitions;
@@ -83,7 +84,11 @@ export class UiDefinitionsBuilder {
           console.log(`Failed to parse sfMetadata.json file for UI ${folder}`, e);
         }
       }
+
       const metadata: UiMetadata = JSON.parse(metadataString);
+      if (metadata.properties?.priceList) {
+        metadata.properties.priceList = this.mapId(metadata.properties?.priceList);
+      }
       const { children, ...rest } = metadata;
 
       const uiDefinition: UiDefinition = {
@@ -133,6 +138,8 @@ export class UiDefinitionsBuilder {
     const legacyDefinitions: LegacyUiDefinition[] = JSON.parse(metadataString);
 
     for (const ui of legacyDefinitions) {
+      ui.priceList = ui.priceList && this.mapId(ui.priceList);
+
       for (const section of ui.sections) {
         if (section.templateUrl) {
           const p = `${dir}/${section.templateUrl.trim()}`;
@@ -187,5 +194,17 @@ export class UiDefinitionsBuilder {
       console.log('Failed to read/parse JSON file ', e);
       process.exit(255);
     }
+  }
+
+  private mapId(id: string): string {
+    const newId = this.idmap?.get(id);
+
+    if (newId) {
+      console.log(`IDMAP: ${id} => ${newId}`);
+      return newId;
+    }
+
+    console.log(`IDMAP: Id ${id} was not replaced!`);
+    return id;
   }
 }
