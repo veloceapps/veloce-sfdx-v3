@@ -1,16 +1,18 @@
 import { readFileSync } from 'fs';
+import { getContext } from '../utils/context';
 
 export class IdMapJson {
   private idmap: Record<string, string> = {};
 
   public constructor(path: string) {
-    console.log(`IDMAP: Loading from ${path}`);
+    const ctx = getContext();
+    ctx.ux.log(`IDMAP: Loading from ${path}`);
 
     try {
       const raw = readFileSync(path, 'utf-8');
       this.idmap = JSON.parse(raw);
     } catch (e) {
-      console.error(`IDMAP: Failed to load JSON file from ${path}`);
+      ctx.ux.error(`IDMAP: Failed to load JSON file from ${path}`);
     }
   }
 

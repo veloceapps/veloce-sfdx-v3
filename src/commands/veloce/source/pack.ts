@@ -8,11 +8,11 @@ import * as os from 'os';
 import { flags, SfdxCommand } from '@salesforce/command';
 import { Messages } from '@salesforce/core';
 import { AnyJson } from '@salesforce/ts-types';
-import { getPath } from '../../../utils/path.utils';
-import { isLegacyDefinition, UiDefinitionsBuilder } from '../../../utils/ui.utils';
 import { MembersMap } from '../../../common/members.map';
 import { writeFileSafe } from '../../../utils/common.utils';
-import { IdMapJson } from '../../../common/idmap.json';
+import { initContext } from '../../../utils/context';
+import { getPath } from '../../../utils/path.utils';
+import { isLegacyDefinition, UiDefinitionsBuilder } from '../../../utils/ui.utils';
 
 // Initialize Messages with the current plugin directory
 Messages.importMessagesDirectory(__dirname);
@@ -58,6 +58,8 @@ export default class Pack extends SfdxCommand {
   protected static requiresProject = false;
 
   public async run(): Promise<AnyJson> {
+    const ctx = initContext(this);
+
     const memberMap = new MembersMap(this.flags.members ?? '');
     const rootPath = getPath(this.flags.sourcepath) ?? 'source';
     const outputPath = getPath(this.flags.outputpath);
@@ -69,9 +71,10 @@ export default class Pack extends SfdxCommand {
         return [];
       }
 
-      const idmap = idmapPath ? new IdMapJson(idmapPath) : undefined;
-      const uiBuilder = new UiDefinitionsBuilder(`${rootPath}/config-ui`, modelName, idmap);
-      const uiDefs = uiBuilder.pack();
+      ctx.initIdmap(idmapPath);
+
+      const uiBuilder = new UiDefinitionsBuilder();
+      const uiDefs = uiBuilder.pack(`${rootPath}/config-ui`, modelName);
 
       if (outputPath) {
         for (const uiDef of uiDefs) {

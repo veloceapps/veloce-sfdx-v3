@@ -1,6 +1,5 @@
 import { existsSync, readFileSync } from 'fs';
 import { Connection } from '@salesforce/core';
-import { IdMapJson } from '../common/idmap.json';
 import {
   LegacyUiDefinition,
   SfUIDefinition,
@@ -11,6 +10,7 @@ import {
   UiMetadata,
 } from '../types/ui.types';
 import { getDirectoryNames, readFileSafe } from './common.utils';
+import { getContext } from './context';
 
 const METADATA_DECORATOR_REGEX = /@ElementDefinition\(([\s\S]+)\)(\n|\r\n|.)*export class/g;
 
@@ -48,15 +48,13 @@ export async function fetchUiDefinitions(
 export class UiDefinitionsBuilder {
   private sfUiDefinitions: SfUIDefinition[] = [];
 
-  public constructor(private dir: string, private modelName: string, private idmap?: IdMapJson) {}
-
   public getSfUiDefinitions(): SfUIDefinition[] {
     return this.sfUiDefinitions;
   }
 
-  public pack(): UiDef[] {
-    const dir = `${this.dir}/${this.modelName}`;
-    return [...this.packUiDefinitions(dir), ...this.packLegacyUiDefinitions(dir)];
+  public pack(dir: string, modelName: string): UiDef[] {
+    const modelDir = `${dir}/${modelName}`;
+    return [...this.packUiDefinitions(modelDir), ...this.packLegacyUiDefinitions(modelDir)];
   }
 
   private packUiDefinitions(dir: string): UiDefinition[] {
@@ -197,14 +195,15 @@ export class UiDefinitionsBuilder {
   }
 
   private mapId(id: string): string {
-    const newId = this.idmap?.get(id);
+    const ctx = getContext();
+    const newId = ctx.idmap?.get(id);
 
     if (newId) {
-      console.log(`IDMAP: ${id} => ${newId}`);
+      ctx.ux.log(`IDMAP: ${id} => ${newId}`);
       return newId;
     }
 
-    console.log(`IDMAP: Id ${id} was not replaced!`);
+    ctx.ux.log(`IDMAP: Id ${id} was not replaced!`);
     return id;
   }
 }
