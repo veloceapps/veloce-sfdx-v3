@@ -40,8 +40,8 @@ export async function pushUI(params: CommandParams): Promise<string[]> {
       productModels.map(async ({ Id: modelId, VELOCPQ__Version__c: modelVersion, Name: modelName }) => {
         const existingUiDefs = await fetchUiDefinitions(conn, modelId, modelVersion);
         // pack all Ui Definitions
-        const uiBuilder = new UiDefinitionsBuilder(sourcepath, modelName);
-        const uiDefinitions = uiBuilder.pack();
+        const uiBuilder = new UiDefinitionsBuilder();
+        const uiDefinitions = uiBuilder.pack(sourcepath, modelName);
         const sfUiDefinitions = uiBuilder.getSfUiDefinitions();
         const toDelete = existingUiDefs
           .filter(

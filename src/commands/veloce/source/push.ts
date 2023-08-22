@@ -17,6 +17,7 @@ import { pushSettings } from '../../../common/push.settings';
 import { pushRule } from '../../../common/push.rule';
 import { pushDocTemplates } from '../../../common/push.docTemplate';
 import { loadIdMap, saveIdMap } from '../../../common/idmap';
+import { initContext } from '../../../utils/context';
 
 // Initialize Messages with the current plugin directory
 Messages.importMessagesDirectory(__dirname);
@@ -73,6 +74,7 @@ export default class Push extends SfdxCommand {
       return Promise.reject('You must have sfdx-project.json while runnign this plugin.');
     }
 
+    initContext(this);
     const conn = this.org.getConnection();
 
     const members = (this.flags.members || '') as string;
