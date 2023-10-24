@@ -16,8 +16,8 @@ import { pullDRL } from '../../../common/pull.drl';
 import { pullSettings } from '../../../common/pull.settings';
 import { pullRule } from '../../../common/pull.rule';
 import { pullDocTemplates } from '../../../common/pull.docTemplate';
-import { IdMap } from '../../../types/idmap';
-import { loadIdMap } from '../../../common/idmap';
+import { initContext } from '../../../utils/context';
+import { getPath } from '../../../utils/path.utils';
 
 // Initialize Messages with the current plugin directory
 Messages.importMessagesDirectory(__dirname);
@@ -50,6 +50,10 @@ export default class Pull extends SfdxCommand {
       char: 'P',
       description: messages.getMessage('noprojectFlagDescription'),
     }),
+    idmap: flags.string({
+      char: 'I',
+      description: messages.getMessage('idmapFlagDescription'),
+    }),
   };
 
   // Comment this out if your command does not require an org username
@@ -69,35 +73,30 @@ export default class Pull extends SfdxCommand {
       return Promise.reject('You must have sfdx-project.json while runnign this plugin.');
     }
 
+    const ctx = initContext(this);
+    const idmapPath = getPath(this.flags.idmap);
+    ctx.initIdmap(idmapPath);
     const conn = this.org.getConnection();
     const members = (this.flags.members || '') as string;
     const rootPath = ((this.flags.sourcepath || 'source') as string).replace(/\/$/, ''); // trim last slash if present
 
-    const reverseIdmap: IdMap = {};
-    const idmap = await loadIdMap(conn);
-    for (const [key, value] of Object.entries(idmap)) {
-      reverseIdmap[value] = key;
-    }
-
     const memberMap = new MembersMap(members);
 
-    const modelRecords = await pullModel({ idmap: reverseIdmap, rootPath, conn, member: memberMap.get('model') });
+    const modelRecords = await pullModel({ rootPath, conn, member: memberMap.get('model') });
 
-    const uiRecords = await pullUI({ idmap: reverseIdmap, rootPath, conn, member: memberMap.get('config-ui') });
+    const uiRecords = await pullUI({ rootPath, conn, member: memberMap.get('config-ui') });
 
-    const drl = await pullDRL({ idmap: reverseIdmap, rootPath, conn, member: memberMap.get('drl') });
+    const drl = await pullDRL({ rootPath, conn, member: memberMap.get('drl') });
 
-    const rule = await pullRule({ idmap: reverseIdmap, rootPath, conn, member: memberMap.get('rule') });
+    const rule = await pullRule({ rootPath, conn, member: memberMap.get('rule') });
 
     const configSettingRecords = await pullSettings({
-      idmap: reverseIdmap,
       rootPath,
       conn,
       member: memberMap.get('config-settings'),
     });
 
     const docTemplates = await pullDocTemplates({
-      idmap: reverseIdmap,
       rootPath,
       conn,
       member: memberMap.get('doc-template'),

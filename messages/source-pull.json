@@ -3,6 +3,7 @@
   "membersFlagDescription": "Pull only specific type of data or even name of object",
   "sourcepathFlagDescription": "Path where to store sources",
   "noprojectFlagDescription": "Bypass check of sfdx-project.json to exist",
+  "idmapFlagDescription": "idmap.json file path",
   "examples": [
     "sfdx veloce:source:pull --targetusername myOrg@example.com --targetdevhubusername devhub@org.com --members model:OCTA --sourcepath ./source/pmls"
   ]
