@@ -4,15 +4,9 @@ import { writeFileSafe } from '../utils/common.utils';
 import { fetchProductModels } from '../utils/productModel.utils';
 import { fetchDocumentContent } from '../utils/document.utils';
 import { CommandParams } from '../types/command.types';
-import { IdMap } from '../types/idmap';
+import { getContext } from '../utils/context';
 
-async function pullPM(
-  idmap: IdMap,
-  rootPath: string,
-  conn: Connection,
-  dumpAll: boolean,
-  pmsToDump: Set<string>,
-): Promise<void> {
+async function pullPM(rootPath: string, conn: Connection, dumpAll: boolean, pmsToDump: Set<string>): Promise<void> {
   const productModels: ProductModel[] = await fetchProductModels(conn, dumpAll, Array.from(pmsToDump));
   productModels.forEach(
     ({
@@ -24,7 +18,9 @@ async function pullPM(
       VELOCPQ__BundleProduct__c,
       VELOCPQ__Comment__c,
     }) => {
-      const mappedId = idmap[Id] ? idmap[Id] : Id;
+      const ctx = getContext();
+      const localId = ctx.idmap?.reverseGet(Id);
+      const mappedId = localId ? localId : Id;
       const productModelJson = JSON.stringify(
         {
           Id: mappedId,
@@ -44,7 +40,7 @@ async function pullPM(
 }
 
 export async function pullModel(params: CommandParams): Promise<string[]> {
-  const { idmap, rootPath, conn, member } = params;
+  const { rootPath, conn, member } = params;
   if (!member) {
     return [];
   }
@@ -69,7 +65,7 @@ export async function pullModel(params: CommandParams): Promise<string[]> {
     pmsToDump.add(Name);
   });
 
-  void pullPM(idmap, rootPath, conn, member.all, pmsToDump);
+  void pullPM(rootPath, conn, member.all, pmsToDump);
 
   return productModels.map(({ Id }) => Id);
 }

@@ -15,9 +15,10 @@ import { ProductModel } from '../types/productModel.types';
 import { fetchProductModels } from '../utils/productModel.utils';
 import { fetchDocumentContent } from '../utils/document.utils';
 import { CommandParams } from '../types/command.types';
+import { getContext } from '../utils/context';
 
 export async function pullUI(params: CommandParams): Promise<string[]> {
-  const { rootPath, conn, member, idmap: reverseIdmap } = params;
+  const { rootPath, conn, member } = params;
   if (!member) {
     return [];
   }
@@ -49,9 +50,13 @@ export async function pullUI(params: CommandParams): Promise<string[]> {
               try {
                 const uiDef = { ...JSON.parse(content ?? '') } as UiDef;
                 const priceList = (uiDef as UiDefinition).properties?.priceList;
-                if (priceList && reverseIdmap[priceList]) {
-                  console.log(`IDMAP: ${priceList} => ${reverseIdmap[priceList]}`);
-                  (uiDef as UiDefinition).properties!.priceList = reverseIdmap[priceList];
+                if (priceList) {
+                  const ctx = getContext();
+                  const localId = ctx.idmap?.reverseGet(priceList);
+                  if (localId) {
+                    console.log(`IDMAP: ${priceList} => ${localId}`);
+                    (uiDef as UiDefinition).properties!.priceList = localId;
+                  }
                 }
                 return {
                   uiDef,

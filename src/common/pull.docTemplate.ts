@@ -4,10 +4,8 @@ import { Member } from '../types/member.types';
 import { fetchTemplates } from '../utils/docTemplate.utils';
 import { fetchContentVersion } from '../utils/contentDocument.utils';
 import { Template } from '../types/template.types';
-import { IdMap } from '../types/idmap';
 
 export interface PullDocTemplatesParams {
-  idmap: IdMap;
   rootPath: string;
   conn: Connection;
   member?: Member;
