@@ -5,7 +5,7 @@
  * For full license text, see LICENSE.txt file in the repo root or https://opensource.org/licenses/BSD-3-Clause
  */
 import * as os from 'os';
-import { existsSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 import { flags, SfdxCommand } from '@salesforce/command';
 import { Messages } from '@salesforce/core';
 import { AnyJson } from '@salesforce/ts-types';
@@ -17,7 +17,6 @@ import { pullSettings } from '../../../common/pull.settings';
 import { pullRule } from '../../../common/pull.rule';
 import { pullDocTemplates } from '../../../common/pull.docTemplate';
 import { IdMap } from '../../../types/idmap';
-import { loadIdMap } from '../../../common/idmap';
 
 // Initialize Messages with the current plugin directory
 Messages.importMessagesDirectory(__dirname);
@@ -50,6 +49,10 @@ export default class Pull extends SfdxCommand {
       char: 'P',
       description: messages.getMessage('noprojectFlagDescription'),
     }),
+    idmap: flags.string({
+      char: 'I',
+      description: messages.getMessage('idmapFlagDescription'),
+    }),
   };
 
   // Comment this out if your command does not require an org username
@@ -74,7 +77,13 @@ export default class Pull extends SfdxCommand {
     const rootPath = ((this.flags.sourcepath || 'source') as string).replace(/\/$/, ''); // trim last slash if present
 
     const reverseIdmap: IdMap = {};
-    const idmap = await loadIdMap(conn);
+    let idmap: IdMap;
+    try {
+      idmap = JSON.parse(readFileSync(this.flags.idmap).toString());
+    } catch (err) {
+      console.log(`Failed to load ID-Map file`);
+      idmap = {};
+    }
     for (const [key, value] of Object.entries(idmap)) {
       reverseIdmap[value] = key;
     }

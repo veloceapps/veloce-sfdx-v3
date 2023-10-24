@@ -17,7 +17,7 @@ import { fetchDocumentContent } from '../utils/document.utils';
 import { CommandParams } from '../types/command.types';
 
 export async function pullUI(params: CommandParams): Promise<string[]> {
-  const { rootPath, conn, member } = params;
+  const { rootPath, conn, member, idmap: reverseIdmap } = params;
   if (!member) {
     return [];
   }
@@ -47,8 +47,14 @@ export async function pullUI(params: CommandParams): Promise<string[]> {
             .map(async (sfUiDef) => {
               const content = await fetchDocumentContent(conn, sfUiDef.VELOCPQ__SourceDocumentId__c);
               try {
+                const uiDef = { ...JSON.parse(content ?? '') } as UiDef;
+                const priceList = (uiDef as UiDefinition).properties?.priceList;
+                if (priceList && reverseIdmap[priceList]) {
+                  console.log(`IDMAP: ${priceList} => ${reverseIdmap[priceList]}`);
+                  (uiDef as UiDefinition).properties!.priceList = reverseIdmap[priceList];
+                }
                 return {
-                  uiDef: { ...JSON.parse(content ?? '') } as UiDef,
+                  uiDef,
                   sfMetadata: sfUiDef,
                 } as UiDefinitionContainerDto;
               } catch (err) {
