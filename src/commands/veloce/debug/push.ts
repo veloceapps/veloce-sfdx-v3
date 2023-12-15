@@ -1,3 +1,4 @@
+import path = require('path');
 import { EOL } from 'node:os';
 import { existsSync, readdirSync, readFileSync } from 'node:fs';
 import { flags } from '@salesforce/command';
@@ -69,6 +70,7 @@ export default class Push extends DebugSfdxCommand {
     await this.sendModel(debugSession, rootPath, memberMap.get('model'));
     await this.sendDrools(debugSession, conn, rootPath, memberMap.get('drl'));
     await this.sendRules(debugSession, rootPath, memberMap.get('rule'));
+    await this.sendSettings(debugSession, rootPath, memberMap.get('config-settings'));
     // Return an object to be displayed with --json
     return {};
   }
@@ -183,5 +185,44 @@ export default class Push extends DebugSfdxCommand {
         console.log(`Procedure Rule ${rule.name} pushed to dev session`);
       });
     }
+  }
+
+  private findAllSettings(sourcepath: string, member: Member): { key: string; value: string }[] {
+    const result: { key: string; value: string }[] = [];
+    const filenames = readdirSync(`${sourcepath}/settings`);
+    filenames.forEach((file) => {
+      const value = readFileSync(`${sourcepath}/settings/${file}`, 'utf8').toString();
+      const name = file.replace(path.extname(file), '');
+      if (member.all || member.names.includes(name)) {
+        result.push({ key: file, value });
+      }
+    });
+    return result;
+  }
+
+  private async sendSettings(
+    debugSession: DebugSessionInfo,
+    rootPath: string,
+    member: Member | undefined,
+  ): Promise<void> {
+    if (!member) {
+      return;
+    }
+    const backendUrl: string = debugSession.backendUrl;
+    const headers = getDebugClientHeaders(debugSession);
+    const settings = this.findAllSettings(rootPath, member);
+
+    try {
+      await axios.post(
+        `${backendUrl}/services/dev-override/settings/batch`,
+        { entries: settings },
+        {
+          headers,
+        },
+      );
+    } catch (error) {
+      logError('Failed to deploy', error);
+    }
+    this.ux.log('Configuration Settings Successfully Loaded!');
   }
 }
