@@ -1,4 +1,4 @@
-import { gunzipSync } from 'zlib';
+import { brotliDecompress } from 'zlib';
 import { Connection, SfdxError } from '@salesforce/core';
 import { Document, DocumentBody } from '../types/document.types';
 import { CreateResult } from '../types/common.types';
@@ -13,7 +13,16 @@ export async function fetchDocumentContent(conn: Connection, documentId: string)
   const res = await conn.request({ url });
 
   const gzipped = Buffer.from(res.toString(), 'base64');
-  return gunzipSync(gzipped).toString();
+  return new Promise((resolve, reject) => {
+    brotliDecompress(gzipped, (err, data) => {
+      if (err) {
+        reject(err);
+        console.error('brotliDecompress: An error occurred:', err);
+      } else {
+        resolve(data.toString('utf8'));
+      }
+    });
+  });
 }
 
 export async function fetchDocument(conn: Connection, documentId: string): Promise<Document | undefined> {
