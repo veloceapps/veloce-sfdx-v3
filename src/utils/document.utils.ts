@@ -1,7 +1,21 @@
-import { brotliDecompress } from 'zlib';
+import { brotliDecompress, gunzipSync } from 'zlib';
 import { Connection, SfdxError } from '@salesforce/core';
 import { Document, DocumentBody } from '../types/document.types';
 import { CreateResult } from '../types/common.types';
+
+// https://stackoverflow.com/questions/71868696/check-if-file-is-compressed-browser-side
+const checkSequence = (sequence: number[], bytes: Uint8Array): boolean => {
+  if (sequence.length > bytes.length) {
+    throw new Error(`bytes.size ${bytes.length} sequence.length ${sequence.length}`);
+  }
+  for (let index = 0; index < sequence.length; index++) {
+    const byte = bytes[index];
+    if (byte !== sequence[index]) {
+      return false;
+    }
+  }
+  return true;
+};
 
 export async function fetchDocumentContent(conn: Connection, documentId: string): Promise<string | undefined> {
   const url: string | undefined = (await fetchDocument(conn, documentId))?.Body;
@@ -13,6 +27,10 @@ export async function fetchDocumentContent(conn: Connection, documentId: string)
   const res = await conn.request({ url });
 
   const gzipped = Buffer.from(res.toString(), 'base64');
+  // GZIP compressed file
+  if (checkSequence([0x1f, 0x8b], gzipped)) {
+    return gunzipSync(gzipped).toString();
+  }
   return new Promise((resolve, reject) => {
     brotliDecompress(gzipped, (err, data) => {
       if (err) {
