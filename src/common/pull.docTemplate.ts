@@ -2,7 +2,7 @@ import { Connection } from '@salesforce/core';
 import { parseJsonSafe, writeFileSafe } from '../utils/common.utils';
 import { Member } from '../types/member.types';
 import { fetchTemplates } from '../utils/docTemplate.utils';
-import { fetchContentVersion } from '../utils/contentDocument.utils';
+import {fetchContentVersion, uploadContentDocument} from '../utils/contentDocument.utils';
 import { Template } from '../types/template.types';
 
 export interface PullDocTemplatesParams {
@@ -50,7 +50,14 @@ export async function pullDocTemplates(params: PullDocTemplatesParams): Promise<
       writeFileSafe(queriesDir, `${q['queryName'] as string}.json`, JSON.stringify(q, null, 2), { flag: 'w+' });
     });
 
-    writeFileSafe(dir, 'script.js', VELOCPQ__Script__c ?? '', { flag: 'w+' });
+    const docIdPrefix = '#!#ExtScr//';
+    if (String(VELOCPQ__Script__c).startsWith(docIdPrefix)) {
+      const docId = VELOCPQ__Script__c.replace(docIdPrefix, '');
+      const docContent = await uploadContentDocument(conn, docId)
+      writeFileSafe(dir, 'script.js', docContent ?? '', { flag: 'w+' });
+    } else {
+      writeFileSafe(dir, 'script.js', VELOCPQ__Script__c ?? '', { flag: 'w+' });
+    }
 
     if (VELOCPQ__FileId__c) {
       const resultContent = await fetchContentVersion(conn, undefined, VELOCPQ__FileId__c);
