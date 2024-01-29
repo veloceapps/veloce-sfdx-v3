@@ -41,6 +41,15 @@ export async function fetchContentVersion(conn: Connection, contentVersionId?: s
   return record;
 }
 
+export async function uploadContentDocument(conn: Connection, documentId: string): Promise<string> {
+  console.log(`Loading document with id ${documentId}`);
+
+  return await conn.request<string>({
+    url: `/services/data/v${conn.getApiVersion()}/connect/files/${documentId}/content`,
+    method: 'GET',
+  });
+}
+
 export async function createContentVersion(conn: Connection, data: ContentVersion): Promise<CreateResult> {
   const result = await conn.request<CreateResult>({
     url: `/services/data/v${conn.getApiVersion()}/sobjects/ContentVersion`,
@@ -106,4 +115,3 @@ export async function createOrUpdateContentDocument(conn: Connection, data: Cont
     return contentVersion.ContentDocumentId;
   }
 }
-
