@@ -5,6 +5,8 @@ import { fetchTemplates } from '../utils/docTemplate.utils';
 import {fetchContentVersion, uploadContentDocument} from '../utils/contentDocument.utils';
 import { Template } from '../types/template.types';
 
+const DOC_ID_PREFIX = '#!#ExtScr//';
+
 export interface PullDocTemplatesParams {
   rootPath: string;
   conn: Connection;
@@ -50,9 +52,8 @@ export async function pullDocTemplates(params: PullDocTemplatesParams): Promise<
       writeFileSafe(queriesDir, `${q['queryName'] as string}.json`, JSON.stringify(q, null, 2), { flag: 'w+' });
     });
 
-    const docIdPrefix = '#!#ExtScr//';
-    if (String(VELOCPQ__Script__c).startsWith(docIdPrefix)) {
-      const docId = VELOCPQ__Script__c.replace(docIdPrefix, '');
+    if (String(VELOCPQ__Script__c).startsWith(DOC_ID_PREFIX)) {
+      const docId = VELOCPQ__Script__c.replace(DOC_ID_PREFIX, '');
       const docContent = await uploadContentDocument(conn, docId)
       writeFileSafe(dir, 'script.js', docContent ?? '', { flag: 'w+' });
     } else {
