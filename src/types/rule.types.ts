@@ -41,7 +41,7 @@ export interface SFProcedureRuleTransformation {
   VELOCPQ__ResultPath__c: string;
   VELOCPQ__JavaScript__c: string;
   VELOCPQ__Expression__c: string;
-  VELOCPQ__ScriptJsId__c: string;
+  VELOCPQ__ScriptJsId__c?: string;
 }
 
 export interface SFProcedureRuleMapping {

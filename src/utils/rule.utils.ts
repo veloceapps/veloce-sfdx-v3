@@ -19,7 +19,7 @@ import {
   SFProcedureRuleTransformation,
 } from '../types/rule.types';
 import { createRulesParser, RuleVisitor } from '../grammar/src';
-import { parseJsonSafe, writeFileSafe } from './common.utils';
+import { isInstalledVersionBetween, parseJsonSafe, writeFileSafe } from './common.utils';
 import { createDocument, fetchDocumentContent, updateDocument } from './document.utils';
 import { createFolder, fetchFolder } from './folder.utils';
 
@@ -30,6 +30,7 @@ export async function fetchProcedureRules(
   dumpAll: boolean,
   ruleNames?: string[],
 ): Promise<SFProcedureRule[]> {
+  const useScriptJsId = await isInstalledVersionBetween(conn, '2023.R6.1.0');
   let query = `SELECT Id,
                       Name,
                       VELOCPQ__RuleGroupId__r.Name,
@@ -57,8 +58,7 @@ export async function fetchProcedureRules(
                               VELOCPQ__RuleId__c,
                               VELOCPQ__Sequence__c,
                               VELOCPQ__ResultPath__c,
-                              VELOCPQ__Expression__c,
-                              VELOCPQ__ScriptJsId__c,
+                              VELOCPQ__Expression__c, ${useScriptJsId ? 'VELOCPQ__ScriptJsId__c,' : ''}
                               VELOCPQ__ReferenceId__c
                        FROM VELOCPQ__ProcedureRules_TransformationRules__r),
                       (SELECT Id,
@@ -94,26 +94,32 @@ export async function fetchProcedureRules(
         ({ Id, VELOCPQ__ScriptJsId__c }) => ({ Id, scriptJsId: VELOCPQ__ScriptJsId__c }),
       ),
     ];
-  }, [] as { Id: string; scriptJsId: string }[]);
+  }, [] as { Id: string; scriptJsId?: string }[]);
 
-  const contentLinksQuery = `Select Id, ContentDocumentId, LinkedEntityId
-                             From ContentDocumentLink
-                             Where LinkedEntityId IN ('${transformationIds.map((tr) => tr.Id).join("','")}')`;
-  const contentLinks = await conn.query<SFContent>(contentLinksQuery);
-  const contentLinksRecords = contentLinks?.records || [];
   const javaScripts: { id: string; javaScript: string }[] = [];
-  for (const record of contentLinksRecords) {
-    const javaScript = await conn.request<string>({ url: `/connect/files/${record.ContentDocumentId}/content` });
-    javaScripts.push({ id: record.LinkedEntityId, javaScript });
-  }
-  for (const { scriptJsId } of transformationIds) {
-    if (scriptJsId) {
-      const javaScript = await fetchDocumentContent(conn, scriptJsId);
-      if (javaScript) {
-        javaScripts.push({ id: scriptJsId, javaScript });
+  if (useScriptJsId) {
+    // starting from 2023.R6.1.0
+    for (const { scriptJsId } of transformationIds) {
+      if (scriptJsId) {
+        const javaScript = await fetchDocumentContent(conn, scriptJsId);
+        if (javaScript) {
+          javaScripts.push({ id: scriptJsId, javaScript });
+        }
       }
     }
+  } else {
+    // before version 2023.R6.1.0
+    const contentLinksQuery = `Select Id, ContentDocumentId, LinkedEntityId
+                             From ContentDocumentLink
+                             Where LinkedEntityId IN ('${transformationIds.map((tr) => tr.Id).join("','")}')`;
+    const contentLinks = await conn.query<SFContent>(contentLinksQuery);
+    const contentLinksRecords = contentLinks?.records || [];
+    for (const record of contentLinksRecords) {
+      const javaScript = await conn.request<string>({ url: `/connect/files/${record.ContentDocumentId}/content` });
+      javaScripts.push({ id: record.LinkedEntityId, javaScript });
+    }
   }
+
   return rules.map((rule) => {
     return {
       ...rule,
@@ -121,7 +127,9 @@ export async function fetchProcedureRules(
         ...(rule.VELOCPQ__ProcedureRules_TransformationRules__r ?? {}),
         records: (rule.VELOCPQ__ProcedureRules_TransformationRules__r?.records || []).map((transformation) => {
           const javaScript = javaScripts.find(
-            (o) => o.id === transformation.Id || o.id === transformation.VELOCPQ__ScriptJsId__c,
+            (o) =>
+              o.id === transformation.Id ||
+              (transformation.VELOCPQ__ScriptJsId__c && o.id === transformation.VELOCPQ__ScriptJsId__c),
           );
           if (javaScript) {
             return { ...transformation, VELOCPQ__JavaScript__c: javaScript.javaScript };
@@ -486,7 +494,12 @@ export async function findRuleTransformations(
   transformation: RuleTransformation,
   ruleId: string,
 ): Promise<SFProcedureRuleTransformation | undefined> {
-  const query = `SELECT Id, VELOCPQ__ScriptJsId__c FROM VELOCPQ__TransformationRule__c WHERE VELOCPQ__ResultPath__c='${transformation.resultPath}' AND VELOCPQ__RuleId__c ='${ruleId}'`;
+  const useScriptJsId = await isInstalledVersionBetween(conn, '2023.R6.1.0');
+  const query = `SELECT Id${
+    useScriptJsId ? ', VELOCPQ__ScriptJsId__c' : ''
+  } FROM VELOCPQ__TransformationRule__c WHERE VELOCPQ__ResultPath__c='${
+    transformation.resultPath
+  }' AND VELOCPQ__RuleId__c ='${ruleId}'`;
 
   const result = await conn.autoFetchQuery<SFProcedureRuleTransformation>(query, { autoFetch: true, maxFetch: 1 });
   return result?.records?.[0] ?? undefined;
@@ -528,6 +541,7 @@ export async function upsertRuleTransformation(
   // Check if veloce folder exists:
   const folderId: string =
     (await fetchFolder(conn, SCRIPTS_FOLDER_NAME))?.Id ?? (await createFolder(conn, SCRIPTS_FOLDER_NAME)).id;
+  const useScriptJsId = await isInstalledVersionBetween(conn, '2023.R6.1.0');
   const body = {
     VELOCPQ__ReferenceId__c: transformation.referenceId,
     VELOCPQ__Sequence__c: transformation.sequence,
@@ -551,31 +565,42 @@ export async function upsertRuleTransformation(
     } else {
       console.log(`New Procedure Rule Transformation ${body.VELOCPQ__ResultPath__c} created with id ${result.id}`);
     }
-    if (transformation.javaScript) {
-      const output = transformation.javaScript;
-      const compressed = brotliCompressSync(output);
-      // Encode to base64 TWICE!, first time is requirement of POST/PATCH, and it will be decoded on reads automatically by SF.
-      const b64Data = Buffer.from(compressed.toString('base64')).toString('base64');
 
-      const documentBody: DocumentBody = {
-        folderId,
-        body: b64Data,
-        name: 'script.js',
-        contentType: 'application/zip',
-        type: 'zip',
-      };
+    if (useScriptJsId) {
+      // starting from 2023.R6.1.0
+      if (transformation.javaScript) {
+        const output = transformation.javaScript;
+        const compressed = brotliCompressSync(output);
+        // Encode to base64 TWICE!, first time is requirement of POST/PATCH, and it will be decoded on reads automatically by SF.
+        const b64Data = Buffer.from(compressed.toString('base64')).toString('base64');
 
-      if (existingRuleTransformation?.VELOCPQ__ScriptJsId__c) {
-        await updateDocument(conn, existingRuleTransformation.VELOCPQ__ScriptJsId__c, documentBody);
+        const documentBody: DocumentBody = {
+          folderId,
+          body: b64Data,
+          name: 'script.js',
+          contentType: 'application/zip',
+          type: 'zip',
+        };
+
+        if (existingRuleTransformation?.VELOCPQ__ScriptJsId__c) {
+          await updateDocument(conn, existingRuleTransformation.VELOCPQ__ScriptJsId__c, documentBody);
+        } else {
+          const scriptJsId = await createDocument(conn, documentBody).then((r) => r.id);
+          await conn
+            .sobject('VELOCPQ__TransformationRule__c')
+            .update({ Id: result.id, VELOCPQ__ScriptJsId__c: scriptJsId });
+        }
+      } else if (existingRuleTransformation?.VELOCPQ__ScriptJsId__c) {
+        await conn.delete('Document', existingRuleTransformation?.VELOCPQ__ScriptJsId__c);
+        await conn.sobject('VELOCPQ__TransformationRule__c').update({ Id: result.id, VELOCPQ__ScriptJsId__c: '' });
       } else {
-        const scriptJsId = await createDocument(conn, documentBody).then((r) => r.id);
-        await conn
-          .sobject('VELOCPQ__TransformationRule__c')
-          .update({ Id: result.id, VELOCPQ__ScriptJsId__c: scriptJsId });
+        // before version 2023.R6.1.0
+        if (transformation.javaScript) {
+          await createJavaScript(conn, transformation.javaScript, result.id);
+        } else {
+          await deleteJavaScript(conn, result.id);
+        }
       }
-    } else if (existingRuleTransformation?.VELOCPQ__ScriptJsId__c) {
-      await conn.delete('Document', existingRuleTransformation?.VELOCPQ__ScriptJsId__c);
-      await conn.sobject('VELOCPQ__TransformationRule__c').update({ Id: result.id, VELOCPQ__ScriptJsId__c: '' });
     }
   } else {
     throw new SfdxError(`Failed to create document: ${JSON.stringify(result)}`);
