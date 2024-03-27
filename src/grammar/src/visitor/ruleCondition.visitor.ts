@@ -5,6 +5,7 @@ import { ParseTreeVisitor } from './ParseTreeVisitor';
 
 export class RuleConditionVisitor extends ParseTreeVisitor {
   public condition: RuleCondition = {};
+  public expressions: { oldText: string; newText: string }[] = [];
 
   public visit(ctx: ParserRuleContext): void {
     switch (ctx.ruleIndex) {
@@ -19,18 +20,39 @@ export class RuleConditionVisitor extends ParseTreeVisitor {
         break;
       }
       case RulesParser.RULE_filterExpression: {
+        super.visit(ctx);
         if (ctx.children?.[0]?.text) {
           this.condition.objectType = RuleObjectTypes[ctx.children[0].text];
         }
-        const expression = ctx.children?.[2]?.text;
+        let expression = ctx.children?.[2]?.text;
         if (expression !== ')') {
+          this.expressions?.forEach(({ oldText, newText }) => {
+            expression = expression?.replace(oldText, newText);
+          });
           this.condition.expression = expression;
         }
-        super.visit(ctx);
         break;
       }
       default:
         super.visit(ctx);
     }
+  }
+
+  public visitChildren(ctx: ParserRuleContext): void {
+    // if expression contains 'in' operator
+    if (ctx.ruleIndex === RulesParser.RULE_expression && ctx.children?.[1]?.text === 'in') {
+      this.expressions.push({
+        oldText: ctx.text,
+        newText: ctx.children
+          .map((child) => {
+            if (child.text === 'in') {
+              return ' in ';
+            }
+            return child.text;
+          })
+          .join(''),
+      });
+    }
+    super.visitChildren(ctx);
   }
 }
