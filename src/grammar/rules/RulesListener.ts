@@ -22,6 +22,7 @@ import { TransformationStatementContext } from './RulesParser';
 import { ScriptContext } from './RulesParser';
 import { ActionDeclarationContext } from './RulesParser';
 import { SetPropertyActionContext } from './RulesParser';
+import { RemovePropertyActionContext } from './RulesParser';
 import { SetFieldValueActionContext } from './RulesParser';
 import { SetScoreContext } from './RulesParser';
 import { AddMessageActionContext } from './RulesParser';
@@ -200,6 +201,17 @@ export interface RulesListener extends ParseTreeListener {
    * @param ctx the parse tree
    */
   exitSetPropertyAction?: (ctx: SetPropertyActionContext) => void;
+
+  /**
+   * Enter a parse tree produced by `RulesParser.removePropertyAction`.
+   * @param ctx the parse tree
+   */
+  enterRemovePropertyAction?: (ctx: RemovePropertyActionContext) => void;
+  /**
+   * Exit a parse tree produced by `RulesParser.removePropertyAction`.
+   * @param ctx the parse tree
+   */
+  exitRemovePropertyAction?: (ctx: RemovePropertyActionContext) => void;
 
   /**
    * Enter a parse tree produced by `RulesParser.setFieldValueAction`.
