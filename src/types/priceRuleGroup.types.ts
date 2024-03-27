@@ -7,4 +7,5 @@ export interface PriceRuleGroup {
   VELOCPQ__Sequence__c: number;
   VELOCPQ__Type__c: string;
   VELOCPQ__PriceListId__c: string;
+  script__c?: string;
 }

@@ -74,6 +74,9 @@ async function saveGroup(group: Group, conn: Connection): Promise<void> {
             o.VELOCPQ__Description__c = '${group.description}';
             o.VELOCPQ__Sequence__c = ${group.sequence};
             o.VELOCPQ__Type__c = '${group.type}';
+            if (!'${group.script}'.equals('undefined')) {
+              o.script__c = '${group.script}'.equals('null') ? null : '${group.script}';
+            }
             update o;
         } else {
             VELOCPQ__PriceRuleGroup__c o = new VELOCPQ__PriceRuleGroup__c(VELOCPQ__ReferenceId__c = '${group.referenceId}');
@@ -83,6 +86,9 @@ async function saveGroup(group: Group, conn: Connection): Promise<void> {
             o.VELOCPQ__Sequence__c = ${group.sequence};
             o.VELOCPQ__Type__c = '${group.type}';
             o.VELOCPQ__PriceListId__c = '${group.priceListId}';
+            if (!'${group.script}'.equals('undefined')) {
+              o.script__c = '${group.script}'.equals('null') ? null : '${group.script}';
+            }
             insert o;
             delete oldGroup;
         }
@@ -94,12 +100,16 @@ async function saveGroup(group: Group, conn: Connection): Promise<void> {
         o.VELOCPQ__Sequence__c = ${group.sequence};
         o.VELOCPQ__Type__c = '${group.type}';
         o.VELOCPQ__PriceListId__c = '${group.priceListId}';
+        if (!'${group.script}'.equals('undefined')) {
+          o.script__c = '${group.script}'.equals('null') ? null : '${group.script}';
+        }
         insert o;
     }`;
   const exec = new ExecuteService(conn);
   const execAnonOptions = { apexCode: code };
   const result = await exec.executeAnonymous(execAnonOptions);
   if (!result.success) {
+    console.error(result.diagnostic);
     throw new SfdxError(result.logs || 'Command Compile Error');
   }
 }

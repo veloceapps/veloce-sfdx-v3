@@ -195,3 +195,11 @@ const concatParts = (arr: RegExpExecArray | null, parts: string[]): string => {
   }
   return result;
 };
+
+export const isFieldExists = async (conn: Connection, objectName: string, fieldName: string): Promise<boolean> => {
+  const scrSQl = `
+SELECT Id
+FROM FieldDefinition
+WHERE EntityDefinition.QualifiedApiName = '${objectName}' AND QualifiedApiName = '${fieldName}'`;
+  return (await conn.query<{ Id: string }>(scrSQl))?.records?.[0] !== undefined;
+};

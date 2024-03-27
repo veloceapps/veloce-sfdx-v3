@@ -16,8 +16,8 @@ import { MembersMap } from '../../../common/members.map';
 import { pushSettings } from '../../../common/push.settings';
 import { pushRule } from '../../../common/push.rule';
 import { pushDocTemplates } from '../../../common/push.docTemplate';
-import { loadIdMap, saveIdMap } from '../../../common/idmap';
 import { initContext } from '../../../utils/context';
+import { getPath } from '../../../utils/path.utils';
 
 // Initialize Messages with the current plugin directory
 Messages.importMessagesDirectory(__dirname);
@@ -55,6 +55,10 @@ export default class Push extends SfdxCommand {
       char: 'd',
       description: messages.getMessage('skipdeleteFlagDescription'),
     }),
+    idmap: flags.string({
+      char: 'I',
+      description: messages.getMessage('idmapFlagDescription'),
+    }),
   };
 
   // Comment this out if your command does not require an org username
@@ -74,34 +78,32 @@ export default class Push extends SfdxCommand {
       return Promise.reject('You must have sfdx-project.json while runnign this plugin.');
     }
 
-    initContext(this);
+    const ctx = initContext(this);
+    const idmapPath = getPath(this.flags.idmap);
+    ctx.initIdmap(idmapPath);
     const conn = this.org.getConnection();
 
     const members = (this.flags.members || '') as string;
     const rootPath = ((this.flags.sourcepath || 'source') as string).replace(/\/$/, ''); // trim last slash if present
 
-    const idmap = await loadIdMap(conn);
     const memberMap = new MembersMap(members);
 
-    const drlRecords = await pushDRL({ idmap, rootPath, conn, member: memberMap.get('drl') });
+    const drlRecords = await pushDRL({ rootPath, conn, member: memberMap.get('drl') });
 
-    const rule = await pushRule({ idmap, rootPath, conn, member: memberMap.get('rule') });
+    const rule = await pushRule({ rootPath, conn, member: memberMap.get('rule') });
 
-    const pmlRecords = await pushModel({ idmap, rootPath, conn, member: memberMap.get('model') });
+    const pmlRecords = await pushModel({ rootPath, conn, member: memberMap.get('model') });
 
-    const uiRecords = await pushUI({ idmap, rootPath, conn, member: memberMap.get('config-ui') });
+    const uiRecords = await pushUI({ rootPath, conn, member: memberMap.get('config-ui') });
 
     const configSettingRecords = await pushSettings({
-      idmap,
       rootPath,
       conn,
       member: memberMap.get('config-settings'),
       skipdelete: this.flags.skipdelete,
     });
 
-    const docTemplateRecords = await pushDocTemplates({ idmap, rootPath, conn, member: memberMap.get('doc-template') });
-
-    await saveIdMap(conn, idmap);
+    const docTemplateRecords = await pushDocTemplates({ rootPath, conn, member: memberMap.get('doc-template') });
 
     // Return an object to be displayed with --json
     return {
