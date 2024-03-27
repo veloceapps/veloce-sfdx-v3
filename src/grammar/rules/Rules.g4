@@ -62,6 +62,7 @@ script
     ;
 actionDeclaration
     :
+    removePropertyAction |
     setPropertyAction |
     setFieldValueAction |
     addMessageAction |
@@ -81,6 +82,10 @@ actionDeclaration
 
 setPropertyAction
     : variableName DOT 'setProperty' LPAREN targetFieldName COMMA value RPAREN
+    ;
+
+removePropertyAction
+    : variableName DOT 'removeProperty' LPAREN targetFieldName RPAREN
     ;
 
 setFieldValueAction

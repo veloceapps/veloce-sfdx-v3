@@ -17,6 +17,14 @@ export class RuleActionVisitor extends ParseTreeVisitor {
 
   public visit(ctx: ParserRuleContext): void {
     switch (ctx.ruleIndex) {
+      case RulesParser.RULE_removePropertyAction: {
+        this.setProperty('variableName', ctx.children?.[0]?.text);
+        this.action.action = this.getActionName(ctx.children?.[2]?.text);
+        this.setProperty('targetFieldName', ctx.children?.[4]?.text);
+
+        super.visit(ctx);
+        break;
+      }
       case RulesParser.RULE_setPropertyAction:
       case RulesParser.RULE_setFieldValueAction: {
         this.setProperty('variableName', ctx.children?.[0]?.text);
