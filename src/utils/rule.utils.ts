@@ -466,7 +466,7 @@ export async function upsertRuleCondition(
     VELOCPQ__ExpressionsJsonString__c: condition.expression,
     VELOCPQ__RuleId__c: ruleId,
     VELOCPQ__ObjectType__c: condition.objectType,
-    VELOCPQ__Property__c: condition.objectType,
+    VELOCPQ__Property__c: condition.property ?? condition.objectType,
   };
   const existingRuleCondition = await findRuleCondition(conn, condition, ruleId);
   let result;
