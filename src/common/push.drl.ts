@@ -64,6 +64,9 @@ async function saveRule(group: Group, rule: Rule, conn: Connection): Promise<voi
 }
 
 async function saveGroup(group: Group, conn: Connection, isScriptExists: boolean): Promise<void> {
+  const scriptCode = isScriptExists
+    ? `o.script__c = '${group.script}'.equals('null') || '${group.script}'.equals('undefined') ? null : '${group.script}';`
+    : '';
   const code = `
     VELOCPQ__PriceRuleGroup__c[] gs = [SELECT Id, VELOCPQ__PriceListId__c FROM VELOCPQ__PriceRuleGroup__c WHERE VELOCPQ__ReferenceId__c = '${group.referenceId}' LIMIT 1];
     if (gs.size() > 0){
@@ -75,9 +78,7 @@ async function saveGroup(group: Group, conn: Connection, isScriptExists: boolean
             o.VELOCPQ__Description__c = '${group.description}';
             o.VELOCPQ__Sequence__c = ${group.sequence};
             o.VELOCPQ__Type__c = '${group.type}';
-            if ('${isScriptExists}'.equals('true')) {
-              o.script__c = '${group.script}'.equals('null') || '${group.script}'.equals('undefined') ? null : '${group.script}';
-            }
+            ${scriptCode}
             update o;
         } else {
             VELOCPQ__PriceRuleGroup__c o = new VELOCPQ__PriceRuleGroup__c(VELOCPQ__ReferenceId__c = '${group.referenceId}');
@@ -87,9 +88,7 @@ async function saveGroup(group: Group, conn: Connection, isScriptExists: boolean
             o.VELOCPQ__Sequence__c = ${group.sequence};
             o.VELOCPQ__Type__c = '${group.type}';
             o.VELOCPQ__PriceListId__c = '${group.priceListId}';
-            if ('${isScriptExists}'.equals('true')) {
-              o.script__c = '${group.script}'.equals('null') || '${group.script}'.equals('undefined') ? null : '${group.script}';
-            }
+            ${scriptCode}
             insert o;
             delete oldGroup;
         }
@@ -101,9 +100,7 @@ async function saveGroup(group: Group, conn: Connection, isScriptExists: boolean
         o.VELOCPQ__Sequence__c = ${group.sequence};
         o.VELOCPQ__Type__c = '${group.type}';
         o.VELOCPQ__PriceListId__c = '${group.priceListId}';
-        if ('${isScriptExists}'.equals('true')) {
-          o.script__c = '${group.script}'.equals('null') || '${group.script}'.equals('undefined') ? null : '${group.script}';
-        }
+        ${scriptCode}
         insert o;
     }`;
   const exec = new ExecuteService(conn);
