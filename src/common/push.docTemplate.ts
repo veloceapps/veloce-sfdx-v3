@@ -11,8 +11,9 @@ import {
 } from '../utils/common.utils';
 import { createOrUpdateContentDocument } from '../utils/contentDocument.utils';
 import { createTemplate, fetchTemplates, updateTemplate } from '../utils/docTemplate.utils';
-
+import { IdMap } from '../types/idmap';
 export interface PushDocTemplatesParams {
+  idmap: IdMap;
   rootPath: string;
   conn: Connection;
   member?: Member;
