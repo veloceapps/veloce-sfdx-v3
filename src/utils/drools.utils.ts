@@ -33,6 +33,7 @@ export interface Group {
   type: string;
   priceRules: Rule[];
   referenceId: string;
+  // script added for Cato project, it contains Extract/Transformation script id
   script?: string | null;
 }
 

@@ -197,9 +197,9 @@ const concatParts = (arr: RegExpExecArray | null, parts: string[]): string => {
 };
 
 export const isFieldExists = async (conn: Connection, objectName: string, fieldName: string): Promise<boolean> => {
-  const scrSQl = `
+  const sql = `
 SELECT Id
 FROM FieldDefinition
 WHERE EntityDefinition.QualifiedApiName = '${objectName}' AND QualifiedApiName = '${fieldName}'`;
-  return (await conn.query<{ Id: string }>(scrSQl))?.records?.[0] !== undefined;
+  return (await conn.query<{ Id: string }>(sql))?.records?.[0] !== undefined;
 };
