@@ -5,7 +5,8 @@ import { Connection } from '@salesforce/core';
 import { PriceRuleGroup } from '../types/priceRuleGroup.types';
 import { PriceRule } from '../types/priceRule.types';
 import { PriceList } from '../types/priceList.types';
-import { parseJsonSafe, writeFileSafe } from './common.utils';
+import { isFieldExists, parseJsonSafe, writeFileSafe } from './common.utils';
+import { getContext } from './context';
 
 const ruleExtractRegex = /(rule\b)([\S\s]*?)(\nend\b)/g;
 const rulePreconditionRegex = /(?<=\nwhen\b)([\S\s]*?)(?=\nthen\b)/g;
@@ -32,6 +33,8 @@ export interface Group {
   type: string;
   priceRules: Rule[];
   referenceId: string;
+  // script added for Cato project, it contains Extract/Transformation script id
+  script?: string | null;
 }
 
 export function extractRulesFromGroup(directory: string, file: string, rulesMeta: Rule[]): Rule[] {
@@ -110,6 +113,7 @@ function extractGroupFromFile(groupFile: string, rulesDirectory: string): Group 
   const groupMetaFilePath = rulesDirectory + '/' + groupMetaFile;
   const metadataStr = fs.readFileSync(groupMetaFilePath).toString();
   const groupMetaData: Group = parseJsonSafe(metadataStr);
+  const ctx = getContext();
   if (groupMetaData) {
     validateGroupMeta(groupMetaData, groupFile);
     return {
@@ -117,6 +121,10 @@ function extractGroupFromFile(groupFile: string, rulesDirectory: string): Group 
       active: groupMetaData.active ?? true,
       description: groupMetaData.description || groupMetaData.name,
       priceRules: extractRulesFromGroup(rulesDirectory, groupFile, groupMetaData.priceRules),
+      script:
+        groupMetaData.script && ctx.idmap?.get(groupMetaData.script)
+          ? ctx.idmap.get(groupMetaData.script)
+          : groupMetaData.script,
     };
   } else {
     throw new SfdxError(`MetaFile is missing for group ${groupFile}`);
@@ -150,9 +158,12 @@ export async function fetchDroolsByGroup(conn: Connection, groupName: string): P
 }
 
 export async function fetchDroolGroups(conn: Connection, groupNames: string[]): Promise<PriceRuleGroup[]> {
+  const isScriptExists = await isFieldExists(conn, 'VELOCPQ__PriceRuleGroup__c', 'script__c');
   let query =
     'SELECT Id,Name, VELOCPQ__Active__c,VELOCPQ__Description__c,VELOCPQ__ReferenceId__c,' +
-    'VELOCPQ__Sequence__c,VELOCPQ__Type__c,VELOCPQ__PriceListId__c from VELOCPQ__PriceRuleGroup__c';
+    `VELOCPQ__Sequence__c,VELOCPQ__Type__c,VELOCPQ__PriceListId__c ${
+      isScriptExists ? ',script__c' : ''
+    } from VELOCPQ__PriceRuleGroup__c`;
   if (groupNames.length > 0) {
     query += ` WHERE Name IN ('${groupNames.join("','")}')`;
   }
@@ -208,6 +219,7 @@ export function saveDroolGroups(groups: Group[], savePath: string): void {
       referenceId: group.referenceId,
       sequence: group.sequence,
       type: group.type,
+      script: group.script,
       priceRules: [],
     };
     for (const rule of group.priceRules) {
@@ -243,6 +255,7 @@ function getFileNameForGroup(type: string, sequence: number, name: string): stri
 export async function getDroolGroups(conn: Connection, groupNames: string[]): Promise<Group[]> {
   const salesforceGroups: PriceRuleGroup[] = await fetchDroolGroups(conn, groupNames);
   const result: Group[] = [];
+  const ctx = getContext();
   for (const salesforceGroup of salesforceGroups) {
     const salesforceGroupId: string = salesforceGroup.Id;
 
@@ -254,6 +267,10 @@ export async function getDroolGroups(conn: Connection, groupNames: string[]): Pr
       referenceId: salesforceGroup.VELOCPQ__ReferenceId__c,
       sequence: salesforceGroup.VELOCPQ__Sequence__c,
       type: salesforceGroup.VELOCPQ__Type__c,
+      script:
+        salesforceGroup.script__c && ctx.idmap?.reverseGet(salesforceGroup.script__c)
+          ? ctx.idmap.reverseGet(salesforceGroup.script__c)
+          : salesforceGroup.script__c,
       priceRules: [],
     };
 

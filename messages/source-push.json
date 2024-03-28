@@ -4,6 +4,7 @@
   "sourcepathFlagDescription": "Path where to get sources",
   "noprojectFlagDescription": "Bypass check of sfdx-project.json to exist",
   "skipdeleteFlagDescription": "Only for upload, skip db clean up",
+  "idmapFlagDescription": "idmap.json file path",
   "examples": [
     "sfdx veloce:source:push --targetusername myOrg@example.com --targetdevhubusername devhub@org.com --members model:OCTA --sourcepath ./source/models"
   ]

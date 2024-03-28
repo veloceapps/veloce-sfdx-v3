@@ -18,6 +18,7 @@ import { pushRule } from '../../../common/push.rule';
 import { pushDocTemplates } from '../../../common/push.docTemplate';
 import { loadIdMap, saveIdMap } from '../../../common/idmap';
 import { initContext } from '../../../utils/context';
+import { getPath } from '../../../utils/path.utils';
 
 // Initialize Messages with the current plugin directory
 Messages.importMessagesDirectory(__dirname);
@@ -55,6 +56,10 @@ export default class Push extends SfdxCommand {
       char: 'd',
       description: messages.getMessage('skipdeleteFlagDescription'),
     }),
+    idmap: flags.string({
+      char: 'I',
+      description: messages.getMessage('idmapFlagDescription'),
+    }),
   };
 
   // Comment this out if your command does not require an org username
@@ -74,7 +79,9 @@ export default class Push extends SfdxCommand {
       return Promise.reject('You must have sfdx-project.json while runnign this plugin.');
     }
 
-    initContext(this);
+    const ctx = initContext(this);
+    const idmapPath = getPath(this.flags.idmap);
+    ctx.initIdmap(idmapPath);
     const conn = this.org.getConnection();
 
     const members = (this.flags.members || '') as string;
