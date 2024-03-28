@@ -2,6 +2,7 @@ import { Connection, SfdxError } from '@salesforce/core';
 import { ExecuteService } from '@salesforce/apex-node';
 import { extractGroupsFromFolder, Group, Rule, setIdFromReferenceId } from '../utils/drools.utils';
 import { CommandParams } from '../types/command.types';
+import { isFieldExists } from '../utils/common.utils';
 
 async function saveRule(group: Group, rule: Rule, conn: Connection): Promise<void> {
   const action = JSON.stringify(rule.action).replaceAll("'", "\\'");
@@ -63,6 +64,7 @@ async function saveRule(group: Group, rule: Rule, conn: Connection): Promise<voi
 }
 
 async function saveGroup(group: Group, conn: Connection): Promise<void> {
+  const isScriptExists = await isFieldExists(conn, 'VELOCPQ__PriceRuleGroup__c', 'script__c');
   const code = `
     VELOCPQ__PriceRuleGroup__c[] gs = [SELECT Id, VELOCPQ__PriceListId__c FROM VELOCPQ__PriceRuleGroup__c WHERE VELOCPQ__ReferenceId__c = '${group.referenceId}' LIMIT 1];
     if (gs.size() > 0){
@@ -74,8 +76,8 @@ async function saveGroup(group: Group, conn: Connection): Promise<void> {
             o.VELOCPQ__Description__c = '${group.description}';
             o.VELOCPQ__Sequence__c = ${group.sequence};
             o.VELOCPQ__Type__c = '${group.type}';
-            if (!'${group.script}'.equals('undefined')) {
-              o.script__c = '${group.script}'.equals('null') ? null : '${group.script}';
+            if ('${isScriptExists}'.equals('true')) {
+              o.script__c = '${group.script}'.equals('null') || '${group.script}'.equals('undefined') ? null : '${group.script}';
             }
             update o;
         } else {
@@ -86,8 +88,8 @@ async function saveGroup(group: Group, conn: Connection): Promise<void> {
             o.VELOCPQ__Sequence__c = ${group.sequence};
             o.VELOCPQ__Type__c = '${group.type}';
             o.VELOCPQ__PriceListId__c = '${group.priceListId}';
-            if (!'${group.script}'.equals('undefined')) {
-              o.script__c = '${group.script}'.equals('null') ? null : '${group.script}';
+            if ('${isScriptExists}'.equals('true')) {
+              o.script__c = '${group.script}'.equals('null') || '${group.script}'.equals('undefined') ? null : '${group.script}';
             }
             insert o;
             delete oldGroup;
@@ -100,8 +102,8 @@ async function saveGroup(group: Group, conn: Connection): Promise<void> {
         o.VELOCPQ__Sequence__c = ${group.sequence};
         o.VELOCPQ__Type__c = '${group.type}';
         o.VELOCPQ__PriceListId__c = '${group.priceListId}';
-        if (!'${group.script}'.equals('undefined')) {
-          o.script__c = '${group.script}'.equals('null') ? null : '${group.script}';
+        if ('${isScriptExists}'.equals('true')) {
+          o.script__c = '${group.script}'.equals('null') || '${group.script}'.equals('undefined') ? null : '${group.script}';
         }
         insert o;
     }`;
