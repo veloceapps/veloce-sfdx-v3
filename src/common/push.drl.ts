@@ -65,7 +65,7 @@ async function saveRule(group: Group, rule: Rule, conn: Connection): Promise<voi
 
 async function saveGroup(group: Group, conn: Connection, isScriptExists: boolean): Promise<void> {
   const scriptCode = isScriptExists
-    ? `o.script__c = '${group.script}'.equals('null') || '${group.script}'.equals('undefined') ? null : '${group.script}';`
+    ? `o.script__c = ${typeof group.script === 'string' && group.script ? "'" + group.script + "'" : 'null'};`
     : '';
   const code = `
     VELOCPQ__PriceRuleGroup__c[] gs = [SELECT Id, VELOCPQ__PriceListId__c FROM VELOCPQ__PriceRuleGroup__c WHERE VELOCPQ__ReferenceId__c = '${group.referenceId}' LIMIT 1];
