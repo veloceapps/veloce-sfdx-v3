@@ -2,7 +2,6 @@ import { Connection, SfdxError } from '@salesforce/core';
 import { ExecuteService } from '@salesforce/apex-node';
 import { extractGroupsFromFolder, Group, Rule, setIdFromReferenceId } from '../utils/drools.utils';
 import { CommandParams } from '../types/command.types';
-import { isFieldExists } from '../utils/common.utils';
 
 async function saveRule(group: Group, rule: Rule, conn: Connection): Promise<void> {
   const action = JSON.stringify(rule.action).replaceAll("'", "\\'");
@@ -63,10 +62,11 @@ async function saveRule(group: Group, rule: Rule, conn: Connection): Promise<voi
   }
 }
 
-async function saveGroup(group: Group, conn: Connection, isScriptExists: boolean): Promise<void> {
-  const scriptCode = isScriptExists
-    ? `o.script__c = ${typeof group.script === 'string' && group.script ? "'" + group.script + "'" : 'null'};`
-    : '';
+async function saveGroup(group: Group, conn: Connection): Promise<void> {
+  const scriptCode =
+    group.script !== undefined
+      ? `o.script__c = ${typeof group.script === 'string' && group.script ? "'" + group.script + "'" : 'null'};`
+      : '';
   const code = `
     VELOCPQ__PriceRuleGroup__c[] gs = [SELECT Id, VELOCPQ__PriceListId__c FROM VELOCPQ__PriceRuleGroup__c WHERE VELOCPQ__ReferenceId__c = '${group.referenceId}' LIMIT 1];
     if (gs.size() > 0){
@@ -120,10 +120,9 @@ export async function pushDRL(params: CommandParams): Promise<string[]> {
   const sourcePath: string = rootPath + '/drl';
   const result = extractGroupsFromFolder(sourcePath);
   await setIdFromReferenceId(result, conn);
-  const isScriptExists = await isFieldExists(conn, 'VELOCPQ__PriceRuleGroup__c', 'script__c');
   for (const group of result) {
     if (member.all || member.names.includes(group.name)) {
-      await saveGroup(group, conn, isScriptExists);
+      await saveGroup(group, conn);
       for (const rule of group.priceRules) {
         await saveRule(group, rule, conn);
       }
