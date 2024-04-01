@@ -21,6 +21,8 @@ export interface SFProcedureRuleGroup {
   VELOCPQ__Sequence__c: string;
   VELOCPQ__Description__c: string;
   VELOCPQ__Active__c: boolean;
+  // Step__c added for Cato project, it contains pricing step, for example PostConfiguration
+  Step__c?: string;
 }
 
 export interface SFProcedureRuleCondition {
@@ -94,6 +96,8 @@ export interface RuleGroup {
   description: number;
   active: boolean;
   rules: Rule[];
+  // Step__c added for Cato project, it contains pricing step, for example PostConfiguration
+  step: string;
 }
 
 export interface Rule {
