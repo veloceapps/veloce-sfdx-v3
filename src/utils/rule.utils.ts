@@ -19,7 +19,7 @@ import {
   SFProcedureRuleTransformation,
 } from '../types/rule.types';
 import { createRulesParser, RuleVisitor } from '../grammar/src';
-import { isInstalledVersionBetween, parseJsonSafe, writeFileSafe } from './common.utils';
+import { isFieldExists, isInstalledVersionBetween, parseJsonSafe, writeFileSafe } from './common.utils';
 import { createDocument, fetchDocumentContent, updateDocument } from './document.utils';
 import { createFolder, fetchFolder } from './folder.utils';
 
@@ -30,6 +30,7 @@ export async function fetchProcedureRules(
   dumpAll: boolean,
   ruleNames?: string[],
 ): Promise<SFProcedureRule[]> {
+  const isStepExists = await isFieldExists(conn, 'VELOCPQ__RuleGroup__c', 'Step__c');
   const useScriptJsId = await isInstalledVersionBetween(conn, '2023.R6.1.0');
   let query = `SELECT Id,
                       Name,
@@ -39,6 +40,7 @@ export async function fetchProcedureRules(
                       VELOCPQ__RuleGroupId__r.VELOCPQ__Description__c,
                       VELOCPQ__RuleGroupId__r.VELOCPQ__Active__c,
                       VELOCPQ__RuleGroupId__r.VELOCPQ__ReferenceId__c,
+                      ${isStepExists ? 'VELOCPQ__RuleGroupId__r.Step__c,' : ''}
                       VELOCPQ__Description__c,
                       VELOCPQ__Sequence__c,
                       VELOCPQ__Active__c,
@@ -160,6 +162,7 @@ const saveToJSON = (procedureRules: SFProcedureRule[], pathToSave: string): void
     description: VELOCPQ__RuleGroupId__r.VELOCPQ__Description__c,
     active: VELOCPQ__RuleGroupId__r.VELOCPQ__Active__c,
     referenceId: VELOCPQ__RuleGroupId__r.VELOCPQ__ReferenceId__c,
+    step: VELOCPQ__RuleGroupId__r.Step__c,
     rules: procedureRules.map(
       ({
         Id,
@@ -354,6 +357,7 @@ export async function upsertRuleGroup(conn: Connection, ruleGroup: RuleGroup): P
     VELOCPQ__Sequence__c: ruleGroup.sequence,
     VELOCPQ__Description__c: ruleGroup.description,
     VELOCPQ__Active__c: ruleGroup.active,
+    Step__c: ruleGroup.step,
   };
   const result = await conn.sobject('VELOCPQ__RuleGroup__c').upsert(body, 'VELOCPQ__ReferenceId__c');
 
