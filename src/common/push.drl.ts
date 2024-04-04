@@ -63,6 +63,10 @@ async function saveRule(group: Group, rule: Rule, conn: Connection): Promise<voi
 }
 
 async function saveGroup(group: Group, conn: Connection): Promise<void> {
+  const scriptCode =
+    group.script !== undefined
+      ? `o.script__c = ${typeof group.script === 'string' && group.script ? "'" + group.script + "'" : 'null'};`
+      : '';
   const code = `
     VELOCPQ__PriceRuleGroup__c[] gs = [SELECT Id, VELOCPQ__PriceListId__c FROM VELOCPQ__PriceRuleGroup__c WHERE VELOCPQ__ReferenceId__c = '${group.referenceId}' LIMIT 1];
     if (gs.size() > 0){
@@ -74,6 +78,7 @@ async function saveGroup(group: Group, conn: Connection): Promise<void> {
             o.VELOCPQ__Description__c = '${group.description}';
             o.VELOCPQ__Sequence__c = ${group.sequence};
             o.VELOCPQ__Type__c = '${group.type}';
+            ${scriptCode}
             update o;
         } else {
             VELOCPQ__PriceRuleGroup__c o = new VELOCPQ__PriceRuleGroup__c(VELOCPQ__ReferenceId__c = '${group.referenceId}');
@@ -83,6 +88,7 @@ async function saveGroup(group: Group, conn: Connection): Promise<void> {
             o.VELOCPQ__Sequence__c = ${group.sequence};
             o.VELOCPQ__Type__c = '${group.type}';
             o.VELOCPQ__PriceListId__c = '${group.priceListId}';
+            ${scriptCode}
             insert o;
             delete oldGroup;
         }
@@ -94,12 +100,14 @@ async function saveGroup(group: Group, conn: Connection): Promise<void> {
         o.VELOCPQ__Sequence__c = ${group.sequence};
         o.VELOCPQ__Type__c = '${group.type}';
         o.VELOCPQ__PriceListId__c = '${group.priceListId}';
+        ${scriptCode}
         insert o;
     }`;
   const exec = new ExecuteService(conn);
   const execAnonOptions = { apexCode: code };
   const result = await exec.executeAnonymous(execAnonOptions);
   if (!result.success) {
+    console.error(result.diagnostic);
     throw new SfdxError(result.logs || 'Command Compile Error');
   }
 }
@@ -112,7 +120,6 @@ export async function pushDRL(params: CommandParams): Promise<string[]> {
   const sourcePath: string = rootPath + '/drl';
   const result = extractGroupsFromFolder(sourcePath);
   await setIdFromReferenceId(result, conn);
-
   for (const group of result) {
     if (member.all || member.names.includes(group.name)) {
       await saveGroup(group, conn);

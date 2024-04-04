@@ -7,4 +7,6 @@ export interface PriceRuleGroup {
   VELOCPQ__Sequence__c: number;
   VELOCPQ__Type__c: string;
   VELOCPQ__PriceListId__c: string;
+  // script__c added for Cato project, it contains Extract/Transformation script id
+  script__c?: string;
 }
