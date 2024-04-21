@@ -168,6 +168,9 @@ async function uploadPM(idmap: IdMap, sourcepath: string, conn: Connection, pmNa
       });
     // update meta json with new id
     if (result.success) {
+      if (!meta['Id']) {
+        meta['Id'] = result.id;
+      }
       const oldId = meta['Id'];
       // Update ID-map
       if (oldId && result.id && oldId !== result.id) {
@@ -176,6 +179,9 @@ async function uploadPM(idmap: IdMap, sourcepath: string, conn: Connection, pmNa
       }
     }
   } else {
+    if (!meta['Id']) {
+      meta['Id'] = pmId;
+    }
     // updating existing product model from meta
     const clone = Object.assign({}, meta);
     if (idmap[meta.Id]) {
