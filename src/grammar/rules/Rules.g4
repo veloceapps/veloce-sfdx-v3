@@ -35,7 +35,7 @@ ruleDeclaration
     'sequence' sequence
     ('condition' (filterDeclaration)+)?
     ('transformation' (transformationDeclaration)+)?
-    ('action' (ifBlockCondition | actionDeclaration)+)?
+    ('action' (conditionalActionDeclaration)+)?
     'end'
     ;
 sequence
@@ -60,6 +60,10 @@ transformationStatement
 script
     : SCRIPT_TEXT
     ;
+
+conditionalActionDeclaration
+    : ('if' LPAREN expression RPAREN 'then')? actionDeclaration
+    ;
 actionDeclaration
     :
     removePropertyAction |
@@ -78,10 +82,6 @@ actionDeclaration
     eligibilityCondition |
     eligibilityAll |
     eligibilityMessage
-    ;
-
-ifBlockCondition
-    : 'if' LPAREN expression RPAREN 'then' actionDeclaration
     ;
 
 setPropertyAction

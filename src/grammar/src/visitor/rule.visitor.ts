@@ -1,5 +1,5 @@
 import { ParserRuleContext } from 'antlr4ts';
-import { RulesParser } from '../../rules/RulesParser';
+import { ActionDeclarationContext, ConditionalActionDeclarationContext, RulesParser } from '../../rules/RulesParser';
 import { Rule } from '../../../types/rule.types';
 import { getStringContent } from '../../../utils/rule.utils';
 import { ParseTreeVisitor } from './ParseTreeVisitor';
@@ -56,8 +56,10 @@ export class RuleVisitor extends ParseTreeVisitor {
         super.visit(ctx);
         break;
       }
-      case RulesParser.RULE_ifBlockCondition:
-      case RulesParser.RULE_actionDeclaration: {
+      case RulesParser.RULE_conditionalActionDeclaration: {
+        const cadCtx = ctx as ConditionalActionDeclarationContext;
+        const actionDeclarationContext: ActionDeclarationContext = cadCtx.actionDeclaration();
+        const ifBlockCondition = cadCtx.expression()?.text;
         const rule = this.rules[this.rules.length - 1];
         if (!ctx.text || ctx.exception) {
           console.log(`Can't parse rule action ${rule.name}. Please check it.`);
@@ -69,8 +71,13 @@ export class RuleVisitor extends ParseTreeVisitor {
           ...(rule.transformations || []).map((transformation) => transformation.resultPath),
         ].filter((variable) => variable);
         ruleActionVisitor.defineVariables(variables);
-        ruleActionVisitor.visit(ctx);
-        rule.mappers?.push(ruleActionVisitor.action);
+        ruleActionVisitor.visit(actionDeclarationContext);
+        const action = ruleActionVisitor.action;
+        action.ifBlockCondition = ifBlockCondition;
+        rule.mappers?.push(action);
+        if (rule.name === '[TPC] 100 Apply Quote Target') {
+          console.log('action=', action);
+        }
         super.visit(ctx);
         break;
       }
