@@ -17,6 +17,14 @@ export class RuleActionVisitor extends ParseTreeVisitor {
 
   public visit(ctx: ParserRuleContext): void {
     switch (ctx.ruleIndex) {
+      case RulesParser.RULE_ifBlockCondition: {
+        this.setProperty('ifBlockCondition', ctx.children?.[2]?.text);
+        this.action.ifBlockSequence = 0;
+        this.visit(ctx.children?.[5] as ParserRuleContext);
+
+        super.visit(ctx);
+        break;
+      }
       case RulesParser.RULE_removePropertyAction: {
         this.setProperty('variableName', ctx.children?.[0]?.text);
         this.action.action = this.getActionName(ctx.children?.[2]?.text);

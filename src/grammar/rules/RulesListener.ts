@@ -21,6 +21,7 @@ import { TransformationDeclarationContext } from './RulesParser';
 import { TransformationStatementContext } from './RulesParser';
 import { ScriptContext } from './RulesParser';
 import { ActionDeclarationContext } from './RulesParser';
+import { IfBlockConditionContext } from './RulesParser';
 import { SetPropertyActionContext } from './RulesParser';
 import { RemovePropertyActionContext } from './RulesParser';
 import { SetFieldValueActionContext } from './RulesParser';
@@ -190,6 +191,17 @@ export interface RulesListener extends ParseTreeListener {
    * @param ctx the parse tree
    */
   exitActionDeclaration?: (ctx: ActionDeclarationContext) => void;
+
+  /**
+   * Enter a parse tree produced by `RulesParser.ifBlockCondition`.
+   * @param ctx the parse tree
+   */
+  enterIfBlockCondition?: (ctx: IfBlockConditionContext) => void;
+  /**
+   * Exit a parse tree produced by `RulesParser.ifBlockCondition`.
+   * @param ctx the parse tree
+   */
+  exitIfBlockCondition?: (ctx: IfBlockConditionContext) => void;
 
   /**
    * Enter a parse tree produced by `RulesParser.setPropertyAction`.

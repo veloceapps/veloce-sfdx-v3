@@ -35,7 +35,7 @@ ruleDeclaration
     'sequence' sequence
     ('condition' (filterDeclaration)+)?
     ('transformation' (transformationDeclaration)+)?
-    ('action' (actionDeclaration)+)?
+    ('action' (ifBlockCondition | actionDeclaration)+)?
     'end'
     ;
 sequence
@@ -78,6 +78,10 @@ actionDeclaration
     eligibilityCondition |
     eligibilityAll |
     eligibilityMessage
+    ;
+
+ifBlockCondition
+    : 'if' LPAREN expression RPAREN 'then' actionDeclaration
     ;
 
 setPropertyAction

@@ -56,6 +56,7 @@ export class RuleVisitor extends ParseTreeVisitor {
         super.visit(ctx);
         break;
       }
+      case RulesParser.RULE_ifBlockCondition:
       case RulesParser.RULE_actionDeclaration: {
         const rule = this.rules[this.rules.length - 1];
         if (!ctx.text || ctx.exception) {

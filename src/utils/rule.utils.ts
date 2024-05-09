@@ -32,6 +32,7 @@ export async function fetchProcedureRules(
 ): Promise<SFProcedureRule[]> {
   const isStepExists = await isFieldExists(conn, 'VELOCPQ__RuleGroup__c', 'Step__c');
   const useScriptJsId = await isInstalledVersionBetween(conn, '2023.R6.1.0');
+  const supportsIfBlockCondition = await isInstalledVersionBetween(conn, '2023.R6.1.0');
   let query = `SELECT Id,
                       Name,
                       VELOCPQ__RuleGroupId__r.Name,
@@ -78,7 +79,11 @@ export async function fetchProcedureRules(
                               VELOCPQ__AllowOverride__c,
                               VELOCPQ__ReferenceId__c,
                               VELOCPQ__Sequence__c,
-                              VELOCPQ__Eligible__c
+                              VELOCPQ__Eligible__c${
+                                supportsIfBlockCondition
+                                  ? ',VELOCPQ__IfBlockCondition__c,VELOCPQ__IfBlockSequence__c'
+                                  : ''
+                              }
                        FROM VELOCPQ__ProcedureRules_RuleMappings__r)
                FROM VELOCPQ__ProcedureRule__c`;
   if (!dumpAll) {
@@ -298,7 +303,11 @@ const actionsToDSL = (actions: SFProcedureRuleMapping[], type: string): string =
               action.VELOCPQ__TotalMetricName__c,
               isAdjustPriceAction ? `${action.VELOCPQ__AllowOverride__c}` : null,
             ];
-            return `${type === 'METRIC' ? 'chargeItem' : action.VELOCPQ__VariableName__c}.${camelCase(
+            return `${
+              action.VELOCPQ__IfBlockCondition__c
+                ? 'if (' + action.VELOCPQ__IfBlockCondition__c + ') then\n            '
+                : ''
+            }${type === 'METRIC' ? 'chargeItem' : action.VELOCPQ__VariableName__c}.${camelCase(
               action.VELOCPQ__Action__c,
             )}(${argumentsOrder.filter((arg) => !!arg || isBoolean(arg)).join(',')})`;
           })
@@ -664,6 +673,12 @@ export async function deleteRuleActions(conn: Connection, fromRuleId: string): P
 }
 
 export async function createRuleAction(conn: Connection, action: RuleAction, ruleId: string): Promise<SuccessResult> {
+  const supportsIfBlockCondition = await isInstalledVersionBetween(conn, '2023.R6.1.0');
+  if (!supportsIfBlockCondition && action.ifBlockCondition?.length) {
+    throw new SfdxError(
+      'Failed to create rule action: installed version of Veloce CPQ package does not support if-blocks in actions. Please update to at least 2023.R6.1.0 version.',
+    );
+  }
   const body = {
     Id: '',
     VELOCPQ__Sequence__c: action.sequence,
@@ -681,13 +696,15 @@ export async function createRuleAction(conn: Connection, action: RuleAction, rul
     VELOCPQ__MessageValueType__c: action.messageValueType,
     VELOCPQ__AllowOverride__c: action.allowOverride === true,
     VELOCPQ__Eligible__c: action.eligible,
+    VELOCPQ__IfBlockCondition__c: action.ifBlockCondition,
+    VELOCPQ__IfBlockSequence__c: action.ifBlockSequence ?? 0,
   };
   const result = await conn.sobject('VELOCPQ__RuleMapper__c').create(body);
 
   if (result.success) {
     console.log(`Procedure Rule Action ${body.VELOCPQ__Action__c} upserted`);
   } else {
-    throw new SfdxError(`Failed to create document: ${JSON.stringify(result)}`);
+    throw new SfdxError(`Failed to create rule action: ${JSON.stringify(result)}`);
   }
 
   return result;
