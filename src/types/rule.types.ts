@@ -63,6 +63,8 @@ export interface SFProcedureRuleMapping {
   VELOCPQ__MessageValueType__c: string;
   VELOCPQ__AllowOverride__c: boolean;
   VELOCPQ__Eligible__c: boolean;
+  VELOCPQ__IfBlockCondition__c: string;
+  VELOCPQ__IfBlockSequence__c: number;
 }
 
 interface SOQLResult<T> {
@@ -148,4 +150,6 @@ export interface RuleAction {
   messageValueType?: string;
   allowOverride?: boolean;
   eligible?: boolean;
+  ifBlockCondition?: string;
+  ifBlockSequence?: number;
 }

@@ -35,7 +35,7 @@ ruleDeclaration
     'sequence' sequence
     ('condition' (filterDeclaration)+)?
     ('transformation' (transformationDeclaration)+)?
-    ('action' (actionDeclaration)+)?
+    ('action' (conditionalActionDeclaration)+)?
     'end'
     ;
 sequence
@@ -59,6 +59,10 @@ transformationStatement
     ;
 script
     : SCRIPT_TEXT
+    ;
+
+conditionalActionDeclaration
+    : ('if' LPAREN expression RPAREN 'then')? actionDeclaration
     ;
 actionDeclaration
     :
