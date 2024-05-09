@@ -75,9 +75,6 @@ export class RuleVisitor extends ParseTreeVisitor {
         const action = ruleActionVisitor.action;
         action.ifBlockCondition = ifBlockCondition;
         rule.mappers?.push(action);
-        if (rule.name === '[TPC] 100 Apply Quote Target') {
-          console.log('action=', action);
-        }
         super.visit(ctx);
         break;
       }
