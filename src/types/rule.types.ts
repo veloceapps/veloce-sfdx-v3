@@ -31,6 +31,7 @@ export interface SFProcedureRuleCondition {
   VELOCPQ__Sequence__c: number;
   VELOCPQ__VariableName__c: string;
   VELOCPQ__Property__c?: string;
+  VELOCPQ__RelatedConditionVariable__c?: string;
   VELOCPQ__ExpressionsJsonString__c: string;
   VELOCPQ__RuleId__c: string;
   VELOCPQ__ObjectType__c: string;
@@ -124,6 +125,7 @@ export interface RuleCondition {
   objectType?: string;
   variableName?: string;
   property?: string;
+  relatedConditionVariable?: string;
 }
 
 export interface RuleTransformation {

@@ -1,3 +1,4 @@
+import { SfdxError } from '@salesforce/core';
 import { ParserRuleContext } from 'antlr4ts';
 import { ActionDeclarationContext, ConditionalActionDeclarationContext, RulesParser } from '../../rules/RulesParser';
 import { Rule } from '../../../types/rule.types';
@@ -80,6 +81,9 @@ export class RuleVisitor extends ParseTreeVisitor {
       }
       default:
         super.visit(ctx);
+    }
+    if (this.exception != null) {
+      throw new SfdxError('Exception occurred during parsing rules', undefined, undefined, undefined, this.exception);
     }
   }
 
