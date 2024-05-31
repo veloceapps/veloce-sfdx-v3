@@ -14,7 +14,7 @@ import {
 } from '../utils/rule.utils';
 
 export async function pushRule(params: CommandParams): Promise<string[]> {
-  const { rootPath, conn, member } = params;
+  const { rootPath, conn, member, skipdelete } = params;
   if (!member) {
     return [];
   }
@@ -64,15 +64,17 @@ export async function pushRule(params: CommandParams): Promise<string[]> {
       }
     }
 
-    const rulesCleanupResult = await cleanupRules(conn, result, ruleGroup.referenceId);
-    const removedRules = rulesCleanupResult.reduce(
-      (ids: string[], item) => (item.success ? [...ids, item.id] : ids),
-      [],
-    );
-    for (const ruleId of removedRules) {
-      await cleanupRuleConditions(conn, [], ruleId);
-      await cleanupRuleTransformations(conn, [], ruleId);
-      await cleanupRuleActions(conn, [], ruleId);
+    if (!skipdelete) {
+      const rulesCleanupResult = await cleanupRules(conn, result, ruleGroup.referenceId);
+      const removedRules = rulesCleanupResult.reduce(
+        (ids: string[], item) => (item.success ? [...ids, item.id] : ids),
+        [],
+      );
+      for (const ruleId of removedRules) {
+        await cleanupRuleConditions(conn, [], ruleId);
+        await cleanupRuleTransformations(conn, [], ruleId);
+        await cleanupRuleActions(conn, [], ruleId);
+      }
     }
   }
 
