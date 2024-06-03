@@ -7,5 +7,5 @@ export interface CommandParams {
   rootPath: string;
   conn: Connection;
   member: Member | undefined;
-  skipdelete?: boolean;
+  skipDelete?: boolean;
 }

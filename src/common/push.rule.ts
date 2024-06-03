@@ -14,7 +14,7 @@ import {
 } from '../utils/rule.utils';
 
 export async function pushRule(params: CommandParams): Promise<string[]> {
-  const { rootPath, conn, member, skipdelete } = params;
+  const { rootPath, conn, member, skipDelete } = params;
   if (!member) {
     return [];
   }
@@ -64,7 +64,7 @@ export async function pushRule(params: CommandParams): Promise<string[]> {
       }
     }
 
-    if (!skipdelete) {
+    if (!skipDelete) {
       const rulesCleanupResult = await cleanupRules(conn, result, ruleGroup.referenceId);
       const removedRules = rulesCleanupResult.reduce(
         (ids: string[], item) => (item.success ? [...ids, item.id] : ids),
