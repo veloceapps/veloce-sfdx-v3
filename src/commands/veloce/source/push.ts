@@ -92,7 +92,13 @@ export default class Push extends SfdxCommand {
 
     const drlRecords = await pushDRL({ idmap, rootPath, conn, member: memberMap.get('drl') });
 
-    const rule = await pushRule({ idmap, rootPath, conn, member: memberMap.get('rule') });
+    const rule = await pushRule({
+      idmap,
+      rootPath,
+      conn,
+      member: memberMap.get('rule'),
+      skipDelete: this.flags.skipdelete,
+    });
 
     const pmlRecords = await pushModel({ idmap, rootPath, conn, member: memberMap.get('model') });
 
@@ -108,6 +114,7 @@ export default class Push extends SfdxCommand {
 
     const docTemplateRecords = await pushDocTemplates({ idmap, rootPath, conn, member: memberMap.get('doc-template') });
 
+    ctx.storeIdmap(idmapPath);
     await saveIdMap(conn, idmap);
 
     // Return an object to be displayed with --json

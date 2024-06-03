@@ -1,4 +1,5 @@
 import { CommandParams } from '../types/command.types';
+import { getContext } from '../utils/context';
 import {
   cleanupRuleActions,
   cleanupRuleConditions,
@@ -14,10 +15,13 @@ import {
 } from '../utils/rule.utils';
 
 export async function pushRule(params: CommandParams): Promise<string[]> {
-  const { rootPath, conn, member, skipDelete } = params;
+  const { idmap, rootPath, conn, member, skipDelete } = params;
   if (!member) {
     return [];
   }
+
+  const ctx = getContext();
+  const idmapJson = ctx.idmap; // idmap from command arguments (stored in JSON file)
 
   const names = member.all ? undefined : Array.from(member.names).map((ui) => ui.split(':')[0]);
   const ruleGroups = getRuleGroups(rootPath + '/rule', names);
@@ -27,12 +31,36 @@ export async function pushRule(params: CommandParams): Promise<string[]> {
   for (const ruleGroup of ruleGroups) {
     const ruleGroupResult = await upsertRuleGroup(conn, ruleGroup);
 
+    if (ruleGroup.id) {
+      if (idmapJson) {
+        // if provided, use old json-idmap
+        console.log(`IDMAP(JSON): ${ruleGroup.id} => ${ruleGroupResult.id}`);
+        idmapJson.put(ruleGroup.id, ruleGroupResult.id);
+      } else if (idmap) {
+        // otherwise, use SF-based idmap
+        console.log(`IDMAP(NEW): ${ruleGroup.id} => ${ruleGroupResult.id}`);
+        idmap[ruleGroup.id] = ruleGroupResult.id;
+      }
+    }
+
     for (const rule of ruleGroup.rules) {
       if (!rule.name) {
         continue;
       }
       const ruleResult = await upsertRule(conn, rule, ruleGroupResult.id);
       result.push(ruleResult.id);
+
+      if (rule.id) {
+        if (idmapJson) {
+          // if provided, use old json-idmap
+          console.log(`IDMAP(JSON): ${rule.id} => ${ruleResult.id}`);
+          idmapJson.put(rule.id, ruleResult.id);
+        } else if (idmap) {
+          // otherwise, use SF-based idmap
+          console.log(`IDMAP(NEW): ${rule.id} => ${ruleResult.id}`);
+          idmap[rule.id] = ruleResult.id;
+        }
+      }
 
       const conditionsResults = [];
       for (const condition of rule.conditions || []) {
@@ -65,6 +93,7 @@ export async function pushRule(params: CommandParams): Promise<string[]> {
     }
 
     if (!skipDelete) {
+      console.log(`Clean up rule group with id ${ruleGroupResult.id}`);
       const rulesCleanupResult = await cleanupRules(conn, result, ruleGroup.referenceId);
       const removedRules = rulesCleanupResult.reduce(
         (ids: string[], item) => (item.success ? [...ids, item.id] : ids),
@@ -75,6 +104,8 @@ export async function pushRule(params: CommandParams): Promise<string[]> {
         await cleanupRuleTransformations(conn, [], ruleId);
         await cleanupRuleActions(conn, [], ruleId);
       }
+    } else {
+      console.log(`Skipping clean up rule group with id ${ruleGroupResult.id}`);
     }
   }
 

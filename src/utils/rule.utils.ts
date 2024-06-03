@@ -190,7 +190,7 @@ const saveToJSON = (procedureRules: SFProcedureRule[], pathToSave: string): void
   writeFileSafe(
     pathToSave,
     `${VELOCPQ__RuleGroupId__r.VELOCPQ__Type__c}_${VELOCPQ__RuleGroupId__r.Name}.json`,
-    JSON.stringify(generatedJSON),
+    JSON.stringify(generatedJSON, null, 2),
     {
       flag: 'w+',
     },

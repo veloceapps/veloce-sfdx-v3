@@ -92,6 +92,7 @@ export const RuleObjectTypes: { [key: string]: string } = {
 };
 
 export interface RuleGroup {
+  id?: string;
   referenceId: string;
   name: string;
   type: string;
@@ -104,6 +105,7 @@ export interface RuleGroup {
 }
 
 export interface Rule {
+  id?: string;
   referenceId?: string;
   name?: string;
   sequence?: number;
