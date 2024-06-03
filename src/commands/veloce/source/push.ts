@@ -103,7 +103,7 @@ export default class Push extends SfdxCommand {
       rootPath,
       conn,
       member: memberMap.get('config-settings'),
-      skipdelete: this.flags.skipdelete,
+      skipDelete: this.flags.skipdelete,
     });
 
     const docTemplateRecords = await pushDocTemplates({ idmap, rootPath, conn, member: memberMap.get('doc-template') });

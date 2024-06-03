@@ -19,6 +19,11 @@ export class RuleConditionVisitor extends ParseTreeVisitor {
         super.visit(ctx);
         break;
       }
+      case RulesParser.RULE_relatedConditionVariable: {
+        this.condition.relatedConditionVariable = ctx.text;
+        super.visit(ctx);
+        break;
+      }
       case RulesParser.RULE_filterExpression: {
         super.visit(ctx);
         if (ctx.children?.[0]?.text) {

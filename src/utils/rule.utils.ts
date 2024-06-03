@@ -32,7 +32,7 @@ export async function fetchProcedureRules(
 ): Promise<SFProcedureRule[]> {
   const isStepExists = await isFieldExists(conn, 'VELOCPQ__RuleGroup__c', 'Step__c');
   const useScriptJsId = await isInstalledVersionBetween(conn, '2023.R6.1.0');
-  const supportsIfBlockCondition = await isInstalledVersionBetween(conn, '2023.R6.1.0');
+  const atLeastR6_1_0 = await isInstalledVersionBetween(conn, '2023.R6.1.0');
   let query = `SELECT Id,
                       Name,
                       VELOCPQ__RuleGroupId__r.Name,
@@ -55,7 +55,7 @@ export async function fetchProcedureRules(
                               VELOCPQ__RuleId__c,
                               VELOCPQ__ObjectType__c,
                               VELOCPQ__ReferenceId__c,
-                              VELOCPQ__Sequence__c
+                              VELOCPQ__Sequence__c${atLeastR6_1_0 ? ',VELOCPQ__RelatedConditionVariable__c' : ''}
                        FROM VELOCPQ__ProcedureRules_RuleConditions__r),
                       (SELECT Id,
                               VELOCPQ__RuleId__c,
@@ -80,9 +80,7 @@ export async function fetchProcedureRules(
                               VELOCPQ__ReferenceId__c,
                               VELOCPQ__Sequence__c,
                               VELOCPQ__Eligible__c${
-                                supportsIfBlockCondition
-                                  ? ',VELOCPQ__IfBlockCondition__c,VELOCPQ__IfBlockSequence__c'
-                                  : ''
+                                atLeastR6_1_0 ? ',VELOCPQ__IfBlockCondition__c,VELOCPQ__IfBlockSequence__c' : ''
                               }
                        FROM VELOCPQ__ProcedureRules_RuleMappings__r)
                FROM VELOCPQ__ProcedureRule__c`;
@@ -253,7 +251,11 @@ const conditionsToDSL = (conditions: SFProcedureRuleCondition[], type: string): 
                 condition.VELOCPQ__Property__c ? '|' + condition.VELOCPQ__Property__c + ':' : ':'
               } ${type === 'METRIC' ? 'ChargeItem' : RuleObjectTypes[condition.VELOCPQ__ObjectType__c]}(${
                 condition.VELOCPQ__ExpressionsJsonString__c ?? ''
-              })`,
+              })${
+                condition.VELOCPQ__RelatedConditionVariable__c?.length
+                  ? ' from ' + condition.VELOCPQ__RelatedConditionVariable__c
+                  : ''
+              }`,
           )
           .join('\n        ')}`;
 };
@@ -472,6 +474,12 @@ export async function upsertRuleCondition(
   condition: RuleCondition,
   ruleId: string,
 ): Promise<SuccessResult> {
+  const atLeastR6_1_0 = await isInstalledVersionBetween(conn, '2023.R6.1.0');
+  if (!atLeastR6_1_0 && condition.relatedConditionVariable?.length) {
+    throw new SfdxError(
+      'Failed to create rule condition: installed version of Veloce CPQ package does not support related condition variables. Please update to at least 2023.R6.1.0 version.',
+    );
+  }
   const body = {
     VELOCPQ__ReferenceId__c: condition.referenceId,
     VELOCPQ__Sequence__c: condition.sequence,
@@ -480,6 +488,9 @@ export async function upsertRuleCondition(
     VELOCPQ__RuleId__c: ruleId,
     VELOCPQ__ObjectType__c: condition.objectType,
     VELOCPQ__Property__c: condition.property ?? condition.objectType,
+    ...(condition.relatedConditionVariable?.length && {
+      VELOCPQ__RelatedConditionVariable__c: condition.relatedConditionVariable,
+    }),
   };
   const existingRuleCondition = await findRuleCondition(conn, condition, ruleId);
   let result;
@@ -673,8 +684,8 @@ export async function deleteRuleActions(conn: Connection, fromRuleId: string): P
 }
 
 export async function createRuleAction(conn: Connection, action: RuleAction, ruleId: string): Promise<SuccessResult> {
-  const supportsIfBlockCondition = await isInstalledVersionBetween(conn, '2023.R6.1.0');
-  if (!supportsIfBlockCondition && action.ifBlockCondition?.length) {
+  const atLeastR6_1_0 = await isInstalledVersionBetween(conn, '2023.R6.1.0');
+  if (!atLeastR6_1_0 && action.ifBlockCondition?.length) {
     throw new SfdxError(
       'Failed to create rule action: installed version of Veloce CPQ package does not support if-blocks in actions. Please update to at least 2023.R6.1.0 version.',
     );

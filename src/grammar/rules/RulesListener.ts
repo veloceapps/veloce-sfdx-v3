@@ -42,6 +42,7 @@ import { MetricNameContext } from './RulesParser';
 import { TotalMetricNameContext } from './RulesParser';
 import { TransformationVariableContext } from './RulesParser';
 import { VariableNameContext } from './RulesParser';
+import { RelatedConditionVariableContext } from './RulesParser';
 import { TargetFieldNameContext } from './RulesParser';
 import { ExplanationContext } from './RulesParser';
 import { ValueContext } from './RulesParser';
@@ -422,6 +423,17 @@ export interface RulesListener extends ParseTreeListener {
    * @param ctx the parse tree
    */
   exitVariableName?: (ctx: VariableNameContext) => void;
+
+  /**
+   * Enter a parse tree produced by `RulesParser.relatedConditionVariable`.
+   * @param ctx the parse tree
+   */
+  enterRelatedConditionVariable?: (ctx: RelatedConditionVariableContext) => void;
+  /**
+   * Exit a parse tree produced by `RulesParser.relatedConditionVariable`.
+   * @param ctx the parse tree
+   */
+  exitRelatedConditionVariable?: (ctx: RelatedConditionVariableContext) => void;
 
   /**
    * Enter a parse tree produced by `RulesParser.targetFieldName`.

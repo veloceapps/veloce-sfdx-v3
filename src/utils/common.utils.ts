@@ -142,8 +142,8 @@ FROM InstalledSubscriberPackage`,
     })?.[0]?.Name;
 };
 
-/* i.e. 2023.R6.1.0 or 2023.R6-SNAPSHOT */
-export const versionPattern = /(?<year>[0-9]+)\.R(?<major>[0-9]+)(\.(?<minor>[0-9]+)\.(?<patch>[0-9]+)|-SNAPSHOT)/g;
+/* i.e. 2023.R6.1.0 or 2023.R6-SNAPSHOT or 2024.R7.2-SNAPSHOT */
+export const versionPattern = /(?<year>[0-9]+)\.R(?<major>[0-9]+)(\.(?<minor>[0-9]+))?(\.(?<patch>[0-9]+)|-SNAPSHOT)/g;
 /*
  * isInstalledVersionBetween checks installed Veloce Advanced CPQ version for compatibility
  */
@@ -158,7 +158,7 @@ export const isInstalledVersionBetween = async (
     const toParts = versionPattern.exec(toVersion ?? '');
     const installedParts = versionPattern.exec(installedVersion);
     if (installedParts) {
-      if (!installedParts.groups?.['minor']) {
+      if (!installedParts.groups?.['patch']) {
         // SNAPSHOT
         // compare strings ('year' + 'major')
         if (

@@ -5,7 +5,7 @@ import { ConfigurationSetting } from '../types/configurationSetting.types';
 import { CommandParams } from '../types/command.types';
 
 export async function pushSettings(params: CommandParams): Promise<string[]> {
-  const { rootPath, conn, member, skipdelete } = params;
+  const { rootPath, conn, member, skipDelete } = params;
   if (!member) {
     return [];
   }
@@ -39,8 +39,8 @@ export async function pushSettings(params: CommandParams): Promise<string[]> {
     }
   }
 
-  if (!skipdelete) {
-    const settingsToDelete = existingSettings.reduce((acc, {Id}) => {
+  if (!skipDelete) {
+    const settingsToDelete = existingSettings.reduce((acc, { Id }) => {
       if (!ids.includes(Id)) {
         acc.push(Id);
       }

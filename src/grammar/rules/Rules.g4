@@ -42,7 +42,7 @@ sequence
     : INTLITERAL
     ;
 filterDeclaration
-    : variableName('|' property)? ':' filterExpression
+    : variableName('|' property)? ':' filterExpression ('from' relatedConditionVariable)?
     ;
 property:
     IDENTIFIER
@@ -163,6 +163,9 @@ transformationVariable:
     IDENTIFIER
     ;
 variableName:
+    IDENTIFIER
+    ;
+relatedConditionVariable:
     IDENTIFIER
     ;
 targetFieldName:
