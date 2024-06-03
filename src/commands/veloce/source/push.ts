@@ -52,7 +52,7 @@ export default class Push extends SfdxCommand {
       char: 'P',
       description: messages.getMessage('noprojectFlagDescription'),
     }),
-    skipDelete: flags.boolean({
+    skipdelete: flags.boolean({
       char: 'd',
       description: messages.getMessage('skipdeleteFlagDescription'),
     }),
@@ -103,7 +103,7 @@ export default class Push extends SfdxCommand {
       rootPath,
       conn,
       member: memberMap.get('config-settings'),
-      skipDelete: this.flags.skipDelete,
+      skipDelete: this.flags.skipdelete,
     });
 
     const docTemplateRecords = await pushDocTemplates({ idmap, rootPath, conn, member: memberMap.get('doc-template') });
