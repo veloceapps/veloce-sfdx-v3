@@ -3,7 +3,7 @@ import { fetchProcedureRules, saveProcedureRules } from '../utils/rule.utils';
 import { CommandParams } from '../types/command.types';
 
 export async function pullRule(params: CommandParams): Promise<string[]> {
-  const { rootPath, conn, member } = params;
+  const { idmap, rootPath, conn, member } = params;
   if (!member) {
     return [];
   }
@@ -16,7 +16,7 @@ export async function pullRule(params: CommandParams): Promise<string[]> {
   const procedureRules: SFProcedureRule[] = await fetchProcedureRules(conn, member.all, names);
   console.log(`Dumping Rules result count: ${procedureRules.length}`);
 
-  saveProcedureRules(procedureRules, rootPath + '/rule');
+  saveProcedureRules(procedureRules, rootPath + '/rule', idmap);
 
   return procedureRules.map(({ Id }) => Id);
 }

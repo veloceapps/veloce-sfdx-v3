@@ -5,6 +5,7 @@ import { Connection, SfdxError } from '@salesforce/core';
 import { SuccessResult, RecordResult } from 'jsforce/record-result';
 import { camelCase, groupBy, isBoolean } from 'lodash';
 import { DocumentBody } from '../types/document.types';
+import { IdMap } from '../types/idmap';
 import {
   Rule,
   RuleAction,
@@ -22,6 +23,7 @@ import { createRulesParser, RuleVisitor } from '../grammar/src';
 import { isFieldExists, isInstalledVersionBetween, parseJsonSafe, writeFileSafe } from './common.utils';
 import { createDocument, fetchDocumentContent, updateDocument } from './document.utils';
 import { createFolder, fetchFolder } from './folder.utils';
+import { getIdFromIdmap } from './idmap.utils';
 
 const SCRIPTS_FOLDER_NAME = 'velo_scripts';
 
@@ -146,19 +148,19 @@ export async function fetchProcedureRules(
   });
 }
 
-export function saveProcedureRules(procedureRules: SFProcedureRule[], pathToSave: string): void {
+export function saveProcedureRules(procedureRules: SFProcedureRule[], pathToSave: string, idmap?: IdMap): void {
   const groups = groupBy(procedureRules, 'VELOCPQ__RuleGroupId__c');
   Object.keys(groups).forEach((key) => {
     const procedureRulesGroup = groups[key];
-    saveToJSON(procedureRulesGroup, pathToSave);
+    saveToJSON(procedureRulesGroup, pathToSave, idmap);
     saveToDSL(procedureRulesGroup, pathToSave);
   });
 }
 
-const saveToJSON = (procedureRules: SFProcedureRule[], pathToSave: string): void => {
+const saveToJSON = (procedureRules: SFProcedureRule[], pathToSave: string, idmap?: IdMap): void => {
   const { VELOCPQ__RuleGroupId__c, VELOCPQ__RuleGroupId__r } = procedureRules[0];
   const generatedJSON = {
-    id: VELOCPQ__RuleGroupId__c,
+    id: getIdFromIdmap(VELOCPQ__RuleGroupId__c, idmap),
     name: VELOCPQ__RuleGroupId__r.Name,
     type: VELOCPQ__RuleGroupId__r.VELOCPQ__Type__c,
     sequence: VELOCPQ__RuleGroupId__r.VELOCPQ__Sequence__c,
@@ -176,7 +178,7 @@ const saveToJSON = (procedureRules: SFProcedureRule[], pathToSave: string): void
         VELOCPQ__ReferenceId__c,
         VELOCPQ__Sequence__c,
       }) => ({
-        id: Id,
+        id: getIdFromIdmap(Id, idmap),
         name: Name,
         description: VELOCPQ__Description__c,
         active: VELOCPQ__Active__c,
