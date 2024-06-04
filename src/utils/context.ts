@@ -18,6 +18,14 @@ export class Context {
     this.idmap = new IdMapJson(path);
   }
 
+  public storeIdmap(path?: string | null): void {
+    if (!path || !this.idmap) {
+      return;
+    }
+
+    this.idmap.saveToPath(path);
+  }
+
   public get ux(): UX {
     const pCmd = this.cmd as any as PublicSfdxCommand;
 
