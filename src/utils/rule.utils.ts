@@ -168,25 +168,27 @@ const saveToJSON = (procedureRules: SFProcedureRule[], pathToSave: string, idmap
     active: VELOCPQ__RuleGroupId__r.VELOCPQ__Active__c,
     referenceId: VELOCPQ__RuleGroupId__r.VELOCPQ__ReferenceId__c,
     step: VELOCPQ__RuleGroupId__r.Step__c,
-    rules: procedureRules.map(
-      ({
-        Id,
-        Name,
-        VELOCPQ__Description__c,
-        VELOCPQ__Active__c,
-        VELOCPQ__Default__c,
-        VELOCPQ__ReferenceId__c,
-        VELOCPQ__Sequence__c,
-      }) => ({
-        id: getIdFromIdmap(Id, idmap),
-        name: Name,
-        description: VELOCPQ__Description__c,
-        active: VELOCPQ__Active__c,
-        isDefault: VELOCPQ__Default__c,
-        referenceId: VELOCPQ__ReferenceId__c,
-        sequence: VELOCPQ__Sequence__c,
-      }),
-    ),
+    rules: procedureRules
+      .sort((a, b) => a.VELOCPQ__Sequence__c - b.VELOCPQ__Sequence__c)
+      .map(
+        ({
+          Id,
+          Name,
+          VELOCPQ__Description__c,
+          VELOCPQ__Active__c,
+          VELOCPQ__Default__c,
+          VELOCPQ__ReferenceId__c,
+          VELOCPQ__Sequence__c,
+        }) => ({
+          id: getIdFromIdmap(Id, idmap),
+          name: Name,
+          description: VELOCPQ__Description__c,
+          active: VELOCPQ__Active__c,
+          isDefault: VELOCPQ__Default__c,
+          referenceId: VELOCPQ__ReferenceId__c,
+          sequence: VELOCPQ__Sequence__c,
+        }),
+      ),
   };
 
   writeFileSafe(
@@ -202,6 +204,7 @@ const saveToJSON = (procedureRules: SFProcedureRule[], pathToSave: string, idmap
 const saveToDSL = (procedureRules: SFProcedureRule[], pathToSave: string): any => {
   const { VELOCPQ__RuleGroupId__r } = procedureRules[0];
   const result = procedureRules
+    .sort((a, b) => a.VELOCPQ__Sequence__c - b.VELOCPQ__Sequence__c)
     .map((procedureRule) => {
       const conditions = conditionsToDSL(
         procedureRule.VELOCPQ__ProcedureRules_RuleConditions__r?.records,
