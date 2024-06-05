@@ -1,5 +1,5 @@
 import { CommandParams } from '../types/command.types';
-import { getContext } from '../utils/context';
+import { putIdToIdmap } from '../utils/idmap.utils';
 import {
   cleanupRuleActions,
   cleanupRuleConditions,
@@ -20,9 +20,6 @@ export async function pushRule(params: CommandParams): Promise<string[]> {
     return [];
   }
 
-  const ctx = getContext();
-  const idmapJson = ctx.idmap; // idmap from command arguments (stored in JSON file)
-
   const names = member.all ? undefined : Array.from(member.names).map((ui) => ui.split(':')[0]);
   const ruleGroups = getRuleGroups(rootPath + '/rule', names);
 
@@ -31,16 +28,8 @@ export async function pushRule(params: CommandParams): Promise<string[]> {
   for (const ruleGroup of ruleGroups) {
     const ruleGroupResult = await upsertRuleGroup(conn, ruleGroup);
 
-    if (ruleGroup.id) {
-      if (idmapJson) {
-        // if provided, use old json-idmap
-        console.log(`IDMAP(JSON): ${ruleGroup.id} => ${ruleGroupResult.id}`);
-        idmapJson.put(ruleGroup.id, ruleGroupResult.id);
-      } else if (idmap) {
-        // otherwise, use SF-based idmap
-        console.log(`IDMAP(NEW): ${ruleGroup.id} => ${ruleGroupResult.id}`);
-        idmap[ruleGroup.id] = ruleGroupResult.id;
-      }
+    if (ruleGroup.id && ruleGroupResult.id) {
+      putIdToIdmap(ruleGroup.id, ruleGroupResult.id, idmap);
     }
 
     for (const rule of ruleGroup.rules) {
@@ -50,16 +39,8 @@ export async function pushRule(params: CommandParams): Promise<string[]> {
       const ruleResult = await upsertRule(conn, rule, ruleGroupResult.id);
       result.push(ruleResult.id);
 
-      if (rule.id) {
-        if (idmapJson) {
-          // if provided, use old json-idmap
-          console.log(`IDMAP(JSON): ${rule.id} => ${ruleResult.id}`);
-          idmapJson.put(rule.id, ruleResult.id);
-        } else if (idmap) {
-          // otherwise, use SF-based idmap
-          console.log(`IDMAP(NEW): ${rule.id} => ${ruleResult.id}`);
-          idmap[rule.id] = ruleResult.id;
-        }
+      if (rule.id && ruleResult.id) {
+        putIdToIdmap(rule.id, ruleResult.id, idmap);
       }
 
       const conditionsResults = [];
