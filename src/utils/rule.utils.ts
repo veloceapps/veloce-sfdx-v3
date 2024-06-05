@@ -492,7 +492,7 @@ export async function upsertRuleCondition(
     VELOCPQ__ExpressionsJsonString__c: condition.expression,
     VELOCPQ__RuleId__c: ruleId,
     VELOCPQ__ObjectType__c: condition.objectType,
-    VELOCPQ__Property__c: condition.property ?? condition.objectType,
+    VELOCPQ__Property__c: condition.property,
     ...(condition.relatedConditionVariable?.length && {
       VELOCPQ__RelatedConditionVariable__c: condition.relatedConditionVariable,
     }),
