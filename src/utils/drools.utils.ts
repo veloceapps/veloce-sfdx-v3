@@ -5,7 +5,7 @@ import { Connection } from '@salesforce/core';
 import { PriceRuleGroup } from '../types/priceRuleGroup.types';
 import { PriceRule } from '../types/priceRule.types';
 import { PriceList } from '../types/priceList.types';
-import { isFieldExists, parseJsonSafe, writeFileSafe } from './common.utils';
+import { isFieldExists, parseJsonSafe, queryAllRecords, writeFileSafe } from './common.utils';
 import { getContext } from './context';
 
 const ruleExtractRegex = /(rule\b)([\S\s]*?)(\nend\b)/g;
@@ -153,8 +153,7 @@ export async function fetchDroolsByGroup(conn: Connection, groupName: string): P
     'VELOCPQ__Description__c,VELOCPQ__ReferenceId__c,VELOCPQ__PriceRuleGroupId__c,VELOCPQ__Sequence__c from VELOCPQ__PriceRule__c';
   query += ` WHERE VELOCPQ__PriceRuleGroupId__c = '${groupName}'`;
 
-  const result = await conn.query<PriceRule>(query);
-  return result?.records ?? [];
+  return await queryAllRecords<PriceRule>(conn, query);
 }
 
 export async function fetchDroolGroups(conn: Connection, groupNames: string[]): Promise<PriceRuleGroup[]> {
@@ -167,8 +166,7 @@ export async function fetchDroolGroups(conn: Connection, groupNames: string[]): 
   if (groupNames.length > 0) {
     query += ` WHERE Name IN ('${groupNames.join("','")}')`;
   }
-  const result = await conn.query<PriceRuleGroup>(query);
-  return result?.records ?? [];
+  return await queryAllRecords<PriceRuleGroup>(conn, query);
 }
 
 export async function setIdFromReferenceId(groups: Group[], conn: Connection): Promise<void> {
@@ -176,8 +174,7 @@ export async function setIdFromReferenceId(groups: Group[], conn: Connection): P
   const query = `SELECT Id,VELOCPQ__ReferenceId__c from VELOCPQ__PriceList__c WHERE VELOCPQ__ReferenceId__c in ('${referenceIds.join(
     "','",
   )}')`;
-  const result = await conn.query<PriceList>(query);
-  const priceListRecords = result?.records ?? [];
+  const priceListRecords = await queryAllRecords<PriceList>(conn, query);
   const referenceIdToId: { [key: string]: string } = {};
 
   for (const priceListRecord of priceListRecords) {
@@ -194,8 +191,7 @@ export async function setIdFromReferenceId(groups: Group[], conn: Connection): P
 export async function setReferenceIdFromId(groups: Group[], conn: Connection): Promise<void> {
   const ids = groups.map((group) => group.priceListId);
   const query = `SELECT Id,VELOCPQ__ReferenceId__c from VELOCPQ__PriceList__c WHERE Id in ('${ids.join("','")}')`;
-  const result = await conn.query<PriceList>(query);
-  const priceListRecords = result?.records ?? [];
+  const priceListRecords = await queryAllRecords<PriceList>(conn, query);
   const idToReferenceId: { [key: string]: string } = {};
 
   for (const priceListRecord of priceListRecords) {

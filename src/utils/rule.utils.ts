@@ -20,7 +20,13 @@ import {
   SFProcedureRuleTransformation,
 } from '../types/rule.types';
 import { createRulesParser, RuleVisitor } from '../grammar/src';
-import { isFieldExists, isInstalledVersionBetween, parseJsonSafe, writeFileSafe } from './common.utils';
+import {
+  isFieldExists,
+  isInstalledVersionBetween,
+  parseJsonSafe,
+  queryAllRecords,
+  writeFileSafe,
+} from './common.utils';
 import { createDocument, fetchDocumentContent, updateDocument } from './document.utils';
 import { createFolder, fetchFolder } from './folder.utils';
 import { getIdFromIdmap } from './idmap.utils';
@@ -90,10 +96,7 @@ export async function fetchProcedureRules(
     query += ` WHERE VELOCPQ__RuleGroupId__r.Name IN ('${ruleNames?.join("','")}')`;
   }
 
-  const result = await conn.query<SFProcedureRule>(query);
-
-  // get script file for transformations
-  const rules = result?.records ?? [];
+  const rules = await queryAllRecords<SFProcedureRule>(conn, query);
   const transformationIds = rules.reduce((acc, rule) => {
     return [
       ...acc,
@@ -119,8 +122,7 @@ export async function fetchProcedureRules(
     const contentLinksQuery = `Select Id, ContentDocumentId, LinkedEntityId
                              From ContentDocumentLink
                              Where LinkedEntityId IN ('${transformationIds.map((tr) => tr.Id).join("','")}')`;
-    const contentLinks = await conn.query<SFContent>(contentLinksQuery);
-    const contentLinksRecords = contentLinks?.records || [];
+    const contentLinksRecords = await queryAllRecords<SFContent>(conn, contentLinksQuery);
     for (const record of contentLinksRecords) {
       const javaScript = await conn.request<string>({ url: `/connect/files/${record.ContentDocumentId}/content` });
       javaScripts.push({ id: record.LinkedEntityId, javaScript });
@@ -758,9 +760,9 @@ export async function deleteJavaScript(conn: Connection, transformationId: strin
   const query = `select Id, ContentDocumentId
                  from ContentDocumentLink
                  where LinkedEntityId = '${transformationId}'`;
-  const queryResults = await conn.query<SFContent>(query);
+  const queryResults = await queryAllRecords<SFContent>(conn, query);
 
-  for (const record of queryResults.records) {
+  for (const record of queryResults) {
     await conn.sobject('ContentDocument').delete(record.ContentDocumentId);
   }
 }

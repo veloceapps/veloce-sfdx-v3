@@ -1,5 +1,6 @@
 import { Connection } from '@salesforce/core';
 import { ProductModel } from '../types/productModel.types';
+import { queryAllRecords } from './common.utils';
 
 export async function fetchProductModels(
   conn: Connection,
@@ -12,6 +13,5 @@ export async function fetchProductModels(
     query += ` WHERE Name IN ('${modelNames?.join("','")}')`;
   }
 
-  const result = await conn.query<ProductModel>(query);
-  return result?.records ?? [];
+  return await queryAllRecords<ProductModel>(conn, query);
 }
