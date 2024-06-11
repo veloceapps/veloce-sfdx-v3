@@ -1,6 +1,6 @@
 import { readFileSync, existsSync, mkdirSync, writeFileSync, readdirSync, WriteFileOptions } from 'fs';
-import { ExecuteOptions } from 'jsforce/query';
 import { exec as nodeExec } from 'node:child_process';
+import { ExecuteOptions } from 'jsforce/query';
 import { Connection } from '@salesforce/core';
 import { UX } from '@salesforce/command';
 import { InstalledSubscriberPackage } from '../types/common.types';
