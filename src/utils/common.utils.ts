@@ -1,4 +1,5 @@
 import { readFileSync, existsSync, mkdirSync, writeFileSync, readdirSync, WriteFileOptions } from 'fs';
+import { ExecuteOptions } from 'jsforce/query';
 import { exec as nodeExec } from 'node:child_process';
 import { Connection } from '@salesforce/core';
 import { UX } from '@salesforce/command';
@@ -202,4 +203,15 @@ SELECT Id
 FROM FieldDefinition
 WHERE EntityDefinition.QualifiedApiName = '${objectName}' AND QualifiedApiName = '${fieldName}'`;
   return (await conn.query<{ Id: string }>(sql))?.records?.[0] !== undefined;
+};
+
+export const queryAllRecords = async <T>(conn: Connection, soql: string, options?: ExecuteOptions): Promise<T[]> => {
+  const records: T[] = [];
+  let qr = await conn.query<T>(soql, options);
+  records.push(...qr.records);
+  while (!qr.done && qr.nextRecordsUrl) {
+    qr = await conn.queryMore<T>(qr.nextRecordsUrl, options);
+    records.push(...qr.records);
+  }
+  return records;
 };
