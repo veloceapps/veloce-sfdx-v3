@@ -2,8 +2,9 @@ import * as fs from 'fs';
 import { brotliCompressSync } from 'node:zlib';
 import * as path from 'path';
 import { Connection, SfdxError } from '@salesforce/core';
-import { SuccessResult, RecordResult } from 'jsforce/record-result';
+import { RecordResult, SuccessResult } from 'jsforce/record-result';
 import { camelCase, groupBy, isBoolean } from 'lodash';
+import { createRulesParser, RuleVisitor } from '../grammar/src';
 import { DocumentBody } from '../types/document.types';
 import { IdMap } from '../types/idmap';
 import {
@@ -19,7 +20,6 @@ import {
   SFProcedureRuleMapping,
   SFProcedureRuleTransformation,
 } from '../types/rule.types';
-import { createRulesParser, RuleVisitor } from '../grammar/src';
 import {
   isFieldExists,
   isInstalledVersionBetween,
@@ -487,7 +487,8 @@ export async function upsertRuleCondition(
       'Failed to create rule condition: installed version of Veloce CPQ package does not support related condition variables. Please update to at least 2023.R6.1.0 version.',
     );
   }
-  const body = {
+
+  const body: Record<string, any> = {
     VELOCPQ__ReferenceId__c: condition.referenceId,
     VELOCPQ__Sequence__c: condition.sequence,
     VELOCPQ__VariableName__c: condition.variableName,
@@ -495,10 +496,12 @@ export async function upsertRuleCondition(
     VELOCPQ__RuleId__c: ruleId,
     VELOCPQ__ObjectType__c: condition.objectType,
     VELOCPQ__Property__c: condition.property,
-    ...(condition.relatedConditionVariable?.length && {
-      VELOCPQ__RelatedConditionVariable__c: condition.relatedConditionVariable,
-    }),
   };
+
+  if (atLeastR6_1_0) {
+    body['VELOCPQ__RelatedConditionVariable__c'] = condition.relatedConditionVariable;
+  }
+
   const existingRuleCondition = await findRuleCondition(conn, condition, ruleId);
   let result;
   if (existingRuleCondition) {
@@ -509,9 +512,9 @@ export async function upsertRuleCondition(
 
   if (result.success) {
     if (existingRuleCondition) {
-      console.log(`Procedure Rule Condition ${body.VELOCPQ__VariableName__c} updated`);
+      console.log(`Procedure Rule Condition ${condition.variableName} updated`);
     } else {
-      console.log(`New Procedure Rule Condition ${body.VELOCPQ__VariableName__c} created with id ${result.id}`);
+      console.log(`New Procedure Rule Condition ${condition.variableName} created with id ${result.id}`);
     }
   } else {
     throw new SfdxError(`Failed to create document: ${JSON.stringify(result)}`);
