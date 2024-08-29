@@ -499,7 +499,7 @@ export async function upsertRuleCondition(
   };
 
   if (atLeastR6_1_0) {
-    body['VELOCPQ__RelatedConditionVariable__c'] = condition.relatedConditionVariable;
+    body['VELOCPQ__RelatedConditionVariable__c'] = condition.relatedConditionVariable ?? '';
   }
 
   const existingRuleCondition = await findRuleCondition(conn, condition, ruleId);
