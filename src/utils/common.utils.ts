@@ -144,7 +144,8 @@ FROM InstalledSubscriberPackage`,
 };
 
 /* i.e. 2023.R6.1.0 or 2023.R6-SNAPSHOT or 2024.R7.2-SNAPSHOT */
-export const versionPattern = /(?<year>[0-9]+)\.R(?<major>[0-9]+)(\.(?<minor>[0-9]+))?(\.(?<patch>[0-9]+)|-SNAPSHOT)/g;
+export const versionPattern =
+  '(?<year>[0-9]+)\\.R(?<major>[0-9]+)(\\.(?<minor>[0-9]+))?(\\.(?<patch>[0-9]+)|-SNAPSHOT)';
 /*
  * isInstalledVersionBetween checks installed Veloce Advanced CPQ version for compatibility
  */
@@ -155,9 +156,9 @@ export const isInstalledVersionBetween = async (
 ): Promise<boolean> => {
   const installedVersion = await getInstalledPackageReleaseVersion(conn);
   if (installedVersion) {
-    const fromParts = versionPattern.exec(fromVersion);
-    const toParts = versionPattern.exec(toVersion ?? '');
-    const installedParts = versionPattern.exec(installedVersion);
+    const fromParts = RegExp(versionPattern, 'g').exec(fromVersion);
+    const toParts = RegExp(versionPattern, 'g').exec(toVersion ?? '');
+    const installedParts = RegExp(versionPattern, 'g').exec(installedVersion);
     if (installedParts) {
       if (!installedParts.groups?.['patch']) {
         // SNAPSHOT
@@ -192,7 +193,8 @@ export const isInstalledVersionBetween = async (
 const concatParts = (arr: RegExpExecArray | null, parts: string[]): string => {
   let result = '';
   for (const part of parts) {
-    result += arr?.groups?.[part] ?? '';
+    const p = arr?.groups?.[part] ?? '';
+    result += p.length === 1 ? '0' + p : p;
   }
   return result;
 };
