@@ -40,7 +40,7 @@ export async function fetchProcedureRules(
 ): Promise<SFProcedureRule[]> {
   const isStepExists = await isFieldExists(conn, 'VELOCPQ__RuleGroup__c', 'Step__c');
   const atLeastR6_1_0 = await isInstalledVersionBetween(conn, '2023.R6.1.0');
-  const atLeastR7_1_0 = await isInstalledVersionBetween(conn, '2023.R7.1.0');
+  const atLeastR7_1_0 = await isInstalledVersionBetween(conn, '2024.R7.1.0');
   let query = `SELECT Id,
                       Name,
                       VELOCPQ__RuleGroupId__r.Name,
@@ -695,7 +695,7 @@ export async function deleteRuleActions(conn: Connection, fromRuleId: string): P
 
 export async function createRuleAction(conn: Connection, action: RuleAction, ruleId: string): Promise<SuccessResult> {
   const atLeastR6_1_0 = await isInstalledVersionBetween(conn, '2023.R6.1.0');
-  const atLeastR7_1_0 = await isInstalledVersionBetween(conn, '2023.R7.1.0');
+  const atLeastR7_1_0 = await isInstalledVersionBetween(conn, '2024.R7.1.0');
   if (!atLeastR6_1_0 && action.ifBlockCondition?.length) {
     throw new SfdxError(
       'Failed to create rule action: installed version of Veloce CPQ package does not support if-blocks in actions. Please update to at least 2023.R6.1.0 version.',
