@@ -39,8 +39,8 @@ export async function fetchProcedureRules(
   ruleNames?: string[],
 ): Promise<SFProcedureRule[]> {
   const isStepExists = await isFieldExists(conn, 'VELOCPQ__RuleGroup__c', 'Step__c');
-  const useScriptJsId = await isInstalledVersionBetween(conn, '2023.R6.1.0');
   const atLeastR6_1_0 = await isInstalledVersionBetween(conn, '2023.R6.1.0');
+  const atLeastR7_1_0 = await isInstalledVersionBetween(conn, '2023.R7.1.0');
   let query = `SELECT Id,
                       Name,
                       VELOCPQ__RuleGroupId__r.Name,
@@ -69,7 +69,7 @@ export async function fetchProcedureRules(
                               VELOCPQ__RuleId__c,
                               VELOCPQ__Sequence__c,
                               VELOCPQ__ResultPath__c,
-                              VELOCPQ__Expression__c, ${useScriptJsId ? 'VELOCPQ__ScriptJsId__c,' : ''}
+                              VELOCPQ__Expression__c, ${atLeastR6_1_0 ? 'VELOCPQ__ScriptJsId__c,' : ''}
                               VELOCPQ__ReferenceId__c
                        FROM VELOCPQ__ProcedureRules_TransformationRules__r),
                       (SELECT Id,
@@ -87,9 +87,9 @@ export async function fetchProcedureRules(
                               VELOCPQ__AllowOverride__c,
                               VELOCPQ__ReferenceId__c,
                               VELOCPQ__Sequence__c,
-                              VELOCPQ__Eligible__c${
-                                atLeastR6_1_0 ? ',VELOCPQ__IfBlockCondition__c,VELOCPQ__IfBlockSequence__c' : ''
-                              }
+                              VELOCPQ__Eligible__c
+                                ${atLeastR6_1_0 ? ',VELOCPQ__IfBlockCondition__c' : ''}
+                                ${atLeastR7_1_0 ? ',VELOCPQ__IfBlockSequence__c' : ''}
                        FROM VELOCPQ__ProcedureRules_RuleMappings__r)
                FROM VELOCPQ__ProcedureRule__c`;
   if (!dumpAll) {
@@ -107,7 +107,7 @@ export async function fetchProcedureRules(
   }, [] as { Id: string; scriptJsId?: string }[]);
 
   const javaScripts: { id: string; javaScript: string }[] = [];
-  if (useScriptJsId) {
+  if (atLeastR6_1_0) {
     // starting from 2023.R6.1.0
     for (const { scriptJsId } of transformationIds) {
       if (scriptJsId) {
@@ -528,9 +528,9 @@ export async function findRuleTransformations(
   transformation: RuleTransformation,
   ruleId: string,
 ): Promise<SFProcedureRuleTransformation | undefined> {
-  const useScriptJsId = await isInstalledVersionBetween(conn, '2023.R6.1.0');
+  const atLeastR6_1_0 = await isInstalledVersionBetween(conn, '2023.R6.1.0');
   const query = `SELECT Id${
-    useScriptJsId ? ', VELOCPQ__ScriptJsId__c' : ''
+    atLeastR6_1_0 ? ', VELOCPQ__ScriptJsId__c' : ''
   } FROM VELOCPQ__TransformationRule__c WHERE VELOCPQ__ResultPath__c='${
     transformation.resultPath
   }' AND VELOCPQ__RuleId__c ='${ruleId}'`;
@@ -575,7 +575,7 @@ export async function upsertRuleTransformation(
   // Check if veloce folder exists:
   const folderId: string =
     (await fetchFolder(conn, SCRIPTS_FOLDER_NAME))?.Id ?? (await createFolder(conn, SCRIPTS_FOLDER_NAME)).id;
-  const useScriptJsId = await isInstalledVersionBetween(conn, '2023.R6.1.0');
+  const atLeastR6_1_0 = await isInstalledVersionBetween(conn, '2023.R6.1.0');
   const body = {
     VELOCPQ__ReferenceId__c: transformation.referenceId,
     VELOCPQ__Sequence__c: transformation.sequence,
@@ -600,7 +600,7 @@ export async function upsertRuleTransformation(
       console.log(`New Procedure Rule Transformation ${body.VELOCPQ__ResultPath__c} created with id ${result.id}`);
     }
 
-    if (useScriptJsId) {
+    if (atLeastR6_1_0) {
       // starting from 2023.R6.1.0
       if (transformation.javaScript) {
         const output = transformation.javaScript;
@@ -695,6 +695,7 @@ export async function deleteRuleActions(conn: Connection, fromRuleId: string): P
 
 export async function createRuleAction(conn: Connection, action: RuleAction, ruleId: string): Promise<SuccessResult> {
   const atLeastR6_1_0 = await isInstalledVersionBetween(conn, '2023.R6.1.0');
+  const atLeastR7_1_0 = await isInstalledVersionBetween(conn, '2023.R7.1.0');
   if (!atLeastR6_1_0 && action.ifBlockCondition?.length) {
     throw new SfdxError(
       'Failed to create rule action: installed version of Veloce CPQ package does not support if-blocks in actions. Please update to at least 2023.R6.1.0 version.',
@@ -717,8 +718,8 @@ export async function createRuleAction(conn: Connection, action: RuleAction, rul
     VELOCPQ__MessageValueType__c: action.messageValueType,
     VELOCPQ__AllowOverride__c: action.allowOverride === true,
     VELOCPQ__Eligible__c: action.eligible,
-    VELOCPQ__IfBlockCondition__c: action.ifBlockCondition,
-    VELOCPQ__IfBlockSequence__c: action.ifBlockSequence ?? 0,
+    ...(atLeastR6_1_0 ? { VELOCPQ__IfBlockCondition__c: action.ifBlockCondition } : {}),
+    ...(atLeastR7_1_0 ? { VELOCPQ__IfBlockSequence__c: action.ifBlockSequence ?? 0 } : {}),
   };
   const result = await conn.sobject('VELOCPQ__RuleMapper__c').create(body);
 
