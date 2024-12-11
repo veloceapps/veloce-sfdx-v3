@@ -1,21 +1,28 @@
-import { existsSync, mkdirSync } from 'fs';
-import { writeFileSafe } from '../utils/common.utils';
+import { existsSync, mkdirSync, rmSync } from 'fs';
+import { CommandParams } from '../types/command.types';
+import { ProductModel } from '../types/productModel.types';
 import {
   LegacySection,
   LegacyUiDefinition,
+  SfConfigurationProcessor,
   SfUIDefinition,
-  UiDefinitionContainerDto,
   UiDef,
   UiDefinition,
+  UiDefinitionContainerDto,
   UiElement,
   UiMetadata,
 } from '../types/ui.types';
-import { extractElementMetadata, fetchUiDefinitions, fromBase64, isLegacyDefinition } from '../utils/ui.utils';
-import { ProductModel } from '../types/productModel.types';
-import { fetchProductModels } from '../utils/productModel.utils';
-import { fetchDocumentContent } from '../utils/document.utils';
-import { CommandParams } from '../types/command.types';
+import { writeFileSafe } from '../utils/common.utils';
 import { getContext } from '../utils/context';
+import { fetchDocumentContent } from '../utils/document.utils';
+import { fetchProductModels } from '../utils/productModel.utils';
+import {
+  extractElementMetadata,
+  fetchConfigurationProcessors,
+  fetchUiDefinitions,
+  fromBase64,
+  isLegacyDefinition,
+} from '../utils/ui.utils';
 
 export async function pullUI(params: CommandParams): Promise<string[]> {
   const { rootPath, conn, member } = params;
@@ -53,9 +60,9 @@ export async function pullUI(params: CommandParams): Promise<string[]> {
                 if (priceList) {
                   const ctx = getContext();
                   const localId = ctx.idmap?.reverseGet(priceList);
-                  if (localId) {
+                  if (localId && !isLegacyDefinition(uiDef) && uiDef.properties != null) {
                     console.log(`IDMAP: ${priceList} => ${localId}`);
-                    (uiDef as UiDefinition).properties!.priceList = localId;
+                    uiDef.properties.priceList = localId;
                   }
                 }
                 return {
@@ -74,6 +81,21 @@ export async function pullUI(params: CommandParams): Promise<string[]> {
       })),
     ),
   );
+
+  const uiIds = modelsWithContents
+    .flatMap((content) => content.uiDefs)
+    .map((uiDef) => uiDef.sfMetadata.Id)
+    .filter((v): v is string => Boolean(v));
+
+  const processors = await fetchConfigurationProcessors(conn, uiIds);
+  const processorsMap = processors.reduce((acc: Record<string, SfConfigurationProcessor[]>, processor) => {
+    if (!acc[processor.VELOCPQ__OwnerId__c]) {
+      acc[processor.VELOCPQ__OwnerId__c] = [];
+    }
+
+    acc[processor.VELOCPQ__OwnerId__c].push(processor);
+    return acc;
+  }, {});
 
   modelsWithContents.forEach(({ productModel, uiDefs }) => {
     const { Name } = productModel;
@@ -94,6 +116,9 @@ export async function pullUI(params: CommandParams): Promise<string[]> {
       } else {
         const uiDir = `${path}/${container.uiDef.name}`;
         saveUiDefinition(container.sfMetadata, container.uiDef, uiDir);
+        if (container.sfMetadata.Id && processorsMap[container.sfMetadata.Id]) {
+          saveConfigurationProcessors(processorsMap[container.sfMetadata.Id], uiDir);
+        }
       }
     });
 
@@ -233,4 +258,38 @@ function saveElement(el: UiElement, path: string): string | undefined {
   el.children.forEach((c) => saveElement(c, elDir));
 
   return elName;
+}
+
+function saveConfigurationProcessors(processors: SfConfigurationProcessor[], path: string): void {
+  const actionsFolder = `${path}/actions`;
+  const selectorsFolder = `${path}/selectors`;
+  const metadataFileName = 'VELOCPQ__ConfigurationProcessor__c.json';
+
+  rmSync(actionsFolder, { recursive: true, force: true });
+  rmSync(selectorsFolder, { recursive: true, force: true });
+  if (!existsSync(`${path}/${metadataFileName}`)) {
+    rmSync(`${path}/${metadataFileName}`, { force: true });
+  }
+
+  processors.forEach((processor) => {
+    const folderName =
+      processor.VELOCPQ__Type__c === 'ACTION'
+        ? 'actions'
+        : processor.VELOCPQ__Type__c === 'SELECTOR'
+        ? 'selectors'
+        : null;
+
+    if (folderName) {
+      writeFileSafe(
+        `${path}/${folderName}`,
+        `${processor.VELOCPQ__ApiNameField__c}.js`,
+        processor.VELOCPQ__Script__c ?? '',
+      );
+
+      // not needed as part of metadata anymore
+      delete processor['VELOCPQ__Script__c'];
+    }
+  });
+
+  writeFileSafe(`${path}`, 'VELOCPQ__ConfigurationProcessor__c.json', JSON.stringify(processors, null, 2) + '\n');
 }

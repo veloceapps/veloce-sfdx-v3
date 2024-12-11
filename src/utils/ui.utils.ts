@@ -2,6 +2,7 @@ import { existsSync, readFileSync } from 'fs';
 import { Connection } from '@salesforce/core';
 import {
   LegacyUiDefinition,
+  SfConfigurationProcessor,
   SfUIDefinition,
   UiDef,
   UiDefinition,
@@ -9,8 +10,9 @@ import {
   UiElementMetadata,
   UiMetadata,
 } from '../types/ui.types';
-import { getDirectoryNames, readFileSafe } from './common.utils';
+import { getDirectoryNames, getFileNames, parseJsonSafe, readFileSafe } from './common.utils';
 import { getContext } from './context';
+import { fetchDocumentContent } from './document.utils';
 
 const METADATA_DECORATOR_REGEX = /@ElementDefinition\(([\s\S]+)\)(\n|\r\n|.)*export class/g;
 
@@ -45,11 +47,48 @@ export async function fetchUiDefinitions(
   return result?.records ?? [];
 }
 
+export async function fetchConfigurationProcessors(
+  conn: Connection,
+  ownerIds: string[],
+): Promise<SfConfigurationProcessor[]> {
+  const query = `SELECT Id, Name, VELOCPQ__ApiNameField__c, VELOCPQ__OwnerId__c, VELOCPQ__ReferenceId__c, VELOCPQ__Script__c, VELOCPQ__ScriptDocumentId__c, VELOCPQ__Type__c FROM VELOCPQ__ConfigurationProcessor__c WHERE VELOCPQ__OwnerId__c in ('${ownerIds.join(
+    "','",
+  )}')`;
+  const result = await conn.autoFetchQuery<SfConfigurationProcessor>(query, { autoFetch: true, maxFetch: 100000 });
+
+  const records = result?.records ?? [];
+  const documentScriptsMap = records.reduce((acc: Record<string, string>, record) => {
+    if (record.VELOCPQ__ScriptDocumentId__c) {
+      acc[record.VELOCPQ__ScriptDocumentId__c] = '';
+    }
+    return acc;
+  }, {});
+
+  await Promise.all(
+    Object.keys(documentScriptsMap).map((id) =>
+      fetchDocumentContent(conn, id).then((script) => (documentScriptsMap[id] = script ?? '')),
+    ),
+  );
+
+  records.forEach((record) => {
+    if (record.VELOCPQ__ScriptDocumentId__c) {
+      record['VELOCPQ__Script__c'] = documentScriptsMap[record.VELOCPQ__ScriptDocumentId__c];
+    }
+  });
+
+  return records;
+}
+
 export class UiDefinitionsBuilder {
   private sfUiDefinitions: SfUIDefinition[] = [];
+  private sfConfigurationProcessors: Record<string, Partial<SfConfigurationProcessor>[]> = {};
 
   public getSfUiDefinitions(): SfUIDefinition[] {
     return this.sfUiDefinitions;
+  }
+
+  public getConfigurationProcessors(): Record<string, Partial<SfConfigurationProcessor>[]> {
+    return this.sfConfigurationProcessors;
   }
 
   public pack(dir: string, modelName: string): UiDef[] {
@@ -64,23 +103,9 @@ export class UiDefinitionsBuilder {
       const mainDir = `${dir}/${folder}`;
       const sourceDir = `${mainDir}/src`;
       const metadataString = readFileSafe(`${mainDir}/metadata.json`);
-      const sfMetadataString = readFileSafe(`${mainDir}/sfMetadata.json`);
 
       if (!metadataString) {
         return acc;
-      }
-
-      if (sfMetadataString) {
-        try {
-          const sfMetadata = JSON.parse(sfMetadataString ?? {}) as SfUIDefinition | SfUIDefinition[];
-          if (sfMetadata instanceof Array) {
-            this.sfUiDefinitions.push(...sfMetadata);
-          } else {
-            this.sfUiDefinitions.push(sfMetadata);
-          }
-        } catch (e) {
-          console.log(`Failed to parse sfMetadata.json file for UI ${folder}`, e);
-        }
       }
 
       const metadata: UiMetadata = JSON.parse(metadataString);
@@ -94,10 +119,50 @@ export class UiDefinitionsBuilder {
         children: children.map((childName) => this.packUiElement(`${sourceDir}/${childName}`)),
       };
 
+      const sfMetadataString = readFileSafe(`${mainDir}/sfMetadata.json`);
+      if (sfMetadataString) {
+        try {
+          const sfMetadata = JSON.parse(sfMetadataString ?? {}) as SfUIDefinition | SfUIDefinition[];
+          if (sfMetadata instanceof Array) {
+            this.sfUiDefinitions.push(...sfMetadata);
+          } else {
+            this.sfUiDefinitions.push({ ...sfMetadata, Name: uiDefinition.name });
+          }
+        } catch (e) {
+          console.log(`Failed to parse sfMetadata.json file for UI ${folder}`, e);
+        }
+      }
+
+      this.sfConfigurationProcessors[uiDefinition.name] = [
+        this.packConfigurationProcessors(mainDir, 'ACTION'),
+        this.packConfigurationProcessors(mainDir, 'SELECTOR'),
+      ].flat();
+
       return [...acc, uiDefinition];
     }, [] as UiDefinition[]);
 
     return uiDefinitions;
+  }
+
+  private packConfigurationProcessors(dir: string, type: 'ACTION' | 'SELECTOR'): Partial<SfConfigurationProcessor>[] {
+    const folderName = type === 'ACTION' ? 'actions' : 'selectors';
+    const processorsMetadataRaw = readFileSafe(`${dir}/VELOCPQ__ConfigurationProcessor__c.json`);
+    const processorsMetadata: SfConfigurationProcessor[] | undefined = parseJsonSafe(processorsMetadataRaw);
+
+    return getFileNames(`${dir}/${folderName}`).map((fileName) => {
+      const script = readFileSafe(`${dir}/${folderName}/${fileName}`);
+      const apiName = fileName.split('.').slice(0, -1).join('.') || fileName;
+      const processorMetadata = processorsMetadata?.find(
+        (meta) => meta.VELOCPQ__Type__c === type && meta.VELOCPQ__ApiNameField__c === apiName,
+      );
+
+      return {
+        ...processorMetadata,
+        VELOCPQ__ApiNameField__c: apiName,
+        VELOCPQ__Script__c: script,
+        VELOCPQ__Type__c: type,
+      };
+    });
   }
 
   private packUiElement(dir: string): UiElement {
