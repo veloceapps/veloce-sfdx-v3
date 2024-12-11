@@ -17,7 +17,7 @@
     "csv-parse": "^5.0.3",
     "csv-write-stream": "^2.0.0",
     "csv-writer": "^1.6.0",
-    "open": "^8.2.1",
+    "open": "^8.4.2",
     "ts-replace-all": "^1.0.0",
     "tslib": "^2",
     "uuid": "^8.3.2"
