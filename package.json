@@ -1,7 +1,7 @@
 {
   "name": "veloce-sfdx-v3",
   "description": "Extension to sfdx which allows veloce specific data pull and push",
-  "version": "0.0.39",
+  "version": "0.0.40",
   "author": "veloceapps",
   "bugs": "https://github.com/veloceapps/veloce-sfdx-v3/issues",
   "dependencies": {
