@@ -6,7 +6,7 @@
  */
 import { existsSync, readFileSync } from 'node:fs';
 import * as os from 'os';
-import * as parse from 'csv-parse/lib/sync';
+import { parse } from 'csv-parse/sync';
 import { flags, SfdxCommand } from '@salesforce/command';
 import { Connection, Messages, SfdxError } from '@salesforce/core';
 import { AnyJson } from '@salesforce/ts-types';
