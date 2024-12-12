@@ -11,6 +11,17 @@ export interface SfUIDefinition {
   VELOCPQ__ReferenceId__c?: string;
 }
 
+export interface SfConfigurationProcessor {
+  Id?: string;
+  Name: string;
+  VELOCPQ__ApiNameField__c: string;
+  VELOCPQ__OwnerId__c: string;
+  VELOCPQ__ReferenceId__c?: string;
+  VELOCPQ__Script__c?: string;
+  VELOCPQ__ScriptDocumentId__c?: string;
+  VELOCPQ__Type__c: string;
+}
+
 export interface UiDefinitionContainerDto {
   uiDef: UiDef;
   sfMetadata: SfUIDefinition;
