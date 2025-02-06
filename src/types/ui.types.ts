@@ -37,7 +37,9 @@ export interface UiDefinition {
   primary?: boolean;
   children: UiElement[];
   properties?: {
-    priceList?: string;
+    priceListId?: string;
+    quoteId?: string;
+    productId?: string;
   };
 }
 
