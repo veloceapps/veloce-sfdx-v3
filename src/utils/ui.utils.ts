@@ -96,6 +96,12 @@ export class UiDefinitionsBuilder {
     return [...this.packUiDefinitions(modelDir), ...this.packLegacyUiDefinitions(modelDir)];
   }
 
+  public packv2(dir: string, definitionName: string): UiDef | null {
+    const definitionDir = `${dir}/${definitionName}`;
+
+    return this.packUiDefinition(definitionDir);
+  }
+
   private packUiDefinitions(dir: string): UiDefinition[] {
     const folders = getDirectoryNames(`${dir}`);
 
@@ -142,6 +148,55 @@ export class UiDefinitionsBuilder {
     }, [] as UiDefinition[]);
 
     return uiDefinitions;
+  }
+
+  private packUiDefinition(dir: string): UiDefinition | null {
+    const mainDir = `${dir}`;
+    const sourceDir = `${mainDir}/src`;
+    const metadataString = readFileSafe(`${mainDir}/metadata.json`);
+
+    if (!metadataString) {
+      return null;
+    }
+
+    const metadata: UiMetadata = JSON.parse(metadataString);
+
+    if (metadata.properties?.quoteId) {
+      metadata.properties.quoteId = this.mapId(metadata.properties?.quoteId);
+    }
+
+    if (metadata.properties?.productId) {
+      metadata.properties.productId = this.mapId(metadata.properties?.productId);
+    }
+
+    const { children, ...rest } = metadata;
+    const uiDefinition: UiDefinition = {
+      ...rest,
+      children: children.map((childName) => this.packUiElement(`${sourceDir}/${childName}`)),
+    };
+
+    const sfMetadataString = readFileSafe(`${mainDir}/sfMetadata.json`);
+
+    if (sfMetadataString) {
+      try {
+        const sfMetadata = JSON.parse(sfMetadataString ?? {}) as SfUIDefinition | SfUIDefinition[];
+
+        if (sfMetadata instanceof Array) {
+          this.sfUiDefinitions.push(...sfMetadata);
+        } else {
+          this.sfUiDefinitions.push({ ...sfMetadata, Name: uiDefinition.name });
+        }
+      } catch (e) {
+        console.log(`Failed to parse sfMetadata.json file for UI`, e);
+      }
+    }
+
+    this.sfConfigurationProcessors[uiDefinition.name] = [
+      this.packConfigurationProcessors(mainDir, 'ACTION'),
+      this.packConfigurationProcessors(mainDir, 'SELECTOR'),
+    ].flat();
+
+    return uiDefinition;
   }
 
   private packConfigurationProcessors(dir: string, type: 'ACTION' | 'SELECTOR'): Partial<SfConfigurationProcessor>[] {
