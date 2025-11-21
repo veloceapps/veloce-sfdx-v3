@@ -1,7 +1,8 @@
 import { existsSync, readFileSync } from 'fs';
 import { Connection } from '@salesforce/core';
 import {
-  LegacyUiDefinition,
+  LegacyUiDefinition, NewSfConfigurationProcessor,
+  NewSfUIDefinition,
   SfConfigurationProcessor,
   SfUIDefinition,
   UiDef,
@@ -15,6 +16,8 @@ import { getContext } from './context';
 import { fetchDocumentContent } from './document.utils';
 
 const METADATA_DECORATOR_REGEX = /@ElementDefinition\(([\s\S]+)\)(\n|\r\n|.)*export class/g;
+
+const PACKAGE_NAME = 'VELOCE_PRISM';
 
 export const isLegacyDefinition = (uiDefinition: UiDef): uiDefinition is LegacyUiDefinition => {
   return !(uiDefinition as UiDefinition).version;
@@ -45,6 +48,46 @@ export async function fetchUiDefinitions(
   const query = `SELECT Id, Name, VELOCPQ__ModelId__c, VELOCPQ__Default__c, VELOCPQ__SourceBlob__c, VELOCPQ__SourceDocumentId__c, VELOCPQ__ModelVersion__c, VELOCPQ__ReferenceId__c FROM VELOCPQ__UiDefinition__c WHERE VELOCPQ__ModelId__c='${modelId}' AND VELOCPQ__ModelVersion__c=${modelVersion}`;
   const result = await conn.autoFetchQuery<SfUIDefinition>(query, { autoFetch: true, maxFetch: 100000 });
   return result?.records ?? [];
+}
+
+export async function fetchNewUiDefinitions(conn: Connection): Promise<NewSfUIDefinition[]> {
+  const query = `SELECT Id, Name, ${PACKAGE_NAME}__SourceBlob__c, ${PACKAGE_NAME}__SourceDocumentId__c FROM ${PACKAGE_NAME}__UiDefinition__c`;
+  const result = await conn.autoFetchQuery<NewSfUIDefinition>(query, { autoFetch: true, maxFetch: 100000 });
+  return result?.records ?? [];
+}
+
+export async function fetchNewConfigurationProcessors(
+  conn: Connection,
+  ownerIds: string[],
+): Promise<NewSfConfigurationProcessor[]> {
+  const query = `SELECT Id, Name, ${PACKAGE_NAME}__ApiNameField__c, ${PACKAGE_NAME}__OwnerId__c, ${PACKAGE_NAME}__ReferenceId__c, ${PACKAGE_NAME}__Script__c, ${PACKAGE_NAME}__ScriptDocumentId__c, ${PACKAGE_NAME}__Type__c FROM ${PACKAGE_NAME}__ConfigurationProcessor__c WHERE ${PACKAGE_NAME}__OwnerId__c in ('${ownerIds.join(
+    "','",
+  )}')`;
+  const result = await conn.autoFetchQuery<NewSfConfigurationProcessor>(query, { autoFetch: true, maxFetch: 100000 });
+
+  const records = result?.records ?? [];
+  const documentScriptsMap = records.reduce((acc: Record<string, string>, record) => {
+    const key = record[`${PACKAGE_NAME}__ScriptDocumentId__c`];
+    if (key) {
+      acc[key] = '';
+    }
+    return acc;
+  }, {});
+
+  await Promise.all(
+    Object.keys(documentScriptsMap).map((id) =>
+      fetchDocumentContent(conn, id).then((script) => (documentScriptsMap[id] = script ?? '')),
+    ),
+  );
+
+  records.forEach((record) => {
+    const key = record[`${PACKAGE_NAME}__ScriptDocumentId__c`];
+    if (key) {
+      record[`${PACKAGE_NAME}__Script__c`] = documentScriptsMap[key];
+    }
+  });
+
+  return records;
 }
 
 export async function fetchConfigurationProcessors(

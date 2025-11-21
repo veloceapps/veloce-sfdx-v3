@@ -11,6 +11,28 @@ export interface SfUIDefinition {
   VELOCPQ__ReferenceId__c?: string;
 }
 
+export interface NewSfUIDefinition {
+  Id?: string;
+  Name: string;
+  VELOCE_PRISM__ModelId__c: string;
+  VELOCE_PRISM__Default__c: boolean;
+  VELOCE_PRISM__SourceBlob__c?: string;
+  VELOCE_PRISM__SourceDocumentId__c: string;
+  VELOCE_PRISM__ModelVersion__c: string;
+  VELOCE_PRISM__ReferenceId__c?: string;
+}
+
+export interface NewSfConfigurationProcessor {
+  Id?: string;
+  Name: string;
+  VELOCE_PRISM__ApiNameField__c: string;
+  VELOCE_PRISM__OwnerId__c: string;
+  VELOCE_PRISM__ReferenceId__c?: string;
+  VELOCE_PRISM__Script__c?: string;
+  VELOCE_PRISM__ScriptDocumentId__c?: string;
+  VELOCE_PRISM__Type__c: string;
+}
+
 export interface SfConfigurationProcessor {
   Id?: string;
   Name: string;
@@ -24,7 +46,7 @@ export interface SfConfigurationProcessor {
 
 export interface UiDefinitionContainerDto {
   uiDef: UiDef;
-  sfMetadata: SfUIDefinition;
+  sfMetadata: NewSfUIDefinition;
 }
 
 export type UiMetadata = Omit<UiDefinition, 'children'> & {

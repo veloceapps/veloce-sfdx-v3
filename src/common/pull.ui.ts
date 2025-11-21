@@ -1,11 +1,10 @@
 import { existsSync, mkdirSync, rmSync } from 'fs';
 import { CommandParams } from '../types/command.types';
-import { ProductModel } from '../types/productModel.types';
 import {
   LegacySection,
   LegacyUiDefinition,
-  SfConfigurationProcessor,
-  SfUIDefinition,
+  NewSfConfigurationProcessor,
+  NewSfUIDefinition,
   UiDef,
   UiDefinition,
   UiDefinitionContainerDto,
@@ -13,16 +12,16 @@ import {
   UiMetadata,
 } from '../types/ui.types';
 import { writeFileSafe } from '../utils/common.utils';
-import { getContext } from '../utils/context';
 import { fetchDocumentContent } from '../utils/document.utils';
-import { fetchProductModels } from '../utils/productModel.utils';
 import {
   extractElementMetadata,
-  fetchConfigurationProcessors,
-  fetchUiDefinitions,
+  fetchNewConfigurationProcessors,
+  fetchNewUiDefinitions,
   fromBase64,
   isLegacyDefinition,
 } from '../utils/ui.utils';
+
+const PACKAGE_NAME = 'VELOCE_PRISM';
 
 export async function pullUI(params: CommandParams): Promise<string[]> {
   const { rootPath, conn, member } = params;
@@ -33,94 +32,79 @@ export async function pullUI(params: CommandParams): Promise<string[]> {
 
   console.log(
     `Pulling All Uis for ${
-      member.all ? 'All Product models' : 'Product models with names: ' + (modelNames?.join() ?? '')
+      member.all ? 'All UI Definitions' : 'UI Definitions with names: ' + (modelNames?.join() ?? '')
     }`,
   );
-  const uiDefProductModels: ProductModel[] = await fetchProductModels(conn, member.all, modelNames);
+  // const uiDefProductModels: ProductModel[] = await fetchProductModels(conn, member.all, modelNames);
 
-  Array.from(member.names).forEach((ui) => {
-    const [modelName, uiDefName] = ui.split(':');
-    if (uiDefName) {
-      console.log(
-        `Pull for separate UI Definition '${uiDefName}' is not supported. Pulling All UI Definitions for '${modelName}'.`,
-      );
-    }
-  });
+  // Array.from(member.names).forEach((ui) => {
+  //   const [modelName, uiDefName] = ui.split(':');
+  //   if (uiDefName) {
+  //     console.log(
+  //       `Pull for separate UI Definition '${uiDefName}' is not supported. Pulling All UI Definitions for '${modelName}'.`,
+  //     );
+  //   }
+  // });
 
-  const modelsWithContents: { productModel: ProductModel; uiDefs: UiDefinitionContainerDto[] }[] = await Promise.all(
-    uiDefProductModels.map((productModel) =>
-      fetchUiDefinitions(conn, productModel.Id, productModel.VELOCPQ__Version__c).then(async (uiDefinitions) => ({
-        uiDefs: await Promise.all(
-          uiDefinitions
-            .map(async (sfUiDef) => {
-              const content = await fetchDocumentContent(conn, sfUiDef.VELOCPQ__SourceDocumentId__c);
-              try {
-                const uiDef = { ...JSON.parse(content ?? '') } as UiDef;
-                const priceList = (uiDef as UiDefinition).properties?.priceList;
-                if (priceList) {
-                  const ctx = getContext();
-                  const localId = ctx.idmap?.reverseGet(priceList);
-                  if (localId && !isLegacyDefinition(uiDef) && uiDef.properties != null) {
-                    console.log(`IDMAP: ${priceList} => ${localId}`);
-                    uiDef.properties.priceList = localId;
-                  }
-                }
-                return {
-                  uiDef,
-                  sfMetadata: sfUiDef,
-                } as UiDefinitionContainerDto;
-              } catch (err) {
-                console.log(`Failed to parse document content: ${productModel.Name}`);
-                return;
-              }
-            })
-            .filter(async (uiDef) => (await uiDef) !== undefined)
-            .map(async (uiDef) => (await uiDef) as UiDefinitionContainerDto),
-        ),
-        productModel,
-      })),
-    ),
+  const uiDefinitions = await fetchNewUiDefinitions(conn);
+
+  const containers = await Promise.all(
+    uiDefinitions
+      .filter((uiDef) => {
+        if (modelNames) {
+          return modelNames.includes(uiDef.Name);
+        }
+        return true;
+      })
+      .map(async (sfUiDef) => {
+        const content = await fetchDocumentContent(conn, sfUiDef.VELOCE_PRISM__SourceDocumentId__c);
+        try {
+          const uiDef = { ...JSON.parse(content ?? '') } as UiDef;
+          return {
+            uiDef,
+            sfMetadata: sfUiDef,
+          } as UiDefinitionContainerDto;
+        } catch (err) {
+          console.log(`Failed to parse document content: ${sfUiDef.Name}`);
+          return;
+        }
+      })
+      .filter(async (uiDef) => (await uiDef) !== undefined)
+      .map(async (uiDef) => (await uiDef) as UiDefinitionContainerDto),
   );
 
-  const uiIds = modelsWithContents
-    .flatMap((content) => content.uiDefs)
-    .map((uiDef) => uiDef.sfMetadata.Id)
-    .filter((v): v is string => Boolean(v));
+  const uiIds = containers.map((container) => container.sfMetadata.Id).filter((v): v is string => Boolean(v));
 
-  const processors = await fetchConfigurationProcessors(conn, uiIds);
-  const processorsMap = processors.reduce((acc: Record<string, SfConfigurationProcessor[]>, processor) => {
-    if (!acc[processor.VELOCPQ__OwnerId__c]) {
-      acc[processor.VELOCPQ__OwnerId__c] = [];
+  const processors = await fetchNewConfigurationProcessors(conn, uiIds);
+
+  console.log(processors);
+
+  const processorsMap = processors.reduce((acc: Record<string, NewSfConfigurationProcessor[]>, processor) => {
+    if (!acc[processor[`${PACKAGE_NAME}__OwnerId__c`]]) {
+      acc[processor[`${PACKAGE_NAME}__OwnerId__c`]] = [];
     }
 
-    acc[processor.VELOCPQ__OwnerId__c].push(processor);
+    acc[processor[`${PACKAGE_NAME}__OwnerId__c`]].push(processor);
     return acc;
   }, {});
 
-  modelsWithContents.forEach(({ productModel, uiDefs }) => {
-    const { Name } = productModel;
-    const path = `${rootPath}/config-ui/${Name}`;
+  containers.forEach((container) => {
+    const path = `${rootPath}/config-ui`;
 
     // legacy ui definitions metadata is stored in global metadata.json as array
     const legacyMetadataArray: LegacyUiDefinition[] = [];
-    const legacySfMetadataArray: SfUIDefinition[] = [];
+    const legacySfMetadataArray: NewSfUIDefinition[] = [];
 
-    if (uiDefs.length) {
-      console.log(`Pulling Uis result: ${uiDefs.length} UI Definition(s) for ${Name} model`);
-    }
-
-    uiDefs?.forEach((container) => {
-      if (isLegacyDefinition(container.uiDef)) {
-        saveLegacyUiDefinition(container.uiDef, path, container.uiDef.name, legacyMetadataArray);
-        legacySfMetadataArray.push(container.sfMetadata);
-      } else {
-        const uiDir = `${path}/${container.uiDef.name}`;
-        saveUiDefinition(container.sfMetadata, container.uiDef, uiDir);
-        if (container.sfMetadata.Id && processorsMap[container.sfMetadata.Id]) {
-          saveConfigurationProcessors(processorsMap[container.sfMetadata.Id], uiDir);
-        }
+    if (isLegacyDefinition(container.uiDef)) {
+      saveLegacyUiDefinition(container.uiDef, path, container.uiDef.name, legacyMetadataArray);
+      legacySfMetadataArray.push(container.sfMetadata);
+    } else {
+      const uiDir = `${path}/${container.uiDef.name}`;
+      saveUiDefinition(container.sfMetadata, container.uiDef, uiDir);
+      if (container.sfMetadata.Id && processorsMap[container.sfMetadata.Id]) {
+        saveConfigurationProcessors(processorsMap[container.sfMetadata.Id], uiDir);
       }
-    });
+    }
 
     if (legacyMetadataArray.length) {
       writeFileSafe(path, 'metadata.json', JSON.stringify(legacyMetadataArray, null, 2));
@@ -128,15 +112,7 @@ export async function pullUI(params: CommandParams): Promise<string[]> {
     }
   });
 
-  return modelsWithContents.flatMap(({ productModel, uiDefs }) => {
-    return uiDefs.map((container) => {
-      if (isLegacyDefinition(container.uiDef)) {
-        return productModel.Id;
-      } else {
-        return container.sfMetadata.Id as string;
-      }
-    });
-  });
+  return containers.map((container) => container.sfMetadata.Id as string);
 }
 
 function saveLegacySections(
@@ -214,7 +190,7 @@ function saveLegacySectionFiles(
   metadata.sections.push(sectionMeta);
 }
 
-function saveUiDefinition(sfUiDef: SfUIDefinition, ui: UiDefinition, path: string): void {
+function saveUiDefinition(sfUiDef: NewSfUIDefinition, ui: UiDefinition, path: string): void {
   const { children, ...rest } = ui;
 
   // save elements recursively
@@ -260,10 +236,10 @@ function saveElement(el: UiElement, path: string): string | undefined {
   return elName;
 }
 
-function saveConfigurationProcessors(processors: SfConfigurationProcessor[], path: string): void {
+function saveConfigurationProcessors(processors: NewSfConfigurationProcessor[], path: string): void {
   const actionsFolder = `${path}/actions`;
   const selectorsFolder = `${path}/selectors`;
-  const metadataFileName = 'VELOCPQ__ConfigurationProcessor__c.json';
+  const metadataFileName = `${PACKAGE_NAME}__ConfigurationProcessor__c.json`;
 
   rmSync(actionsFolder, { recursive: true, force: true });
   rmSync(selectorsFolder, { recursive: true, force: true });
@@ -273,23 +249,27 @@ function saveConfigurationProcessors(processors: SfConfigurationProcessor[], pat
 
   processors.forEach((processor) => {
     const folderName =
-      processor.VELOCPQ__Type__c === 'ACTION'
+      processor[`${PACKAGE_NAME}__Type__c`] === 'ACTION'
         ? 'actions'
-        : processor.VELOCPQ__Type__c === 'SELECTOR'
+        : processor[`${PACKAGE_NAME}__Type__c`] === 'SELECTOR'
         ? 'selectors'
         : null;
 
     if (folderName) {
       writeFileSafe(
         `${path}/${folderName}`,
-        `${processor.VELOCPQ__ApiNameField__c}.js`,
-        processor.VELOCPQ__Script__c ?? '',
+        `${processor[`${PACKAGE_NAME}__ApiNameField__c`]}.js`,
+        processor[`${PACKAGE_NAME}__Script__c`] ?? '',
       );
 
       // not needed as part of metadata anymore
-      delete processor['VELOCPQ__Script__c'];
+      delete processor[`${PACKAGE_NAME}__Script__c`];
     }
   });
 
-  writeFileSafe(`${path}`, 'VELOCPQ__ConfigurationProcessor__c.json', JSON.stringify(processors, null, 2) + '\n');
+  writeFileSafe(
+    `${path}`,
+    `${PACKAGE_NAME}__ConfigurationProcessor__c.json`,
+    JSON.stringify(processors, null, 2) + '\n',
+  );
 }
